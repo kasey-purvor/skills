@@ -1,368 +1,768 @@
-# Testing Standards
+# Testing
 
-**Status:** Draft
+## The Systems View of Testing
 
-## Core Principle
+Most developers think of testing as "write a function, write a test for that function." That's the micro view. The systems view asks a completely different question: **how do you prove your entire system works correctly?**
 
-TDD is mandatory at all tiers. AI agents must always write tests first — no exceptions.
+A system has many layers and boundaries. Data enters, gets validated, transformed, stored, retrieved, transformed again, and sent out. Errors get thrown, caught, classified, and turned into responses. External services get called, fail, retry, and recover. Each of these is a place where bugs hide.
 
----
-
-## Tier Requirements
-
-### Exploratory
-
-**TDD only.** The red-green-refactor cycle produces baseline tests. No additional requirements.
-
-- Write failing test
-- Write minimal code to pass
-- Refactor
-- Repeat
-
-This naturally produces tests for implemented functionality, sufficient for throwaway/exploratory code.
-
-### Internal
-
-**TDD + Explicit edge cases in plan.**
-
-The Implementer must specify edge cases when writing the plan. AI executes against the list.
-
-Example in plan:
-```markdown
-### Test: validate_email()
-- Valid: standard format, subdomains, plus addressing
-- Invalid: missing @, missing domain, spaces, empty string
-- Boundary: max length (254 chars), min length (3 chars)
-```
-
-### Production
-
-**TDD + Edge cases + Templates + Specification-grounded testing + Mutation testing.**
-
-All Internal requirements, plus:
-
-1. **Test case templates** — Use predefined checklists for common patterns (see Templates section)
-2. **Specification-grounded testing** — When formal data models exist (see [Data Integrity Standards](./data-integrity.md)), tests use those schemas as both input constructors and output validators (see Testing Against Specifications section)
-3. **Mutation testing** — Run `mutmut` (or equivalent) on changed files; surviving mutants must be addressed
+Testing at the systems level means covering all of these concerns systematically — not just "does this function return the right value?" but "does this system behave correctly under real conditions?"
 
 ---
 
-## Design for Testability
+## Test Types — What Each One Proves
 
-Writing tests is only possible if the code is structured to accept them. These patterns make code testable by design — apply them as you write, not after the fact.
+### Unit Tests — "Does this logic work in isolation?"
 
-### Separate Pure Logic from I/O
+A unit test exercises a single function or class with controlled inputs and verifies the output. Dependencies are replaced with test doubles (mocks, stubs).
 
-Business calculations (scoring, formatting, validation, transformation) should be standalone functions that take explicit inputs and return explicit outputs. They should not import database clients, make API calls, or access browser APIs.
-
-**The test:** Can you call this function from a test file by passing in plain values and checking the return value? If yes, it's testable. If you need to set up a database, mock an HTTP client, or render a React component first — the logic needs extracting.
-
-```
-# Good: pure function, testable with plain values
-def calculate_commission(gp_amount: float, tiers: list[Tier]) -> float:
-
-# Bad: logic trapped inside I/O
-def get_commission():
-    gp = db.query("SELECT sum(gp) FROM orders WHERE ...")
-    tiers = db.query("SELECT * FROM commission_tiers WHERE ...")
-    # ... 30 lines of calculation ...
-    return result
-```
-
-### Accept Dependencies as Parameters
-
-Functions that need external services (database, API client, cache) should receive them as parameters rather than importing module-level singletons. This lets tests pass in fakes or mocks without patching imports.
-
-```python
-# Good: client is passed in
-def fetch_customers(db_client, tenant_id: str) -> list[Customer]:
-
-# Bad: client is grabbed from a global
-from integrations.database import db  # module-level singleton
-def fetch_customers(tenant_id: str) -> list[Customer]:
-```
-
-This applies to React hooks too — a hook that imports a Supabase/Firebase/Prisma client directly can only be tested by mocking that module. A hook that receives a data-fetching function can be tested by passing a fake.
-
-### Export Pure Functions
-
-If a function is pure (no side effects, explicit inputs/outputs), export it — even if only one consumer uses it today. Private pure functions are untestable from outside their module. This is one of the most common testability mistakes: the logic is clean, but unreachable.
-
-### Make Date-Dependent Functions Accept a Date
-
-Functions that use `new Date()` or `datetime.now()` internally produce different output depending on when they run. This makes tests non-deterministic — they might pass today and fail tomorrow.
-
-**Fix:** Accept an optional `now` parameter that defaults to the current time in production but can be fixed to a known value in tests.
-
+**TypeScript (Vitest):**
 ```typescript
-// Good: testable with a fixed date
-function getDueLabel(dueDate: Date, now: Date = new Date()): string
-
-// Bad: non-deterministic
-function getDueLabel(dueDate: Date): string {
-  const now = new Date();  // can't control this in tests
-```
-
-### What to Mock, What Not to Mock
-
-- **Mock external services** (databases, APIs, file systems) — these are slow, stateful, and not what you're testing
-- **Don't mock your own abstractions** — if you wrote the function, call the real one. Mocking your own code means you're testing that the mock works, not that the code works
-- **Don't mock what you can extract** — if you need to mock a calculation to test a component, that calculation should be a separate function that you test directly instead
-
----
-
-## Testing Against Specifications
-
-When formal data models and contracts exist (see [Data Integrity Standards](./data-integrity.md)), tests should use those schemas as both input constructors and output validators. This grounds tests in a verified specification rather than developer assumptions about what the data looks like.
-
-### Why This Matters
-
-Without schemas, test data is invented by the developer writing the test. If their mental model of the data is wrong, the test passes but the code breaks on real data. Schema-validated test data eliminates this failure mode: `Schema.parse(data)` in a test guarantees the test data matches the spec.
-
-### The Schema is the Arbiter
-
-When schemas and code disagree, the schema wins — because it was verified against real data (see "Schema verification against real data" in data-integrity.md). If a function expects a field that the schema says doesn't exist, that's a bug in the function, not a missing test case.
-
-### Pattern: Schema as Input Constructor
-
-Use the schema to build test inputs. If the data doesn't parse, the test data is wrong — not the schema.
-
-**Python (Pydantic):**
-```python
-from models.customer import CustomerSummary
-
-def test_commission_calculation():
-    # Schema validates the test data matches the real shape
-    customer = CustomerSummary(
-        customer_code="CUST001",
-        name="Acme Ltd",
-        gp_amount=1500.00,
-        account_status="active",
-    )
-    result = calculate_commission(customer)
-    assert result > 0
-```
-
-**TypeScript (Zod):**
-```typescript
-import { CustomerSummarySchema } from "@/models/customer";
-
-test("commission calculation", () => {
-  // Schema.parse() guarantees test data matches the spec
-  const customer = CustomerSummarySchema.parse({
-    customerCode: "CUST001",
-    name: "Acme Ltd",
-    gpAmount: 1500.0,
-    accountStatus: "active",
+test('applies percentage discount correctly', () => {
+  const result = calculateDiscount({
+    price: 100,
+    discount: { type: 'percentage', value: 20 },
   });
-  const result = calculateCommission(customer);
-  expect(result).toBeGreaterThan(0);
+  expect(result).toBe(80);
+});
+
+test('rejects discount over 100%', () => {
+  expect(() =>
+    calculateDiscount({
+      price: 100,
+      discount: { type: 'percentage', value: 150 },
+    })
+  ).toThrow(ValidationError);
 });
 ```
 
-### Pattern: Schema as Output Validator
-
-Use the schema to validate function output. If the output doesn't parse, the function is producing data that doesn't match the contract.
-
-**Python (Pydantic):**
+**Python (pytest):**
 ```python
-def test_build_customer_summary():
-    raw_row = {"customer_code": "CUST001", "name": "Acme Ltd", ...}
-    result = build_customer_summary(raw_row)
+def test_applies_percentage_discount():
+    result = calculate_discount(price=100, discount=Discount(type="percentage", value=20))
+    assert result == 80
 
-    # If this raises ValidationError, the function output
-    # doesn't match the contract
-    CustomerSummary.model_validate(result)
+def test_rejects_discount_over_100():
+    with pytest.raises(ValidationError):
+        calculate_discount(price=100, discount=Discount(type="percentage", value=150))
 ```
 
-**TypeScript (Zod):**
-```typescript
-test("build customer summary", () => {
-  const rawRow = { customerCode: "CUST001", name: "Acme Ltd", ... };
-  const result = buildCustomerSummary(rawRow);
+**What unit tests prove:** Your logic is correct when given known inputs.
+**What they don't prove:** That the inputs actually look like that in the real system. That the function is wired into the right place. That the database or external service behaves the way your mock said it would.
 
-  // If this throws, the function output doesn't match the contract
-  CustomerSummarySchema.parse(result);
+### Integration Tests — "Do components work together?"
+
+An integration test exercises multiple components working together — your API handler + your database, your service + an external API, your middleware + your routes.
+
+**TypeScript:**
+```typescript
+test('POST /api/users creates a user and returns 201', async () => {
+  const response = await request(app)
+    .post('/api/users')
+    .send({ name: 'Kasey', email: 'kasey@example.com' });
+
+  expect(response.status).toBe(201);
+  expect(response.body.id).toBeDefined();
+
+  // Verify it's actually in the database
+  const user = await db.findUser(response.body.id);
+  expect(user.name).toBe('Kasey');
+});
+```
+
+**Python:**
+```python
+async def test_create_user(client, db):
+    response = await client.post(
+        "/api/users",
+        json={"name": "Kasey", "email": "kasey@example.com"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["id"]
+
+    user = await db.find_user(response.json()["id"])
+    assert user.name == "Kasey"
+```
+
+**What integration tests prove:** Components actually work together — the handler validates, writes to the DB, returns the right response.
+**What they don't prove:** That the system handles load, that the UI renders correctly, that the deploy works.
+
+### Contract Tests — "Does my code match what external data actually looks like?"
+
+A contract test runs your schemas against real or snapshot data to prove they match reality:
+
+```typescript
+test('UserSchema matches actual database rows', async () => {
+  const rows = await db.query('SELECT * FROM users LIMIT 10');
+  for (const row of rows) {
+    expect(() => UserSchema.parse(row)).not.toThrow();
+  }
+});
+```
+
+```python
+def test_user_schema_matches_api(client):
+    response = client.get("/api/users/1")
+    # If the schema is wrong, this throws ValidationError
+    user = User(**response.json())
+```
+
+**What contract tests prove:** Your schemas match the real world — not just what you think the data looks like.
+
+### End-to-End Tests — "Does the whole system work from the user's perspective?"
+
+An E2E test drives the actual UI (or the API from outside) and verifies the full flow:
+
+```typescript
+test('user can sign up and see their dashboard', async ({ page }) => {
+  await page.goto('/signup');
+  await page.fill('[name="email"]', 'test@example.com');
+  await page.fill('[name="password"]', 'SecurePass123!');
+  await page.click('button[type="submit"]');
+
+  await expect(page).toHaveURL('/dashboard');
+  await expect(page.locator('h1')).toContainText('Welcome');
+});
+```
+
+**What E2E tests prove:** The system works as a user experiences it.
+**What they cost:** Slow, flaky (UI changes break them), expensive to maintain. Use sparingly for critical paths only.
+
+### The Testing Pyramid
+
+```
+         /  E2E  \          Few — slow, expensive, critical user journeys only
+        /----------\
+       / Integration \      Moderate — component interactions, API contracts
+      /----------------\
+     /    Unit Tests     \  Many — fast, cheap, logic and edge cases
+    /______________________\
+```
+
+Most tests should be **unit tests** (fast, cheap, reliable). Some should be **integration tests** (verify components work together). Few should be **E2E tests** (verify critical user journeys).
+
+The pyramid doesn't mean E2E tests are less important — it means they're more expensive per test, so you target them at flows that matter most (signup, checkout, core workflows).
+
+---
+
+## What to Test for Each Production Concern
+
+This is the systems view. For each production topic in this skill, here's what needs testing and why.
+
+### Data Integrity Tests
+
+See [Data Integrity](./data-integrity.md) for the concepts these tests verify.
+
+**Schema-to-reality alignment:**
+```typescript
+// Does our schema match what the database actually returns?
+test('UserSchema matches database rows', async () => {
+  const rows = await db.query('SELECT * FROM users LIMIT 10');
+  for (const row of rows) {
+    expect(() => UserSchema.parse(row)).not.toThrow();
+  }
+});
+```
+
+**Validation wiring — is validation actually being called?**
+```typescript
+// Send invalid data → expect rejection
+test('POST /api/users rejects missing email', async () => {
+  const response = await request(app)
+    .post('/api/users')
+    .send({ name: 'Kasey' });  // no email
+  expect(response.status).toBe(400);
+  expect(response.body.errors).toBeDefined();
+});
+```
+
+**Data transformation correctness — the data pipeline:**
+
+Data enters valid but gets transformed at multiple stages. Each transformation needs testing:
+
+```
+DB row → API serialization → Frontend fetch → Hook/transform → Component props
+  ↑            ↑                   ↑               ↑                ↑
+ test         test               test            test             test
+```
+
+```typescript
+// Testing a React hook that transforms API data
+test('useUserGroups groups users by role', () => {
+  const apiUsers = [
+    { id: 1, name: 'Alice', role: 'admin' },
+    { id: 2, name: 'Bob', role: 'member' },
+    { id: 3, name: 'Carol', role: 'admin' },
+  ];
+
+  const { result } = renderHook(() => useUserGroups(apiUsers));
+
+  expect(result.current.admin).toHaveLength(2);
+  expect(result.current.member).toHaveLength(1);
+});
+```
+
+```python
+# Testing a service function that derives data
+def test_calculate_order_summary():
+    orders = [
+        Order(id=1, amount=50.00, status="completed"),
+        Order(id=2, amount=30.00, status="pending"),
+        Order(id=3, amount=20.00, status="completed"),
+    ]
+
+    summary = calculate_order_summary(orders)
+
+    assert summary.total_completed == 70.00
+    assert summary.count_pending == 1
+```
+
+**Complex schema logic:**
+```typescript
+// Custom refinements have logic that can be wrong — test them
+const DiscountSchema = z.object({
+  type: z.enum(["percentage", "fixed"]),
+  value: z.number(),
+}).refine(
+  (d) => d.type !== "percentage" || (d.value >= 0 && d.value <= 100),
+  "Percentage discount must be 0-100"
+);
+
+test('rejects percentage discount over 100', () => {
+  const result = DiscountSchema.safeParse({ type: "percentage", value: 150 });
+  expect(result.success).toBe(false);
+});
+
+test('allows fixed discount over 100', () => {
+  const result = DiscountSchema.safeParse({ type: "fixed", value: 150 });
+  expect(result.success).toBe(true);
+});
+```
+
+### Configuration Tests
+
+See [Configuration](./configuration.md) for the concepts these tests verify.
+
+```typescript
+// Does the app fail fast with clear message when config is missing?
+test('startup fails when DATABASE_URL is missing', () => {
+  const original = process.env.DATABASE_URL;
+  delete process.env.DATABASE_URL;
+  expect(() => envSchema.parse(process.env)).toThrow(/DATABASE_URL/);
+  process.env.DATABASE_URL = original;
+});
+
+// Does type coercion work?
+test('PORT is coerced from string to number', () => {
+  const result = envSchema.parse({ ...validEnv, PORT: '8080' });
+  expect(result.PORT).toBe(8080);
+  expect(typeof result.PORT).toBe('number');
+});
+```
+
+### Error Handling Tests
+
+See [Error Handling](./error-handling.md) for the concepts these tests verify.
+
+```typescript
+// Does the error hierarchy produce correct HTTP status codes?
+test('NotFoundError returns 404', async () => {
+  const response = await request(app).get('/api/users/nonexistent');
+  expect(response.status).toBe(404);
+  expect(response.body.type).toBe('NotFoundError');
+});
+
+// Does the global handler catch unknown errors safely?
+test('unknown errors return 500 without exposing internals', async () => {
+  vi.spyOn(db, 'findUser').mockRejectedValue(new Error('segfault'));
+
+  const response = await request(app).get('/api/users/123');
+
+  expect(response.status).toBe(500);
+  expect(response.body.type).toBe('InternalError');
+  expect(response.body.title).toBe('Internal server error');
+  // MUST NOT contain stack trace or internal error details
+  expect(response.body).not.toHaveProperty('stack');
+  expect(response.body.title).not.toContain('segfault');
+});
+
+// Does the error response match RFC 9457 format?
+test('validation errors include field-level details', async () => {
+  const response = await request(app)
+    .post('/api/users')
+    .send({ name: '', email: 'not-an-email' });
+
+  expect(response.status).toBe(400);
+  expect(response.body).toMatchObject({
+    type: 'ValidationError',
+    status: 400,
+    errors: expect.arrayContaining([
+      expect.objectContaining({ field: 'name' }),
+      expect.objectContaining({ field: 'email' }),
+    ]),
+  });
+});
+```
+
+```python
+async def test_not_found_returns_404(client):
+    response = await client.get("/api/users/nonexistent")
+    assert response.status_code == 404
+    assert response.json()["type"] == "NotFoundError"
+
+async def test_unknown_error_returns_safe_500(client, monkeypatch):
+    async def broken_query(*args):
+        raise RuntimeError("segfault")
+    monkeypatch.setattr(db, "find_user", broken_query)
+
+    response = await client.get("/api/users/123")
+    assert response.status_code == 500
+    assert "segfault" not in response.json()["title"]
+```
+
+### Resilience Tests
+
+See [Resilience](./resilience.md) for the concepts these tests verify.
+
+```typescript
+// Health check returns 503 when database is down
+test('readiness returns 503 when DB is down', async () => {
+  await db.disconnect();
+  const response = await request(app).get('/health/ready');
+  expect(response.status).toBe(503);
+  expect(response.body.status).toBe('not ready');
+  await db.connect();
+});
+
+// Liveness always returns 200 regardless of dependencies
+test('liveness returns 200 even when DB is down', async () => {
+  await db.disconnect();
+  const response = await request(app).get('/health/live');
+  expect(response.status).toBe(200);
+  await db.connect();
+});
+
+// Idempotency — same key returns same result
+test('duplicate idempotency key returns original result', async () => {
+  const key = 'order-123-payment';
+  const first = await request(app)
+    .post('/api/payments')
+    .set('Idempotency-Key', key)
+    .send({ amount: 1000 });
+  const second = await request(app)
+    .post('/api/payments')
+    .set('Idempotency-Key', key)
+    .send({ amount: 1000 });
+
+  expect(first.status).toBe(201);
+  expect(second.status).toBe(200);  // or 201 — but same result
+  expect(second.body.id).toBe(first.body.id);  // same payment, not a duplicate
+});
+```
+
+### Security Tests
+
+See [Security](./security.md) for the concepts these tests verify.
+
+```typescript
+// Authorization — user cannot access another user's data
+test('user cannot access another user\'s data', async () => {
+  const response = await request(app)
+    .get('/api/users/456')
+    .set('Authorization', `Bearer ${userAToken}`);
+  expect(response.status).toBe(403);
+});
+
+// Authentication — protected routes reject unauthenticated requests
+test('protected route rejects missing auth', async () => {
+  const response = await request(app).get('/api/users/123');
+  expect(response.status).toBe(401);
+});
+
+// SQL injection — malicious input doesn't break the system
+test('SQL injection attempt is handled safely', async () => {
+  const response = await request(app)
+    .get('/api/users')
+    .query({ search: "'; DROP TABLE users; --" });
+
+  // Should either reject (400) or return empty results safely
+  expect([200, 400]).toContain(response.status);
+  // Table must still exist
+  const count = await db.query('SELECT COUNT(*) as c FROM users');
+  expect(count[0].c).toBeGreaterThan(0);
+});
+
+// Sensitive data not leaked in errors
+test('error responses do not contain stack traces', async () => {
+  const response = await request(app).get('/api/force-error');
+  expect(response.body).not.toHaveProperty('stack');
+  expect(JSON.stringify(response.body)).not.toContain('.ts:');
+  expect(JSON.stringify(response.body)).not.toContain('.py:');
+});
+```
+
+### API Contract Tests
+
+See [API Design](./api-design.md) for the concepts these tests verify.
+
+```typescript
+// Response shape consistency
+test('GET /api/users returns paginated response', async () => {
+  const response = await request(app).get('/api/users?limit=10');
+  expect(response.body).toHaveProperty('data');
+  expect(response.body).toHaveProperty('pagination');
+  expect(Array.isArray(response.body.data)).toBe(true);
+  expect(response.body.pagination).toHaveProperty('hasMore');
+});
+
+// Status codes are consistent
+test('creating returns 201, not 200', async () => {
+  const response = await request(app)
+    .post('/api/users')
+    .send(validUser);
+  expect(response.status).toBe(201);
+});
+
+// Pagination edge cases
+test('empty results return empty data array, not 404', async () => {
+  const response = await request(app).get('/api/users?status=nonexistent');
+  expect(response.status).toBe(200);
+  expect(response.body.data).toEqual([]);
+});
+```
+
+### Deployment Smoke Tests
+
+See [Deployment](./deployment.md) for the concepts these tests verify.
+
+```typescript
+// Run after every deploy — verify critical paths work
+test('health check is reachable', async () => {
+  const response = await fetch(`${DEPLOY_URL}/health/ready`);
+  expect(response.status).toBe(200);
+});
+
+test('homepage loads', async () => {
+  const response = await fetch(`${DEPLOY_URL}/`);
+  expect(response.status).toBe(200);
+});
+
+test('API returns data', async () => {
+  const response = await fetch(`${DEPLOY_URL}/api/health`);
+  const body = await response.json();
+  expect(body.status).toBe('ok');
 });
 ```
 
 ---
 
-## Test Types
+## Test Infrastructure
 
-Tests serve different purposes. Understanding what each type proves — and what it doesn't — determines which types you need.
+### Test Framework
 
-### Unit Tests — "Does this function do the right thing?"
+| Language | Framework | Why |
+|----------|-----------|-----|
+| TypeScript | **Vitest** | Fast, ESM-native, Jest-compatible API, built-in TypeScript support |
+| Python | **pytest** | The standard, excellent fixtures, extensible with plugins |
 
-Test one function in isolation. Give it known inputs, check the outputs.
+Alternatives: Jest (TypeScript, older, slower than Vitest), unittest (Python, built-in but verbose).
 
-**What gets mocked:** External services (databases, APIs, file systems). You're testing your logic, not whether AWS is up.
+### Test Database — Use a Real One
 
-**What they prove:** Your code is correct when given correct inputs.
+**Don't mock the database.** Mocking means you're testing your mocks, not your queries. A query that passes against a mock might fail against a real database (wrong JOIN, missing index, constraint violation).
 
-**What they don't prove:** That the inputs your code receives in production are actually correct. That the pieces work when wired together.
+Spin up a real test database:
 
-### Boundary / Contract Tests — "Does data at the edge match expectations?"
+```typescript
+// Vitest global setup — test DB lifecycle
+beforeAll(async () => {
+  testDb = await createTestDatabase();  // Docker, testcontainers, or in-memory
+  await runMigrations(testDb);
+});
 
-Test that data crossing a system boundary matches the schema. These use the Zod/Pydantic schemas from [Data Integrity Standards](./data-integrity.md) as both input validators and output validators.
+afterAll(async () => {
+  await testDb.destroy();
+});
 
-**What gets mocked:** Usually nothing — these test the schema itself, or test that real data from a database/API matches the schema.
-
-**What they prove:** The contract between systems is honoured. The schemas match reality.
-
-**What they don't prove:** That your business logic is correct (that's unit tests).
-
-**Examples:**
-- Schema rejects a save-progress request with missing courseId
-- Schema accepts a valid DynamoDB course record
-- API response from a third-party service matches the expected schema
-
-This is a distinct test type, not a unit test. Unit tests verify your code does the right thing with correct data. Boundary tests verify the data itself is correct. See [Data Integrity Standards — Validation Boundaries](./data-integrity.md#validation-boundaries) for where boundaries exist.
-
-### Integration Tests — "Do the pieces work together?"
-
-Test multiple components connected together, with minimal or no mocking.
-
-**What gets mocked:** As little as possible. Ideally hits a real (test) database, real file system, etc.
-
-**What they prove:** The wiring is correct. Components that work individually also work when connected.
-
-**What they don't prove:** That the full user flow works end-to-end through the UI.
-
-### End-to-End Tests — "Does the full flow work as a user would experience it?"
-
-Test complete user journeys from the UI or API surface through to the database and back.
-
-**What gets mocked:** Nothing. Real browser, real API, real database (test environment).
-
-**What they prove:** The system works as a whole. The user experience is correct.
-
-**What they don't prove:** Individual function correctness (too coarse-grained for that).
-
-### Edge Case Tests — "What happens when things go wrong?"
-
-Not a separate test type — these are unit, boundary, or integration tests that specifically target error paths and boundary conditions:
-- What if the input is empty / null / malformed?
-- What if the database returns no results?
-- What if the file is too large?
-- What if the external service times out?
-
-The Test Case Templates section below provides checklists for common edge case patterns.
-
-### Summary
-
-| Type | What it proves | What gets mocked | When required |
-|------|---------------|-----------------|---------------|
-| **Unit** | Function logic is correct | External services | All tiers |
-| **Boundary / Contract** | Data at edges matches schemas | Usually nothing | Production (wherever schemas exist) |
-| **Integration** | Components work together | Minimal | Internal, Production |
-| **End-to-end** | Full user flows work | Nothing | Production (critical paths) |
-
----
-
-## Build Order — When to Write What
-
-The order you build things affects what you can test. This sequence ensures each layer is testable before the next depends on it.
-
-1. **Define data models as runtime schemas** (Zod, Pydantic) — not plain interfaces. The schema is the single source of truth: it gives you the compile-time type (`z.infer<typeof CourseSchema>`) AND runtime validation (`.parse()`) from one definition. Starting with plain interfaces creates a retrofit tax later. Everything else depends on knowing what the data looks like.
-2. **Write pure logic + unit tests** — functions with no side effects (parsers, validators, transformers, calculators). Use schemas to construct test inputs (`Schema.parse(testData)` guarantees your test data matches the spec). Easiest to test, most valuable to get right.
-3. **Write the I/O layer + unit tests with mocks** — repositories, API clients, file handlers. Schemas validate what comes back from the database/API. Mock external services to test your code sends the right commands.
-4. **Wire it together + integration tests** — orchestrators, handlers, routes. Test the full flow with minimal mocking.
-5. **Verify boundary coverage** — not "add" boundary validation (it's been there since step 1), but verify every entry/exit point actually calls `.parse()`. This is a review checkpoint, not a retrofit. Check: does every API endpoint validate its input? Does every database read validate the response shape? Are there boundaries where data crosses unchecked?
-
-**For prototypes being upgraded to production:** If the codebase started with plain interfaces instead of schemas (a common shortcut), step 5 becomes a retrofit — migrating interfaces to schemas and adding `.parse()` calls at boundaries. This is more expensive than starting with schemas, but it's a known path. See [Data Integrity Standards — Reverse-Engineering Data Specifications](./data-integrity.md#reverse-engineering-data-specifications) for the upgrade process.
-
-This sequence is a guide, not a rigid rule. The key insight is: **schemas from the start, not bolted on later.** See [Data Integrity Standards — The Three Layers of Data Safety](./data-integrity.md#the-three-layers-of-data-safety) for why runtime validation matters alongside compile-time types.
-
----
-
-## Test Case Templates
-
-Reference these when writing plans for common patterns.
-
-### Validation Function
-
-```
-- Valid input → returns true/success
-- Empty input → appropriate response
-- Null/undefined → appropriate response
-- Type mismatch → appropriate response
-- Boundary: minimum valid value
-- Boundary: maximum valid value
-- Just outside boundaries (off-by-one)
+beforeEach(async () => {
+  await testDb.truncateAll();  // clean state per test
+});
 ```
 
-### CRUD Operation
+```python
+@pytest.fixture
+async def db():
+    test_db = await create_test_database()
+    await run_migrations(test_db)
+    yield test_db
+    await test_db.drop()
 
-```
-- Create: valid data → success
-- Create: duplicate → appropriate error
-- Create: missing required fields → validation error
-- Read: exists → returns data
-- Read: not found → appropriate error
-- Update: exists → success
-- Update: not found → appropriate error
-- Update: partial data → handles correctly
-- Delete: exists → success
-- Delete: not found → appropriate error
-- Delete: cascading effects (if applicable)
+@pytest.fixture(autouse=True)
+async def clean_db(db):
+    yield
+    await db.truncate_all()
 ```
 
-### State Machine
+**Options:** Docker + testcontainers (spins up a real Postgres/MySQL), SQLite in-memory (fast but lacks some features), dedicated test database in your cloud.
+
+### Mocking External HTTP Services
+
+The "use a real database" principle does NOT apply to external HTTP APIs. You can't call the real Stripe API in tests (it would charge real money). You can't hit the real SendGrid API (it would send real emails). External services need to be mocked at the HTTP layer.
+
+**The key principle:** Mock the HTTP boundary, not the function boundary. This way your business logic, error handling, retry logic, and serialization all get exercised — only the actual network call is faked.
+
+**TypeScript — MSW (Mock Service Worker):**
+
+MSW intercepts HTTP requests at the network level. Your application code doesn't know it's being mocked — it makes real `fetch` calls that MSW intercepts.
+
+```typescript
+import { setupServer } from 'msw/node';
+import { http, HttpResponse } from 'msw';
+
+const server = setupServer(
+  // Mock the Stripe API
+  http.post('https://api.stripe.com/v1/charges', () => {
+    return HttpResponse.json({ id: 'ch_test_123', status: 'succeeded' });
+  }),
+
+  // Mock a failure scenario
+  http.post('https://api.stripe.com/v1/refunds', () => {
+    return HttpResponse.json({ error: { message: 'Insufficient funds' } }, { status: 402 });
+  }),
+);
+
+beforeAll(() => server.listen());
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+
+test('processes payment through Stripe', async () => {
+  const result = await paymentService.charge(1000);
+  expect(result.status).toBe('succeeded');
+});
+
+test('handles Stripe failure gracefully', async () => {
+  // Override for this specific test
+  server.use(
+    http.post('https://api.stripe.com/v1/charges', () => {
+      return HttpResponse.json({ error: { message: 'Card declined' } }, { status: 402 });
+    }),
+  );
+
+  await expect(paymentService.charge(1000)).rejects.toThrow(ExternalServiceError);
+});
+```
+
+**Python — respx (for httpx) or responses (for requests):**
+
+```python
+import respx
+from httpx import Response
+
+@respx.mock
+async def test_processes_payment():
+    respx.post("https://api.stripe.com/v1/charges").mock(
+        return_value=Response(200, json={"id": "ch_test_123", "status": "succeeded"})
+    )
+
+    result = await payment_service.charge(1000)
+    assert result.status == "succeeded"
+
+@respx.mock
+async def test_handles_stripe_failure():
+    respx.post("https://api.stripe.com/v1/charges").mock(
+        return_value=Response(402, json={"error": {"message": "Card declined"}})
+    )
+
+    with pytest.raises(ExternalServiceError):
+        await payment_service.charge(1000)
+```
+
+**Why mock at HTTP, not at the function level:**
+
+```typescript
+// BAD: mocking the function — skips serialization, error handling, retry logic
+vi.spyOn(stripe, 'createCharge').mockResolvedValue({ id: 'ch_123' });
+
+// GOOD: mocking the HTTP call — exercises everything except the network
+server.use(http.post('https://api.stripe.com/v1/charges', () => {
+  return HttpResponse.json({ id: 'ch_123', status: 'succeeded' });
+}));
+```
+
+Function-level mocks test your mock. HTTP-level mocks test your code.
+
+### Test Organization
+
+There are two common approaches, and the choice depends on your project, language conventions, and team preference.
+
+**Approach 1: Dedicated test folder (separate from source)**
 
 ```
-- Each valid state transition
-- Invalid state transitions → rejected
-- Initial state correct
-- Terminal states handled
-- Idempotent transitions (if applicable)
+src/
+  api/users.ts
+  services/payment.ts
+tests/
+  api/users.test.ts
+  services/payment.test.ts
+  e2e/signup-flow.test.ts
+  fixtures/factories.ts
 ```
 
-### API Endpoint
+Tests mirror the source tree in a parallel `tests/` directory. Test infrastructure (fixtures, factories, helpers) lives alongside the tests.
+
+- **When it works well:** Python projects (pytest convention — strong community expectation), projects with complex test infrastructure, when you want a clear separation of production code from test code.
+- **Tradeoff:** You navigate two parallel directory trees. When you rename a source file, you have to remember to rename the test file too.
+
+**Approach 2: Colocated (test files alongside source)**
 
 ```
-- Success case → correct status code and body
-- Authentication required → 401 without token
-- Authorization required → 403 without permission
-- Validation error → 400 with helpful message
-- Not found → 404
-- Server error → 500 (and logged)
-- Rate limiting (if applicable)
+src/
+  api/
+    users.ts
+    users.test.ts
+  services/
+    payment.ts
+    payment.test.ts
+  hooks/
+    useUserGroups.ts
+    useUserGroups.test.ts
 ```
 
----
+Test files live next to the files they test. Integration and E2E tests that don't map to a single source file go in a dedicated folder.
 
-## Mutation Testing
+- **When it works well:** TypeScript/JavaScript projects (Vitest, Jest, Next.js all support it natively), when you want it to be immediately obvious which files are untested (no `.test.ts` next to them).
+- **Tradeoff:** Test files mixed into the source tree. Your build tool needs to be configured to exclude `.test.ts` files from production bundles (most already do).
 
-**Tool:** `mutmut` (Python), `Stryker` (JavaScript/TypeScript)
+**Approach 3: Hybrid**
 
-**When to run:** Production tier, on changed files before merge.
+```
+src/
+  api/
+    users.ts
+    users.test.ts          ← unit tests colocated
+  services/
+    payment.ts
+    payment.test.ts        ← unit tests colocated
+tests/
+  integration/
+    api-users.test.ts      ← integration tests in dedicated folder
+  e2e/
+    signup-flow.test.ts    ← E2E tests in dedicated folder
+  fixtures/
+    factories.ts           ← shared test helpers
+```
 
-**Process:**
-1. Run mutation testing on modified code
-2. Review surviving mutants
-3. Add tests to kill surviving mutants, or document why they're acceptable
+Unit tests colocated (they map 1:1 to source files). Integration, E2E, and smoke tests in a dedicated folder (they don't map to a single source file).
 
-**Acceptable survivors:**
-- Equivalent mutants (change doesn't affect behavior)
-- Logging/cosmetic changes
-- Documented exceptions
+**Language conventions:**
+- **Python:** Strongly favours `tests/` directory. Going against this creates friction with pytest defaults and community expectations.
+- **TypeScript/JavaScript:** Both approaches are well-supported. Colocated is increasingly popular in React/Next.js ecosystems. Dedicated folder is more traditional.
+
+The important thing is consistency within a project — pick one and stick with it.
+
+### Test Data Factories
+
+Don't hardcode test data everywhere. Create factory functions that generate valid objects with sensible defaults:
+
+**TypeScript:**
+```typescript
+function createTestUser(overrides: Partial<User> = {}): User {
+  return {
+    id: crypto.randomUUID(),
+    name: 'Test User',
+    email: `test-${crypto.randomUUID().slice(0, 8)}@example.com`,
+    role: 'member',
+    createdAt: new Date().toISOString(),
+    ...overrides,
+  };
+}
+
+// In tests — readable, only specifies what matters
+test('admin can delete users', async () => {
+  const admin = createTestUser({ role: 'admin' });
+  const target = createTestUser({ role: 'member' });
+  // ...
+});
+```
+
+**Python:**
+```python
+def create_test_user(**overrides) -> User:
+    defaults = {
+        "id": str(uuid4()),
+        "name": "Test User",
+        "email": f"test-{uuid4().hex[:8]}@example.com",
+        "role": "member",
+    }
+    return User(**{**defaults, **overrides})
+```
+
+**Using schemas as factories:** Your Zod/Pydantic schemas can generate valid test data — the parse guarantees validity:
+
+```typescript
+const testUser = UserSchema.parse({
+  name: 'Test User',
+  email: 'test@example.com',
+  // Schema fills in defaults for id, createdAt, etc.
+});
+```
 
 ---
 
 ## Anti-Patterns
 
-| Don't | Why |
-|-------|-----|
-| Test implementation details | Tests break on refactor |
-| Mock your own code | Tests pass but integration fails |
-| Skip edge cases "for speed" | Bugs ship to production |
-| Write tests after the fact | Loses TDD benefits, tests often miss cases |
-| Rely on coverage % alone | 100% coverage with useless assertions is worthless |
+| Don't | Do Instead | Why |
+|-------|-----------|-----|
+| Test only the happy path | Test error cases, edge cases, boundary conditions | Happy path tests miss the bugs that break production |
+| Mock the database in integration tests | Use a real test database | Mock tests pass even when real queries fail (wrong JOINs, constraint violations) |
+| Write tests that test the framework/library | Test YOUR code — your logic, your transformations, your wiring | Testing that `z.string().parse("hello")` works is testing Zod, not your app |
+| Hardcode test data inline | Use test data factories with overrides | Inline data is duplicated, hard to maintain, and hides what matters in each test |
+| Write only unit tests | Follow the pyramid — unit, integration, E2E | Unit tests can't catch wiring bugs, integration issues, or user-visible failures |
+| Write E2E tests for everything | E2E only for critical user journeys | E2E tests are slow, flaky, expensive — use them surgically |
+| Test implementation details (private methods, internal state) | Test behaviour (inputs → outputs, side effects) | Implementation changes break detail-tests even when behaviour is correct |
+| Skip testing error responses | Test that errors return the right status code, format, and don't leak internals | Untested error paths are the ones that expose stack traces in production |
+| Ignore flaky tests | Fix or delete them | Flaky tests train the team to ignore test failures |
+| Test in production by accident | Use test databases, test API keys, test email addresses | Production side effects from tests (real emails, real charges) are incidents |
 
 ---
 
-## Open Questions
+## The Testing Checklist
 
-- Specific coverage thresholds per tier? (Currently relying on TDD + mutation testing rather than % targets)
-- E2E test framework preferences?
+When reviewing whether your system is adequately tested, walk through each concern:
+
+- [ ] **Data validation** — Do API endpoints reject invalid input? Do schemas match real data?
+- [ ] **Data transformations** — Is each stage of the data pipeline tested?
+- [ ] **Configuration** — Does the app fail fast with clear messages for missing config?
+- [ ] **Error handling** — Does each error type produce the correct response? Are internals hidden?
+- [ ] **Health checks** — Do they return correct status when dependencies are up vs down?
+- [ ] **Authentication** — Do protected routes reject unauthenticated requests?
+- [ ] **Authorization** — Can users only access their own data?
+- [ ] **API contracts** — Do responses match the documented shape? Are status codes consistent?
+- [ ] **Pagination** — Do edge cases work (empty results, last page, invalid cursor)?
+- [ ] **Idempotency** — Do retried requests produce the same result?
+- [ ] **Smoke tests** — Do critical paths work after every deployment?
+
+---
+
+## Deciding for Your Project
+
+1. **Test framework?** Vitest for TypeScript, pytest for Python — recommended defaults.
+2. **Test database strategy?** Docker + testcontainers for CI, local database for development.
+3. **What's your minimum testing bar?** At minimum: schema validation wiring, error response format, authentication/authorization, critical API contracts.
+4. **How many E2E tests?** One per critical user journey (signup, core workflow, payment if applicable). Not more than 10-20 for most apps.
+5. **When do tests run?** Unit + integration on every PR. E2E on merge to main. Smoke tests on every deploy.
+
+---
+
+## Related Topics
+
+This topic connects to every other topic in the skill. Each section above links to the relevant topic for the concepts being tested:
+
+- [Data Integrity](./data-integrity.md) — schemas, validation boundaries, transformation correctness
+- [Configuration](./configuration.md) — startup validation, type coercion
+- [Error Handling](./error-handling.md) — error hierarchy, response format, information leakage
+- [Resilience](./resilience.md) — health checks, idempotency, timeout handling
+- [Security](./security.md) — authentication, authorization, injection, sensitive data exposure
+- [API Design](./api-design.md) — response shapes, pagination, status codes
+- [Deployment](./deployment.md) — smoke tests, migration verification

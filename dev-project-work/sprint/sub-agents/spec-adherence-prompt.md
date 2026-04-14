@@ -40,12 +40,22 @@ Read these files to understand the project's design and constraints. Verify that
    - Domain assumptions from domain.md (if it exists)
    - API usage, auth, and constraints from integrations.md
 
+## How to Write Findings
+
+The user reading this report is not deeply familiar with every line of code. For each finding:
+
+1. **Name the area in plain English** — what part of the system and what it's supposed to do
+2. **State what the plan/spec said** vs **what actually happened**
+3. **Explain why this matters** — is it a functional gap, a consistency issue, or a minor drift?
+
+Do NOT write findings that require intimate codebase knowledge to understand.
+
 ## Report Format
 
 **Plan Compliance:**
-- ✅ Fully compliant
-- ⚠️ Deviations found (list below)
-- ❌ Missing requirements (list below)
+- Fully compliant
+- Deviations found (list below)
+- Missing requirements (list below)
 
 **Deviations Found:**
 | Task | Plan Said | Actually Did | Justified? |
@@ -61,6 +71,6 @@ Read these files to understand the project's design and constraints. Verify that
 | File | What It Says | What Code Does | Severity |
 |------|-------------|----------------|----------|
 
-**Promotion Candidates:**
-- [findings that likely require Manager review/promotion into project docs or standards files. If none, write "None spotted."]
+**Findings That May Affect Durable Truth:**
+- [findings that the Lead should review for possible promotion into project docs or standards files. If none, write "None spotted."]
 ```

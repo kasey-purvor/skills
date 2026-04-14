@@ -25,8 +25,8 @@
 
 ## Execution Deviations / Post-Review Summary
 
-<!-- Junior keeps the full deviation detail in the implementation plan. -->
-<!-- CURRENT-STATE.md only carries the short review/coordination summary. -->
+<!-- Implementer writes a review summary here after post-chunk review. -->
+<!-- Lead classifies each finding with the user (fix now, promote, defer, backlog, rule out). -->
 
 | Task | Summary | Next Action |
 |------|---------|-------------|
@@ -41,8 +41,8 @@
 <!-- This is the sprint's working queue for findings that may need promotion or -->
 <!-- an update to a durable file. It is not the final home of those items. -->
 <!-- Record only findings that may change durable truth or other durable support files. -->
-<!-- Junior discovers them in the implementation plan. Implementer classifies and summarizes them here. -->
-<!-- Manager uses this queue to promote into the owning file with user confirmation when needed. -->
+<!-- Junior discovers them in the implementation plan. Implementer summarizes them here. -->
+<!-- Lead classifies and promotes into the owning file with user confirmation when needed. -->
 <!-- Likely Owner examples: design.md, architecture.md, data.md, domain.md, integrations.md, -->
 <!-- .context/standards/<topic>.md, conventions.md, backlog.md. -->
 <!-- Status examples: promote now, awaiting user, deferred, promoted, ruled out. -->

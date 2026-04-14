@@ -29,9 +29,9 @@ All four shape how the Junior works. TDD ensures tests are written before implem
 Complete all steps within a task before updating the file. When task is done, update the implementation plan once:
 1. Tick all step checkboxes for that task
 2. Add a task summary note (required — choose one):
-   - `✓ Done as specified`
-   - `✓ Done — [brief justification]`
-   - `⚠️ Deviation — [what changed and why]`
+   - `Done as specified`
+   - `Done — [brief justification]`
+   - `Deviation — [what changed and why]`
 
 If you record a deviation, include enough detail for the Implementer to review it without guessing:
 - what changed
@@ -43,7 +43,7 @@ If you record a deviation, include enough detail for the Implementer to review i
 
 | Mode | Behavior |
 |------|----------|
-| **Supervised** | Execute batch → report → wait for feedback → repeat |
+| **Supervised** | Execute batch -> report -> wait for feedback -> repeat |
 | **Autonomous** | Execute entire plan, only stop on blockers |
 
 User specifies mode at session start.
@@ -79,8 +79,8 @@ Document these in the plan and continue. If you think a finding may affect durab
 | Add error handling not in plan | Assumptions about edge cases |
 | Guess file paths | Wrong files modified |
 | Skip verification steps | Broken code not caught |
-| Assume what unclear instructions mean | Wrong implementation - **stop and ask** |
+| Assume what unclear instructions mean | Wrong implementation — **stop and ask** |
 | Change approach when hitting difficulty | Should escalate, not improvise |
-| Decide whether something belongs in standards, conventions, backlog, or project docs | Surface it only - Implementer and Manager classify it |
+| Decide whether something belongs in standards, conventions, backlog, or project docs | Surface it only — Implementer and Lead classify it |
 | Modify files not in plan | Untracked changes |
 | Omit deviation notes | Implementer needs to know everything |

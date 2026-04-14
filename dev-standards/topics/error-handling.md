@@ -1,204 +1,567 @@
-# Error Handling Standards
+# Error Handling
 
-**Status:** Draft
+## The Problem
 
-## Core Principle
+When something goes wrong in your code, you throw an error. In most beginner code:
 
-Error handling strategy depends on context. This document provides the approaches — the agent and user select what fits the situation.
-
----
-
-## Related Topics
-
-- **Retries, timeouts, circuit breakers**: See [Reliability Standards](./reliability.md) — error categorisation (this file) determines what's retryable; reliability patterns handle the retry mechanics
-- **Structured logging with trace IDs**: See [Logging Standards](./logging.md) — production error handling requires structured logging for debugging
-- **Error leaking to clients**: See `dev-standards-pitfalls` skill — "Error Leaking" anti-pattern
-
----
-
-## Error Handling Approaches
-
-### Fail Fast
-
-**Mantra:** Crash immediately when something's wrong. Don't continue with bad state.
-
-**When to use:**
-- Programming bugs (null reference, assertion failures)
-- Invariants that should never be violated
-- Unrecoverable situations
-
-**Example:**
-```python
-def process_order(order):
-    if order.total < 0:
-        raise ValueError("Order total cannot be negative")
+```typescript
+throw new Error("Something went wrong");
 ```
 
----
-
-### Let It Crash
-
-**Mantra:** Don't handle every error. Let the process crash and restart fresh.
-
-**When to use:**
-- Systems with supervisors (Kubernetes, process managers)
-- When restart returns to known-good state
-- Errors that are genuinely unrecoverable
-
-**Requires:** External supervision to restart the process.
-
----
-
-### Errors as Values
-
-**Mantra:** Errors are data. Return them explicitly, handle them explicitly.
-
-**When to use:**
-- Expected failures (file not found, validation errors)
-- When callers need to make decisions based on error type
-- Languages that support this well (Go, Rust, or explicit Result types)
-
-**Example:**
 ```python
-def get_user(id) -> tuple[User | None, Error | None]:
-    user = db.find(id)
+raise Exception("Something went wrong")
+```
+
+Now imagine you're catching this higher up the call stack. What do you do with it?
+
+```typescript
+try {
+  await processOrder(orderId);
+} catch (error) {
+  // What kind of error is this?
+  // - User sent invalid data? → return 400
+  // - Order doesn't exist? → return 404
+  // - Payment service is down? → return 502, maybe retry
+  // - Bug in our code? → return 500, log it, alert someone
+
+  // With generic Error, you have to inspect the message string:
+  if (error.message.includes("not found")) {  // fragile!
+    return res.status(404).json({ error: "Not found" });
+  }
+  // If someone changes the message wording, this silently breaks
+}
+```
+
+You're pattern-matching on strings. If someone changes the error message from "not found" to "does not exist," your catch block falls through to a generic 500. This is fragile, untyped, and scales terribly.
+
+---
+
+## Error Hierarchies
+
+A custom error hierarchy is a tree of error classes where the class itself tells you what kind of failure occurred:
+
+```
+AppError (base — everything your app throws)
+├── ValidationError     (bad input from the user)
+├── NotFoundError       (requested resource doesn't exist)
+├── ExternalServiceError (a third-party API or database failed)
+│   ├── TimeoutError
+│   └── RateLimitError
+├── AuthorizationError  (user isn't allowed to do this)
+└── ConflictError       (action conflicts with current state)
+```
+
+### TypeScript Implementation
+
+```typescript
+// Base error — everything your app throws extends this
+class AppError extends Error {
+  constructor(
+    message: string,
+    public readonly statusCode: number = 500,
+    public readonly isOperational: boolean = true,
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
+    this.name = this.constructor.name;
+  }
+}
+
+// Specific error types
+class ValidationError extends AppError {
+  constructor(message: string, public readonly fields?: Record<string, string>) {
+    super(message, 400);
+  }
+}
+
+class NotFoundError extends AppError {
+  constructor(resource: string, id: string) {
+    super(`${resource} '${id}' not found`, 404);
+  }
+}
+
+class ExternalServiceError extends AppError {
+  constructor(service: string, cause?: Error) {
+    super(`${service} request failed`, 502, true, { cause });
+  }
+}
+
+class AuthenticationError extends AppError {
+  constructor(message = "Authentication required") {
+    super(message, 401);
+  }
+}
+
+class AuthorizationError extends AppError {
+  constructor(message = "Not authorized") {
+    super(message, 403);
+  }
+}
+
+class ConflictError extends AppError {
+  constructor(message: string) {
+    super(message, 409);
+  }
+}
+```
+
+**AuthenticationError (401) vs AuthorizationError (403):** Authentication = "I don't know who you are" (missing or invalid token). Authorization = "I know who you are, but you can't do this" (valid user, insufficient permissions). These are commonly confused — using distinct classes prevents misuse.
+
+### Python Implementation
+
+**Naming note:** FastAPI/Pydantic has its own `ValidationError` and `RequestValidationError`. To avoid collisions, either name yours `AppValidationError`, or handle both in your exception handlers. The examples below use `ValidationError` for clarity — in a FastAPI project, be explicit about which one you're catching.
+
+```python
+class AppError(Exception):
+    """Base error for all application errors."""
+    def __init__(self, message: str, status_code: int = 500, is_operational: bool = True):
+        super().__init__(message)
+        self.status_code = status_code
+        self.is_operational = is_operational
+
+class ValidationError(AppError):
+    def __init__(self, message: str, fields: dict[str, str] | None = None):
+        super().__init__(message, status_code=400)
+        self.fields = fields or {}
+
+class NotFoundError(AppError):
+    def __init__(self, resource: str, id: str):
+        super().__init__(f"{resource} '{id}' not found", status_code=404)
+
+class ExternalServiceError(AppError):
+    def __init__(self, service: str, cause: Exception | None = None):
+        super().__init__(f"{service} request failed", status_code=502)
+        self.__cause__ = cause  # preserves error chain (same as raise...from)
+
+class AuthenticationError(AppError):
+    def __init__(self, message: str = "Authentication required"):
+        super().__init__(message, status_code=401)
+
+class AuthorizationError(AppError):
+    def __init__(self, message: str = "Not authorized"):
+        super().__init__(message, status_code=403)
+
+class ConflictError(AppError):
+    def __init__(self, message: str):
+        super().__init__(message, status_code=409)
+```
+
+### Using the Hierarchy
+
+Now catch blocks are clean and type-safe:
+
+```typescript
+try {
+  await processOrder(orderId);
+} catch (error) {
+  if (error instanceof ValidationError) {
+    return res.status(400).json({ error: error.message, fields: error.fields });
+  }
+  if (error instanceof NotFoundError) {
+    return res.status(404).json({ error: error.message });
+  }
+  if (error instanceof ExternalServiceError) {
+    return res.status(502).json({ error: "Service temporarily unavailable" });
+  }
+  // Unknown error — this is a bug
+  return res.status(500).json({ error: "Internal server error" });
+}
+```
+
+But even better — you don't write this in every handler. You write it **once** in a global error handler (see below).
+
+### The `isOperational` Flag
+
+This is a crucial distinction on the base `AppError`:
+
+- **Operational errors** are expected failures — user sent bad data, resource not found, external service timed out. Your app knows how to handle these. They're part of normal operation.
+- **Programming errors** are bugs — null reference, wrong type, undefined variable. Your app does NOT know how to handle these. They mean something is wrong with the code itself.
+
+Why this matters: operational errors get a clean response to the user. Programming errors get logged, reported to your error tracking service (Sentry, Datadog, etc.), and might trigger an alert. The `isOperational` flag lets your global error handler decide which treatment to apply.
+
+---
+
+## Error Chaining (Preserving Context)
+
+When an error bubbles up through multiple layers, each layer should add context without losing the original cause:
+
+```
+User clicks "Place Order"
+  → Order Service calls Payment Service
+    → Payment Service calls Database
+      → Database times out              ← original error
+    → Payment Service: "charge failed"  ← context lost!
+  → Order Service: "order failed"       ← even more context lost!
+→ User sees: "order failed"             ← useless for debugging
+```
+
+**With error chaining, you preserve the full trail:**
+
+### TypeScript (ES2022+)
+
+```typescript
+try {
+  await db.execute(query);
+} catch (err) {
+  throw new ExternalServiceError("database", { cause: err });
+  //                                         ^^^^^^^^^^^^^^^^
+  // { cause: err } preserves the original error in the chain
+}
+
+// When you log the full error:
+// ExternalServiceError: database request failed
+//   [cause]: DatabaseTimeoutError: connection timed out to postgres:5432
+```
+
+The `{ cause }` option was added in ES2022 and is supported in all modern runtimes. It's passed as the second argument to the `Error` constructor (via `ErrorOptions`).
+
+### Python
+
+```python
+try:
+    db.execute(query)
+except DatabaseTimeout as e:
+    raise ExternalServiceError("database") from e
+    #                                      ^^^^^^
+    # "from e" preserves the original error
+
+# The traceback shows both:
+# ExternalServiceError: database request failed
+#
+# The above exception was the direct cause of the following exception:
+#
+# DatabaseTimeout: connection timed out to postgres:5432
+```
+
+**Why this matters:** When debugging a production incident at 2am, you need the full chain — not just "order failed" but "order failed → caused by charge failed → caused by database timeout on postgres:5432." Without chaining, you lose the trail.
+
+---
+
+## Global Error Handlers
+
+Instead of writing error handling in every route handler, write it **once** as middleware. Every unhandled error flows through this single point.
+
+### Express (TypeScript)
+
+```typescript
+// Register AFTER all your routes
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  // Known application error — use the hierarchy
+  if (err instanceof AppError) {
+    if (err.isOperational) {
+      logger.warn({ err, path: req.path }, "Operational error");
+    } else {
+      logger.error({ err, path: req.path }, "Non-operational AppError");
+    }
+
+    const body: Record<string, unknown> = {
+      type: err.name,
+      title: err.message,
+      status: err.statusCode,
+    };
+
+    // Include field-level errors for validation failures
+    if (err instanceof ValidationError && err.fields) {
+      body.errors = Object.entries(err.fields).map(([field, message]) => ({
+        field,
+        message,
+      }));
+    }
+
+    return res.status(err.statusCode).json(body);
+  }
+
+  // Unknown error — this is a bug, not an expected failure
+  logger.error({ err, path: req.path }, "Unhandled error");
+  return res.status(500).json({
+    type: "InternalError",
+    title: "Internal server error",
+    status: 500,
+    // NEVER include the actual error message or stack trace in production
+    // — it can leak internal details to attackers
+  });
+});
+```
+
+### FastAPI (Python)
+
+```python
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
+app = FastAPI()
+
+@app.exception_handler(AppError)
+async def app_error_handler(request: Request, exc: AppError):
+    if exc.is_operational:
+        logger.warning("Operational error", path=str(request.url), error=str(exc))
+    else:
+        logger.error("Non-operational error", path=str(request.url), error=str(exc))
+
+    body = {
+        "type": type(exc).__name__,
+        "title": str(exc),
+        "status": exc.status_code,
+    }
+
+    if isinstance(exc, ValidationError) and exc.fields:
+        body["errors"] = [
+            {"field": field, "message": msg}
+            for field, msg in exc.fields.items()
+        ]
+
+    return JSONResponse(status_code=exc.status_code, content=body)
+
+@app.exception_handler(Exception)
+async def unhandled_error_handler(request: Request, exc: Exception):
+    logger.error("Unhandled error", path=str(request.url), error=str(exc))
+    return JSONResponse(
+        status_code=500,
+        content={
+            "type": "InternalError",
+            "title": "Internal server error",
+            "status": 500,
+        },
+    )
+```
+
+### React Error Boundaries (Vite, CRA, Remix, any React app)
+
+React error boundaries catch JavaScript errors in the component tree and display a fallback UI instead of a crashed page. They're the frontend equivalent of a global error handler — without them, a single component error unmounts the entire app.
+
+```tsx
+// ErrorBoundary.tsx — reusable, wrap around any subtree that might fail
+import { Component, type ReactNode } from 'react';
+
+interface Props {
+  fallback: ReactNode | ((error: Error, reset: () => void) => ReactNode);
+  children: ReactNode;
+}
+
+interface State {
+  error: Error | null;
+}
+
+class ErrorBoundary extends Component<Props, State> {
+  state: State = { error: null };
+
+  static getDerivedStateFromError(error: Error): State {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    // Log to your error tracking service (Sentry, Datadog, etc.)
+    console.error('Error boundary caught:', error, info.componentStack);
+  }
+
+  reset = () => this.setState({ error: null });
+
+  render() {
+    if (this.state.error) {
+      const { fallback } = this.props;
+      return typeof fallback === 'function'
+        ? fallback(this.state.error, this.reset)
+        : fallback;
+    }
+    return this.props.children;
+  }
+}
+```
+
+```tsx
+// Usage — wrap around components that might fail (iframes, third-party widgets, data-dependent views)
+<ErrorBoundary fallback={(error, reset) => (
+  <div>
+    <h2>Something went wrong</h2>
+    <p>{error.message}</p>
+    <button onClick={reset}>Try again</button>
+  </div>
+)}>
+  <CoursePlayer />
+</ErrorBoundary>
+```
+
+**Where to place boundaries:** Don't wrap the entire app in one boundary — that gives a full-page error for a single broken component. Place boundaries around **isolated risk areas**: third-party content (iframes, embeds), data-heavy views, and any component that depends on external state.
+
+**Limitation:** Error boundaries only catch errors during rendering, lifecycle methods, and constructors. They do NOT catch errors in event handlers, async code, or `useEffect`. For those, use try/catch in the handler and set error state manually.
+
+### Next.js (error.tsx)
+
+Next.js provides a built-in error boundary convention using file-based routing:
+
+```tsx
+// app/error.tsx — catches errors in any route segment (built on React error boundaries)
+'use client';
+
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  return (
+    <div>
+      <h2>Something went wrong</h2>
+      <button onClick={reset}>Try again</button>
+    </div>
+  );
+}
+
+// app/global-error.tsx — catches errors in the root layout itself
+```
+
+For API routes in Next.js, you'd handle errors in route handlers or use a wrapper function that catches and formats errors.
+
+### Process-Level Handlers (Last Resort)
+
+Even with framework error handlers, some errors escape — unhandled Promise rejections, errors thrown outside request context:
+
+```typescript
+// Node.js — catch unhandled Promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logger.fatal({ reason }, 'Unhandled rejection — shutting down');
+  process.exit(1);
+});
+
+// Node.js — catch uncaught exceptions
+process.on('uncaughtException', (error) => {
+  logger.fatal({ error }, 'Uncaught exception — shutting down');
+  process.exit(1);
+});
+```
+
+```python
+import sys
+
+def global_exception_handler(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+    logger.fatal("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+    sys.exit(1)
+
+sys.excepthook = global_exception_handler
+```
+
+**Why exit on unhandled errors?** After an unhandled error, your process is in an unknown state. Memory might be corrupted, connections might be half-open. The safest thing is to exit and let your process manager (Docker, systemd, Kubernetes) restart a clean instance. This connects to [Resilience](./resilience.md) — graceful shutdown means finishing in-flight work before exiting.
+
+---
+
+## HTTP Error Response Schema
+
+When your API returns an error, the response body should always have the same shape. **RFC 9457 (Problem Details for HTTP APIs)** is the internet standard for this:
+
+**Note:** RFC 9457 specifies that the `type` field should be a URI reference (e.g., `"type": "https://api.example.com/errors/validation"`). Using class names like `"ValidationError"` is a common pragmatic simplification that's easier to work with. Either approach works — be consistent.
+
+```json
+{
+  "type": "ValidationError",
+  "title": "Invalid request data",
+  "status": 400,
+  "detail": "2 validation errors in request body",
+  "errors": [
+    { "field": "email", "message": "Must be a valid email address" },
+    { "field": "age", "message": "Must be a positive integer" }
+  ]
+}
+```
+
+### Fields
+
+| Field | Required | Purpose |
+|-------|----------|---------|
+| `type` | Yes | Machine-readable error type (maps to your error hierarchy class name) |
+| `title` | Yes | Short human-readable summary |
+| `status` | Yes | HTTP status code (repeated in body for convenience — clients don't always have access to the response status) |
+| `detail` | Optional | More specific explanation of what went wrong |
+| `errors` | Optional | Array of field-level validation errors (for 400/422 responses) |
+
+### HTTP Status Code Selection
+
+| Code | When to use | Example |
+|------|------------|---------|
+| **400** Bad Request | Client sent invalid data | Validation failed, malformed JSON |
+| **401** Unauthorized | No authentication or expired token | Missing `Authorization` header |
+| **403** Forbidden | Authenticated but not allowed | User tries to access admin resource |
+| **404** Not Found | Resource doesn't exist | `GET /users/999` where user 999 doesn't exist |
+| **409** Conflict | Conflicts with current state | Creating a user with an email that already exists |
+| **422** Unprocessable Entity | Valid syntax but semantically wrong | Valid JSON but business rules reject it |
+| **429** Too Many Requests | Rate limit exceeded | Client sending too many requests too fast |
+| **500** Internal Server Error | Bug in your code | Unhandled exception, programming error |
+| **502** Bad Gateway | Upstream service failed | Payment API returned an error |
+| **503** Service Unavailable | Temporarily overloaded | Database connection pool exhausted |
+
+**400 vs 422:** Long-running debate. 400 = "I can't parse your request." 422 = "I parsed it but it doesn't make sense." Most APIs just use 400 for all client validation errors. Pick one and be consistent across your entire API.
+
+### Connecting Error Hierarchy to HTTP Responses
+
+The error hierarchy maps directly to HTTP responses through the global error handler:
+
+```
+ValidationError  → 400 + field-level errors
+NotFoundError    → 404
+AuthorizationError → 403
+ConflictError    → 409
+ExternalServiceError → 502
+Unknown Error    → 500 (never expose internal details)
+```
+
+This mapping is defined **once** in the global error handler, not in every route. Your route handlers just throw the right error type:
+
+```typescript
+// In your route — clean, no HTTP status code logic
+async function getUser(req: Request, res: Response) {
+  const user = await db.findUser(req.params.id);
+  if (!user) throw new NotFoundError("User", req.params.id);
+  res.json(user);
+}
+// The global error handler turns NotFoundError into a 404 response
+```
+
+```python
+# In your route — clean, no HTTP status code logic
+@app.get("/users/{user_id}")
+async def get_user(user_id: str):
+    user = await db.find_user(user_id)
     if not user:
-        return None, NotFoundError(f"User {id}")
-    return user, None
+        raise NotFoundError("User", user_id)
+    return user
+# The exception handler turns NotFoundError into a 404 response
 ```
-
----
-
-### Graceful Degradation
-
-**Mantra:** When something fails, provide reduced functionality rather than failing entirely.
-
-**When to use:**
-- Non-critical features
-- User-facing systems
-- When partial function is better than total failure
-
-**Example:** Image service down → show placeholder image.
-
----
-
-### Retry with Backoff
-
-**Mantra:** Transient failures (network, rate limits) often resolve on retry.
-
-**When to use:**
-- External API calls
-- Network operations
-- Rate-limited services
-- Data pipelines with external dependencies
-
-**Pattern:**
-```
-Attempt 1: immediate
-Attempt 2: wait 1s
-Attempt 3: wait 2s
-Attempt 4: wait 4s
-(give up after N attempts)
-```
-
-Add jitter (random offset) to prevent thundering herd.
-
----
-
-## Error Categories
-
-| Category | Example | Typical Approach |
-|----------|---------|------------------|
-| **Programming bug** | Null reference, assertion | Fail fast |
-| **Invalid user input** | Bad email format | Return error, inform user |
-| **Not found** | User ID doesn't exist | Return error (expected case) |
-| **External service failure** | API timeout | Retry with backoff |
-| **Rate limited** | 429 response | Retry with backoff |
-| **Resource exhausted** | Disk full, OOM | Fail fast |
-| **Business rule violation** | Insufficient balance | Return error |
-| **Transient failure** | Network blip | Retry |
-| **Permanent failure** | Invalid API key | Fail fast, alert |
-
----
-
-## Error Information
-
-What an error should contain:
-
-| Field | Purpose | Example |
-|-------|---------|---------|
-| **Type/Code** | Machine-readable classification | `ValidationError`, `E_NOT_FOUND` |
-| **Message** | Developer-readable explanation | "User 123 not found in database" |
-| **User message** | Safe to display to end users | "User not found" |
-| **Context** | What was being attempted | `{"user_id": 123, "operation": "lookup"}` |
-| **Timestamp** | When it occurred | ISO 8601 |
-| **Trace ID** | Correlation across services | UUID |
-
----
-
-## Tier Requirements
-
-### Exploratory
-
-**Minimal error handling.**
-
-- Let errors crash (fail fast)
-- Console output for debugging
-- No retry logic required
-- No user-friendly messages required
-
-### Internal
-
-**Basic error handling.**
-
-- Catch and log errors with context
-- Distinguish expected vs unexpected errors
-- Retry logic for external calls (3 attempts, simple backoff)
-- Graceful messages for known failure modes
-
-### Production
-
-**Comprehensive error handling.**
-
-- All errors categorized and handled appropriately
-- Retry with exponential backoff + jitter for external services
-- User-friendly messages (no stack traces, no internal details)
-- Structured error logging with trace IDs
-- Dead letter queues or fallback paths for pipeline failures
-- Alerting on unexpected error rates
-
----
-
-## Data Pipeline Considerations
-
-For pipelines with external APIs and AI transformations:
-
-| Scenario | Approach |
-|----------|----------|
-| API rate limit (429) | Retry with backoff, respect Retry-After header |
-| API timeout | Retry 2-3 times, then fail the item |
-| API auth failure | Fail fast, alert (won't resolve on retry) |
-| Malformed response | Log, fail the item, continue pipeline |
-| AI model error | Retry once, then fail the item with context |
-| Batch partially fails | Continue with successful items, report failures |
-
-**Key pattern:** Fail individual items, not the whole pipeline. Collect failures for review.
 
 ---
 
 ## Anti-Patterns
 
-| Don't | Why |
-|-------|-----|
-| Catch and ignore (`except: pass`) | Hides bugs, causes silent corruption |
-| Log and re-raise without adding context | Duplicate logs, no new information |
-| Expose stack traces to users | Security risk, poor UX |
-| Retry infinitely | Wastes resources, never resolves permanent failures |
-| Treat all errors the same | Different errors need different handling |
+| Don't | Do Instead | Why |
+|-------|-----------|-----|
+| `throw new Error("not found")` — generic errors with message strings | `throw new NotFoundError("User", id)` — typed error classes | String matching is fragile; class matching is type-safe |
+| Catch-and-ignore: `catch (e) { /* do nothing */ }` | At minimum, log the error | Swallowed errors hide bugs and make debugging impossible |
+| Catch-and-rethrow without context: `catch (e) { throw e }` | Add context: `throw new AppError("order failed", { cause: e })` | Naked rethrow adds no value; wrapping adds context |
+| Expose stack traces to clients: `res.json({ stack: err.stack })` | Return safe, generic messages to clients | Stack traces leak internal code paths — security and UX issue |
+| Handle errors in every route handler individually | Use a global error handler | DRY — one place to maintain error→response mapping |
+| Use HTTP status codes inconsistently (404 sometimes, 400 other times for same thing) | Define the mapping once in the error hierarchy | Inconsistent codes confuse frontend developers and monitoring |
+| Log operational errors at ERROR level | Log operational errors at WARN, programming errors at ERROR | Otherwise your error alerts fire for expected situations (user typos, etc.) |
+| Return different error response shapes per endpoint | Use RFC 9457 Problem Details everywhere | Frontend needs one error-handling function, not per-endpoint parsing |
 
 ---
 
-## Open Questions
+## Deciding for Your Project
 
-- Specific retry configurations per tier?
-- Alerting thresholds?
+When starting a new project, determine:
+
+1. **What error types will your app encounter?** Map your domain to the hierarchy — most apps need at least: Validation, NotFound, Authorization, ExternalService.
+2. **What framework are you using?** This determines how the global error handler is registered (Express middleware, FastAPI exception handler, Next.js error.tsx).
+3. **Do you need field-level validation errors?** If your API accepts complex forms, yes — include an `errors` array in validation responses.
+4. **What error tracking service?** Sentry, Datadog, Bugsnag — programming errors (non-operational) should be reported to one of these.
+5. **400 or 422 for validation?** Pick one, document it, use it everywhere.
+
+---
+
+## Related Topics
+
+- **When data validation fails** — see [Data Integrity](./data-integrity.md) for what triggers `ValidationError` in the first place
+- **Resilience patterns** — see [Resilience](./resilience.md) for retries, circuit breakers, timeouts, graceful shutdown, and health checks
+- **Structured error logging** — see [Logging](./logging.md) for how to log errors with correlation IDs and structured context
+- **Security and error responses** — see [Security](./security.md) for why you must never expose internal error details to clients

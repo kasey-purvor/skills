@@ -35,6 +35,17 @@ Read these files to understand the project's design and constraints. Check that 
 4. **Test Coverage** - Are changes adequately tested?
 5. **Context File Consistency** - Does the code contradict any context file, standards decision, or implemented convention? (e.g., uses an API differently than integrations.md specifies, violates a business rule in design.md, mismodels a domain concept from domain.md)
 
+## How to Write Findings
+
+The user reading this review is not deeply familiar with every line of code. For each finding:
+
+1. **Name the area in plain English** — not just a file path. What part of the system is this? What does it do?
+2. **Describe the issue clearly** — what you found and why it matters
+3. **Explain the impact** — what could go wrong, or what principle it violates
+4. **Suggest a fix** if one is obvious
+
+Do NOT write findings that require intimate codebase knowledge to understand. If your finding can't be understood without reading 5 files of context, you haven't explained it well enough.
+
 ## Report Format
 
 **Strengths:**
@@ -48,8 +59,8 @@ Read these files to understand the project's design and constraints. Check that 
 **Context File Discrepancies:**
 - [file]: [what the file says] vs [what the code does]
 
-**Promotion Candidates:**
-- [findings that likely require Manager review/promotion into project docs or standards files. If none, write "None spotted."]
+**Findings That May Affect Durable Truth:**
+- [findings that the Lead should review for possible promotion into project docs or standards files. If none, write "None spotted."]
 
 **Backlog Candidates:**
 - [concrete future work that is not a bug or truth discrepancy — missing hardening, edge cases not worth fixing now, future concerns spotted while reviewing. If none, write "None spotted."]

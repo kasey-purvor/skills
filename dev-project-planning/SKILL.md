@@ -1,13 +1,13 @@
 ---
 name: dev-project-planning
-description: Use when starting a new project or picking up an existing design - guides collaborative design and architecture through user-directed brainstorming, production engineering expertise, and structured research before sprint planning begins
+description: Use when starting a new project or picking up an existing design - guides collaborative design and architecture through user-directed brainstorming, production engineering expertise, and structured research before or between sprint work
 ---
 
 # Project Planning & Design
 
 ## Overview
 
-Guide early-stage project design from rough idea to sprint-ready specification. This skill precedes `dev-sprint-development` — its output (mature context files in `.context/project/`) is what the Sprint Development Manager picks up.
+Guide project design from rough idea to sprint-ready specification, and reconcile durable docs as planning and sprint work alternate. This skill often starts before `dev-sprint-development`, but projects may move back and forth between the two.
 
 The primary value of this skill is the **context files** it produces and maintains. These are living documents that evolve throughout the project lifecycle.
 
@@ -17,7 +17,7 @@ Domain, Integrations, and Design are explored iteratively — each informs the o
 
 Architecture and Data solidify later, once design has enough substance to make structural decisions. The bridge is **entity lifecycles**: if `domain.md` can describe concrete state sequences (stages, participants, time constraints) for the key concepts, the project is ready for architecture and data model work. If it can only describe obligations or requirements without lifecycles, more domain work is needed first.
 
-Not every project has a complex domain — simple tools may skip `domain.md` entirely. Start new projects by understanding what you're building and the domain it operates in.
+Not every project has a complex domain — simple tools may skip `domain.md` entirely. Start by framing the project in `design.md` at a high level: purpose, scope, user-visible workflow, and obvious constraints. Domain and integration research deepen that picture. Do not start architecture or data model work until the behaviour and constraints are concrete enough to support them.
 
 ---
 
@@ -25,20 +25,24 @@ Not every project has a complex domain — simple tools may skip `domain.md` ent
 
 ### First session (no `.context/project/` exists)
 
-1. Create `.context/` folder structure and copy templates:
+1. Create `.context/` folder structure and seed `design.md` from the template:
    ```bash
-   mkdir -p .context/project .context/reference .context/wip && cp ~/.claude/skills/dev-project-planning/templates/*.md .context/project/
+   mkdir -p .context/project .context/reference .context/wip && cp ~/.claude/skills/dev-project-planning/templates/design.md .context/project/
    ```
 2. Create a `README.md` at the project root: 1-2 sentences describing what the project does, a status line (e.g., "Planning phase"), and links to the context files in `.context/project/`. Then forget about it — do not update the README unless the user explicitly asks.
 3. Ask the user what they're building
-4. Follow the design progression: start with domain and integrations before jumping to design or architecture
+4. Capture the project at a high level in `design.md` first: Purpose & Scope, Interface & Interactions, Configuration, and Core Workflow
+5. Create additional context files from templates only when needed:
+   - `domain.md` for non-trivial domains
+   - `integrations.md` when external services or technical dependencies matter
+   - `architecture.md` and `data.md` once design has enough substance to support structural and schema decisions
 
 ### Continuing session
 
 1. Read existing context files and `.context/HANDOFF.md` (if it exists) silently for orientation
 2. Ask: **"What are we working on this session?"**
 3. Work: research, discuss, record decisions to the appropriate context files
-4. Before ending: update HANDOFF.md, commit context files to current branch with a descriptive message. **mandatory**, always confirm with YouTube before doing.  
+4. Before ending: update HANDOFF.md, commit context files to current branch with a descriptive message. **mandatory**, always confirm with user before doing.  
 
 **Do not** run a comprehensive review or gap analysis unless the user asks for one. Orient yourself from the files and follow the user's lead.
 
@@ -62,7 +66,7 @@ These are triggered by the user, or **suggested by the agent when it seems appro
 | Action | What it does | When to suggest |
 |--------|-------------|-----------------|
 | **Challenge mode** | Actively push back on decisions, propose alternatives, question assumptions, suggest simplifications | When the user seems unsure, says "what do you think?", "be honest", "be critical", "push back on this", or asks for your opinion on a decision |
-| **Sprint prep** | Readiness check for transitioning to sprint work. Reviews context files for sufficiency: are they complete enough to build from? What's provisional? What open questions would block implementation? Checks whether the upcoming work touches areas covered by `.context/standards/` decision files — if decisions exist but conventions.md doesn't yet have corresponding rules, notes that the sprint should establish those patterns and write convention entries as it goes. If no standards decisions exist for relevant areas, loads `dev-standards` to discuss with the user first | When the user mentions wanting to start implementation, or when most open questions are resolved and sprint work seems near |
+| **Sprint prep** | Readiness check for transitioning to sprint work. Reviews context files for sufficiency: are they complete enough to build from? What's provisional? What open questions would block implementation? Determines whether the next handoff is a **vertical-slice entry** (enough clarity to build one thin slice safely) or a **broader sprint-ready entry** (the target area is mostly settled and can support wider chunking). Checks whether the upcoming work touches areas covered by `.context/standards/` decision files — if decisions exist but conventions.md doesn't yet have corresponding rules, notes that the sprint should establish those patterns and write convention entries as it goes. If no standards decisions exist for relevant areas, loads `dev-standards` to discuss with the user first | When the user mentions wanting to start implementation, or when most open questions are resolved and sprint work seems near |
 | **Consistency check** | Dispatched as a **sub-agent** that reads all context files and verifies: cross-references between files are valid, boundary rules are followed (each fact stated once in its owning file), no duplication across files, content matches the rules defined in this skill (what belongs where, mandatory sections present, no guidance/meta-commentary in context files). Reports findings only — does not fix issues | When the user says "let's wrap up", at the end of any session, or after significant changes across multiple files |
 | **Standards assessment** | Loads `dev-standards` and uses whichever mode fits the current state of the project (design-time if planning is in progress, audit if design or code already exists). The standards skill drives the assessment — this action just triggers it and ensures outputs land in `.context/standards/`. Does not need to cover all topics in one session | When the user asks about production concerns, hardening, or "what are we missing?". When design discussions naturally raise production questions (error handling, security, data validation). During sprint prep if `.context/standards/` is empty or incomplete for the upcoming work |
 | **Source review** | Re-read primary source material (requirements docs, CSVs, specs, stakeholder notes) independently of existing context files. Compare what the source says against what's been captured. Identify concepts, signals, or structural intent that prior analysis missed or flattened | When the user questions whether context files fully represent the source material, when a new agent picks up someone else's analysis, or when the user says something feels incomplete |
@@ -78,7 +82,7 @@ These are triggered by the user, or **suggested by the agent when it seems appro
 │   └── implementation/   ← NOT read on startup (conventions.md, backlog.md)
 ├── standards/        ← production engineering decisions (read on demand, written during standards assessment)
 ├── reference/        ← source material: CSVs, meeting notes, stakeholder docs (read on demand)
-├── wip/              ← draft diagrams, exploratory notes, visual aids (read on demand)
+├── wip/              ← draft D2 diagrams plus PNG renders, exploratory notes, visual aids (read on demand)
 └── HANDOFF.md        ← inter-session/inter-skill context bridge
 ```
 
@@ -86,7 +90,16 @@ These are triggered by the user, or **suggested by the agent when it seems appro
 - **`project/implementation/`** — files that support sprint work: `conventions.md` (coding standards and patterns established during sprints) and `backlog.md` (deferred items from sprints). Read during sprint prep or when explicitly asked.
 - **`standards/`** — production engineering decision files, one per topic (error handling, configuration, data integrity, etc.). Created during a standards assessment using the `dev-standards` skill. Records what was decided, deferred, and ruled out. Read during sprint prep or when a production concern comes up. See the `dev-standards` skill for the three-layer model (skill topics → decision files → conventions).
 - **`reference/`** — static input material that informed the planning. Does not change. Read on demand (e.g., during a "source review" action), not on startup.
-- **`wip/`** — work-in-progress artifacts produced during sessions that aren't documentation-quality. Draft diagrams, scratch analysis, exploratory notes. Items either get promoted to `project/` when mature, or discarded.
+- **`wip/`** — work-in-progress artifacts produced during sessions that aren't documentation-quality. Draft D2 diagrams plus PNG renders, scratch analysis, exploratory notes. Human aids only — never authoritative. Items either get promoted to `project/` when mature, or discarded.
+
+### Diagram Policy
+
+- **Format:** D2 is the standard diagram source format
+- **Outputs:** Save both the `.d2` source file and a `.png` render by default
+- **Authority:** Diagrams are human aids only. Text context files remain the source of truth
+- **When to create:** Only when the user explicitly asks for a diagram
+- **Default location:** Save planning diagrams in `.context/wip/`
+- **Reading:** Do not consult diagrams on startup. Only look at them when the user explicitly points you to one
 
 ---
 
@@ -230,12 +243,14 @@ Contains files that support sprint work but aren't needed for planning sessions:
 **Read by:** Whichever skill runs next
 
 **Contents — write these sections each time:**
-- **Date** and **last session type** (project-planning or sprint-development)
-- **What happened** — decisions made, files updated, research completed
-- **Current focus** — what's active, what's provisional (e.g., "architecture.md Data Flow is provisional, depends on auth approach resolution")
-- **Notes for next session** — what to pick up, what needs attention, any findings from a sprint that affect context files
+- **Handoff written on / last session type** — date plus `project-planning` or `sprint-development`
+- **Completed this session / durable changes made** — decisions made, files updated, research completed, promotions performed
+- **Expected next session / entry mode** — planning continuation, vertical-slice sprint entry, or broader sprint-ready entry
+- **Current active area / provisional areas to treat carefully** — what's active, what's provisional (e.g., "architecture.md Data Flow is provisional, depends on auth approach resolution")
+- **Unreconciled durable-file updates / carry-forward pointers** — durable-truth changes that still need reconciliation, plus brief pointers to owned items that the next session must notice
+- **Immediate next-session pickup notes** — what to pick up next, what needs attention first
 
-No template file — the agent writes HANDOFF.md from these instructions each session. This is the **only inter-skill communication channel**. Both project planning and sprint development read and write this file exclusively for inter-session and inter-skill context.
+No template file — the agent writes HANDOFF.md from these instructions each session. This is the dedicated inter-session and inter-skill bridge. Both project planning and sprint development read and write it for continuity, but it is **not** a source-of-truth file. Durable truth must live in its owning `project/*.md`, `.context/standards/*.md`, or `project/implementation/*.md` file. If an item already lives in `PLAN.md`, `backlog.md`, or another owning file, HANDOFF.md should point to it briefly rather than duplicating it as a second owner.
 
 ---
 
@@ -341,17 +356,23 @@ Don't create branches for context-only changes. Don't push unless the user asks.
 
 The user decides when to start sprint work. This skill does not gate that decision — the user may want to build before all context files are mature, and that's expected. Projects often alternate between planning and building as implementation reveals new information.
 
+Use one of these entry modes when handing off:
+
+- **Vertical-slice entry** — enough clarity exists to build one thin slice safely. `design.md` describes the slice's purpose and workflow, the touched area has enough naming/structure to avoid random invention, and any major assumptions are explicitly marked provisional.
+- **Broader sprint-ready entry** — the target area is mostly settled. The workflows, structure, contracts, and relevant standards decisions for the upcoming work are documented or consciously deferred, so sprint can scope larger chunks with less design churn.
+
 When the user decides to move to sprint work, update HANDOFF.md:
 
-1. Note that the next step is sprint work
-2. Note which context files/sections are provisional (e.g., "architecture.md Data Flow is provisional — depends on how the batch endpoint behaves")
-3. Note any open questions that the sprint might resolve through implementation
+1. Set **Expected next session / entry mode** so it clearly says sprint work and which entry mode applies
+2. Update **Current active area / provisional areas to treat carefully** with any context files/sections that are still provisional (e.g., "architecture.md Data Flow is provisional — depends on how the batch endpoint behaves")
+3. Include any open questions that the sprint might resolve through implementation in **Immediate next-session pickup notes**
+4. Include any durable-truth changes or promotions that are still pending in **Unreconciled durable-file updates / carry-forward pointers** so sprint can reconcile them deliberately
 
-The Sprint Development Manager reads HANDOFF.md first, then the context files as needed. HANDOFF.md tells the Manager what's reliable and what might change. Context files should be self-contained — the Manager should not need to read planning session history to understand what's being built.
+The Sprint Development Manager reads HANDOFF.md first, then the authoritative context files as needed. HANDOFF.md tells the Manager what's reliable, what's provisional, and what still needs reconciliation. Context files should be self-contained — the Manager should not need to read planning session history to understand what's being built.
 
 ### Returning from sprint
 
-When the user returns from sprint work, read HANDOFF.md (which the sprint Manager updated at sprint end). It will contain findings from the sprint that affect context files. Incorporate these findings into the appropriate context files.
+When the user returns from sprint work, read HANDOFF.md (which the sprint Manager updated at sprint end). Sprint may already have promoted durable truth directly into the appropriate project or standards files with user confirmation. Use HANDOFF.md to see what changed, what remains provisional, and what still needs reconciliation. Incorporate unresolved findings into the appropriate owning files rather than letting HANDOFF.md become the place where truth lives.
 
 ---
 
@@ -377,4 +398,4 @@ When the user returns from sprint work, read HANDOFF.md (which the sprint Manage
 **Load on-demand:**
 - `dev-brainstorming` → for structured design conversations (one topic at a time, options with tradeoffs)
 - `dev-standards` → when production engineering concerns arise. The standards skill has its own modes (design-time, audit, implementation reference) and determines how to apply itself based on context. Its outputs go to `.context/standards/` (decision files). Conventions.md is written during sprints as patterns are implemented, not during planning. The planning skill's role is to know the standards skill exists and suggest loading it when production concerns come up — not to prescribe how or when standards are applied.
-- `dev-diagrams` → only when the user explicitly asks for a diagram. Output goes to `.context/wip/` by default; promote to `.context/project/` when it accurately reflects the architecture. Never generate diagrams automatically
+- `dev-diagrams` → only when the user explicitly asks for a diagram. Use D2 and save both `.d2` and `.png` outputs by default. Output goes to `.context/wip/` by default. Diagrams are human aids and never replace the text context files as source of truth. Never generate diagrams automatically
