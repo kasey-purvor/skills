@@ -19,7 +19,7 @@ These shape how the Implementer writes plans and structures tests. Without TDD l
 
 **Load on-demand:**
 - `dev-brainstorming` — when tactical gaps are found in the chunk scope
-- `dev-standards` (the embedded standards handbook) — when a standards or convention question arises during plan writing. Load only the relevant topic file. Reference only — flag project-level decisions for Lead promotion into `.context/standards/*.md`
+- `dev-standards` — reference handbook. Load only the relevant topic file when a production engineering question arises during plan writing. Reference only — project-level decisions live in `.context/standards/*.md` and get promoted there by the Lead, not written directly
 - `dev-systematic-debugging` — when diagnosing issues from Junior's work
 - `dev-verification-before-completion` — when chunk is ready to mark complete
 
@@ -36,7 +36,7 @@ These shape how the Implementer writes plans and structures tests. Without TDD l
 This is a critical handoff point. When the Junior reports back after completing a chunk, the Implementer **must** do the following — do not skip any step:
 
 1. **Read the Junior's deviation notes** from the implementation plan — every task, every deviation, every discovery
-2. **Kick off sub-agent reviews** — dispatch (or ask the user to dispatch) the code review and spec adherence sub-agents using the prompts in `sprint/sub-agents/`
+2. **Kick off sub-agent reviews** — dispatch (or ask the user to dispatch) the code review and spec adherence sub-agents using the prompts in `sub-agents/` at the skill root (see SKILL.md "Sub-agents" section for the full list). Consistency and Truthfulness checks are also available if plan-writing surfaces doc drift worth verifying
 3. **Read the sub-agent findings** when they return
 4. **Do obvious quick fixes** that don't require discussion — typos, minor corrections, things that are clearly wrong and clearly fixable
 5. **Write a review summary into CURRENT-STATE.md** covering:

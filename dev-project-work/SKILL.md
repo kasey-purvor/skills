@@ -17,7 +17,22 @@ A unified skill for designing and building software projects. Covers the full li
 
 ## Standards
 
-Production engineering standards live in the **`dev-standards` skill** — a separate handbook consulted on-demand when production engineering questions arise (error handling, security, resilience, testing, etc.). It is not a role. See "Standards as Handbook" below.
+Standards for this project are tracked in `.context/standards/*.md` — one file per topic (error handling, security, resilience, testing, etc.), recording what's been decided, deferred, or ruled not applicable for this project specifically. These are durable project truth. See "Standards Structure" below for the full three-layer model.
+
+---
+
+## Sub-agents
+
+Four sub-agent prompts live in `sub-agents/` at the skill root. Any role may invoke any sub-agent when needed; each role file describes role-specific guidance for when invocation is appropriate.
+
+| Sub-agent | Purpose | Typical caller |
+|---|---|---|
+| `consistency-check-prompt.md` | Reads context files and verifies cross-references, boundary rules, no duplication, mandatory sections present. Reports findings only | Lead, at wrap-up or after significant doc changes across multiple files |
+| `truthfulness-check-prompt.md` | Reads context files for concrete claims (paths, functions, schemas, libraries, routes) and verifies each against the actual codebase. Reports accuracy, staleness, and gaps | Lead, post-sprint or when docs may have drifted from reality |
+| `code-review-prompt.md` | Reads a completed chunk's code for quality, correctness, edge cases, and context-file consistency | Implementer, during post-chunk review |
+| `spec-adherence-prompt.md` | Reads a completed chunk against the implementation plan. Reports what deviates and whether it's justified | Implementer, during post-chunk review |
+
+Sub-agents report findings only. Classification (fix-now, promote, backlog, defer, rule-out) is the Lead's responsibility with the user.
 
 ---
 
@@ -91,7 +106,7 @@ Information flows downward from durable truth into execution artifacts. Discover
 
 - **Durable truth** (context files) is authoritative. Sprint artifacts consume it but do not own it.
 - **Execution artifacts** (PLAN.md, implementation plans, CURRENT-STATE.md) may restate durable truth for clarity, but must never become the only place a fact exists.
-- **Bridges** (HANDOFF.md) carry context between sessions. They point to truth but do not contain it.
+- **Bridges** (HANDOFF.md) carry context between sessions — not just between sprints; HANDOFF is written at any session end, regardless of sprint boundary. They point to truth but do not contain it. **The previous Lead's "expected next session" notes are proposals, not mandates** — the current Lead validates them against the backlog and current circumstances before committing.
 - **Retrospectives** (SPRINT-SUMMARY.md) record what happened during a sprint. They are not read on startup and do not drive decisions — they exist for historical reference only.
 
 ### Entry Modes
@@ -162,7 +177,7 @@ If current work depends on the correction, promote before continuing. If the cha
 | `implementation/*.md` | Chunk implementation plans — exact tasks and steps for the Junior Developer | Execution artifact |
 | `SPRINT-SUMMARY.md` | Sprint retrospective — outcomes, what was built, carry-forward items | Execution artifact |
 | `ACTIVE-SPRINT` | Pointer to current sprint folder | Execution artifact |
-| `HANDOFF.md` | Session bridge between Lead sessions — what changed, what's next, what's provisional | Bridge (Lead-only) |
+| `HANDOFF.md` | **Inter-session bridge** (written at any session end, not just sprint boundaries) — what changed, what's *proposed* next, what's provisional. Proposals not mandates | Bridge (Lead-only) |
 | `reference/` | Source material — CSVs, meeting notes, specs. Static input, not modified | Reference |
 | `wip/` | Work-in-progress — draft diagrams, exploratory notes. Human aids, not authoritative | Temporary |
 | `temp-diagrams/` | Sprint-local diagrams. Human aids, not authoritative | Temporary |
@@ -309,7 +324,7 @@ Concrete items surfaced during sprint work that aren't worth fixing now. Grouped
 
 **Not here:** Component-specific structure decisions (-> architecture.md) . Feature behaviour or business rules (-> design.md) . Data shapes (-> data.md) . Code patterns already implemented (-> conventions.md)
 
-One file per topic, mirroring the standards handbook structure. Each file uses: Decided / Deferred / Not Applicable sections. See "Standards as Handbook" for the full three-layer model.
+One file per topic. Each file uses: Decided / Deferred / Not Applicable sections. See "Standards Structure" for the full three-layer model.
 
 ### The Boundary Rule
 
@@ -368,23 +383,23 @@ Each file carries its own maturity signals. Read maturity from the content itsel
 
 ---
 
-## Standards as Handbook
+## Standards Structure
 
-The `dev-standards` skill is a reference handbook — not a role, not a phase. It contains production engineering knowledge organised by topic: error handling, security, resilience, testing, data integrity, and others. Each topic teaches the concept from the ground up, explains tradeoffs, and shows code examples.
-
-It is consulted on-demand when production engineering questions arise during design or sprint work. It is never loaded in bulk — load only the topic file relevant to the current discussion.
+Project standards decisions live in `.context/standards/*.md`. Each file records what's decided, deferred, or ruled not applicable for a cross-cutting concern (error handling, security, resilience, testing, etc.). These are durable project truth.
 
 ### The Three-Layer Model
 
 | Layer | Location | Purpose | When written |
 |-------|----------|---------|-------------|
-| **Handbook topics** | `dev-standards` skill — `topics/*.md` | Teach concepts, show patterns, explain tradeoffs. Project-independent | Permanent reference — part of the `dev-standards` skill |
-| **Project decision files** | `.context/standards/*.md` | Record what was decided, deferred, or ruled not applicable for this project | During design or sprint scoping, when a cross-cutting concern is discussed |
+| **Project decision files** | `.context/standards/*.md` | Record what's decided, deferred, or ruled not applicable for *this* project | During design or sprint scoping, when a cross-cutting concern is discussed |
 | **Conventions** | `.context/project/implementation/conventions.md` | Terse actionable rules for how decisions look in code | During sprints, when a pattern is first implemented or changed |
+| **Reference handbook** *(optional)* | `dev-standards` skill — `topics/*.md` | Reference material: concepts, tradeoffs, code examples. Project-independent | Load on-demand when concepts are needed; this is reference, not project truth |
 
-Each layer is progressively more specific and more actionable. Handbook topics inform decisions (recorded in project decision files). Decisions get implemented in code. The patterns that emerge get recorded as conventions.
+The first two layers are project-specific and authoritative. Project decisions record *what was chosen*. Conventions record *how those decisions look in actual code*.
 
-### When to Consult Standards
+The third layer (the `dev-standards` skill) is optional reference material alongside other on-demand skills like `dev-brainstorming` and `dev-diagrams`. Load a topic file when a production engineering question needs concepts, tradeoffs, or code examples. It doesn't drive decisions; it informs them.
+
+### When to update `.context/standards/`
 
 - During design when the discussion naturally raises a production concern ("how should we handle errors?", "what about retries?")
 - During sprint scoping when the Lead or Implementer hits a question about how to handle a cross-cutting concern
