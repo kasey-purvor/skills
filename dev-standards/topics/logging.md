@@ -390,6 +390,26 @@ async def log_requests(request: Request, call_next):
 
 ---
 
+## Frontend Logging
+
+Backend logging is well-understood: use a structured logger, write JSON, ship to an aggregator. Frontend logging is different — there's no persistent process, no log files, and `console.log` is the only built-in tool.
+
+**The problem with `console.log` in production:** It only exists in the user's browser DevTools. Once the tab closes, it's gone. If a rep hits an error at 9am and reports it at 2pm, the console output is lost. Fifty `console.error` calls scattered across your codebase are invisible to you — they're visible only to the user who probably isn't looking.
+
+**What to do instead:**
+
+1. **Error-path events go to your error tracking service** (Sentry, Datadog, etc.), not `console.error`. Use global error handlers — React error boundaries, QueryCache/MutationCache `onError` hooks, `window.onerror` — so you don't need to wire up every catch block manually.
+
+2. **Debug logging goes behind a flag.** If you need `console.log` for development, gate it: `if (import.meta.env.DEV) console.log(...)`. Better yet, remove it before committing. Production bundles shouldn't contain debug logging.
+
+3. **Product-level events go to your analytics service** (see [Product Analytics](./product-analytics.md)), not console. "User viewed dashboard" is analytics, not a log.
+
+4. **Catch blocks should not swallow errors.** The pattern `catch (err) { console.error(err); return []; }` is the most common frontend logging anti-pattern. The error is "logged" to a place nobody sees, the component receives empty data as if nothing went wrong, and the user gets a silent partial failure. Instead, let the error propagate to your data-fetching layer's error state (React Query's `error` property, SWR's error return) so the UI can show an error state and the global error handler can report to Sentry.
+
+**Rule of thumb:** If it helps you debug during development, it's a `console.log` that should be removed before merge. If it reports a failure in production, it should go to Sentry. If it measures user behaviour, it should go to analytics. There is almost no case where `console.log` in committed production code is the right choice.
+
+---
+
 ## Anti-Patterns
 
 | Don't | Do Instead | Why |

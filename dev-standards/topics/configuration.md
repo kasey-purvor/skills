@@ -328,6 +328,65 @@ Both Zod (`z.coerce.number()`) and pydantic-settings (coerces by default) handle
 
 ---
 
+## Serverless and Edge Function Configuration
+
+The patterns above assume your application starts once and stays running — a server that boots, validates config, then serves requests indefinitely. In serverless environments (AWS Lambda, Vercel Functions, Deno edge functions), there's no persistent "startup." Each function invocation might be a fresh start, or it might reuse a warm instance from a previous invocation. You don't control which.
+
+This leads developers to skip centralized config validation and instead read environment variables inline, wherever they're needed:
+
+```typescript
+// Scattered across 15 different function files
+export default function handler(req: Request) {
+  const apiKey = Deno.env.get('ANTHROPIC_API_KEY'); // string | undefined
+  const dbUrl = Deno.env.get('SUPABASE_URL');       // might be missing
+  // ... use them directly, hope they exist
+}
+```
+
+This has the same three problems as the traditional server case — no validation, no types, no fail-fast — but it's worse because:
+
+1. **You can't test before deploying.** A traditional server crashes on startup with a missing var. A serverless function only crashes when a request hits the specific code path that reads that var. The function might work fine for days before someone triggers the path that needs the missing key.
+
+2. **Cold starts scatter the reads.** Each function file independently reads its own env vars, often with inconsistent fallback patterns (`KEY || ALTERNATE_KEY`). No single file lists what the function needs.
+
+3. **Warm instances create false confidence.** A warm instance has already read the env vars successfully. If you change a var in your deployment dashboard but the instance is still warm with the old value, you see stale config until the next cold start.
+
+**The fix is the same pattern, just triggered differently.** Instead of validating at "app startup," validate on first import:
+
+```typescript
+// _shared/config.ts — one file, imported by every function
+import { z } from 'zod';
+
+const ConfigSchema = z.object({
+  anthropicApiKey: z.string().min(1),
+  supabaseUrl: z.string().url(),
+  supabaseServiceKey: z.string().min(1),
+  environment: z.enum(['development', 'production']).default('production'),
+});
+
+// Validates on first import — if a var is missing, the function
+// fails immediately on cold start, not deep in business logic
+export const config = ConfigSchema.parse({
+  anthropicApiKey: Deno.env.get('ANTHROPIC_API_KEY'),
+  supabaseUrl: Deno.env.get('SUPABASE_URL'),
+  supabaseServiceKey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
+  environment: Deno.env.get('ENVIRONMENT'),
+});
+```
+
+```typescript
+// In your function handler — import typed config, never read env directly
+import { config } from './_shared/config.ts';
+
+export default function handler(req: Request) {
+  const result = await callApi(config.anthropicApiKey); // typed, validated, guaranteed present
+}
+```
+
+**One additional trap in serverless: in-memory state doesn't persist.** If you store anything in a module-level variable (a cache, a rate-limit counter, a connection pool), it resets on every cold start and is not shared across concurrent instances. This isn't a config issue per se, but it's the same "serverless doesn't work like a server" family of mistakes. Anything that needs to persist across invocations must be stored externally (database, cache service, etc.).
+
+---
+
 ## Anti-Patterns
 
 | Don't | Do Instead | Why |

@@ -66,7 +66,7 @@ Example: "How do I handle errors in this orchestrator?" → `conventions.md` say
 
 ### Data & Validation
 - **[Data Integrity](./topics/data-integrity.md)** — Schema validation (Zod, Pydantic), validation boundaries, the three-layer model, runtime vs compile-time safety, testing data pipelines
-- **[Configuration](./topics/configuration.md)** — Treating app config as validated data, pydantic-settings, env schemas, .env files, startup fail-fast
+- **[Configuration](./topics/configuration.md)** — Treating app config as validated data, pydantic-settings, env schemas, .env files, startup fail-fast, serverless/edge function configuration patterns
 - **[Schema Evolution](./topics/schema-evolution.md)** — Database migrations (Alembic, Prisma, Drizzle), expand-and-contract, zero-downtime changes, backfills
 
 ### Error Handling & Resilience
@@ -74,11 +74,12 @@ Example: "How do I handle errors in this orchestrator?" → `conventions.md` say
 - **[Resilience](./topics/resilience.md)** — Retries with backoff, circuit breakers, timeouts, idempotency keys, graceful shutdown, health checks (liveness/readiness/startup)
 
 ### Security
-- **[Security](./topics/security.md)** — Injection attacks (SQL, NoSQL, command), XSS, CSRF, CORS, security headers, password hashing (bcrypt/argon2), dependency scanning, authentication vs authorization
+- **[Security](./topics/security.md)** — Injection attacks (SQL, NoSQL, command), XSS, CSRF, CORS, security headers, password hashing (bcrypt/argon2), dependency scanning, authentication, authorization models (RBAC/ABAC, privilege escalation, multi-tenant isolation)
 
 ### Observability
-- **[Logging](./topics/logging.md)** — Structured logging (pino, structlog), correlation IDs, AsyncLocalStorage/contextvars, log levels, request logging middleware, secret scrubbing
+- **[Logging](./topics/logging.md)** — Structured logging (pino, structlog), correlation IDs, AsyncLocalStorage/contextvars, log levels, request logging middleware, secret scrubbing, frontend logging patterns
 - **[Monitoring](./topics/monitoring.md)** — Metric types (counter/gauge/histogram), RED and USE methods, percentiles, SLIs/SLOs/error budgets, alerting, distributed tracing, OpenTelemetry
+- **[Product Analytics](./topics/product-analytics.md)** — User tracking (PostHog, Mixpanel), event design, identity/group patterns, analytics wrapper modules, privacy and data residency
 
 ### API & Contracts
 - **[API Design](./topics/api-design.md)** — REST conventions, response shapes, pagination (offset/cursor), versioning strategies, type-safe contracts (tRPC, OpenAPI/FastAPI)
