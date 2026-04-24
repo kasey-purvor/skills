@@ -19,7 +19,7 @@ These shape how the Implementer writes plans and structures tests. Without TDD l
 
 **Load on-demand:**
 - `dev-brainstorming` — when tactical gaps are found in the chunk scope
-- `dev-standards` — reference handbook. Load only the relevant topic file when a production engineering question arises during plan writing. Reference only — project-level decisions live in `.context/standards/*.md` and get promoted there by the Lead, not written directly
+- `.context/standards/*.md` — project decision files for the topic relevant to the current plan. Reference only — if a gap is found (missing decision for a topic this plan needs), flag it for the Lead to promote, don't invent a decision yourself
 - `dev-systematic-debugging` — when diagnosing issues from Junior's work
 - `dev-verification-before-completion` — when chunk is ready to mark complete
 

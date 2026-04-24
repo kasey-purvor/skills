@@ -17,7 +17,7 @@ A unified skill for designing and building software projects. Covers the full li
 
 ## Standards
 
-Standards for this project are tracked in `.context/standards/*.md` — one file per topic (error handling, security, resilience, testing, etc.), recording what's been decided, deferred, or ruled not applicable for this project specifically. These are durable project truth. See "Standards Structure" below for the full three-layer model.
+Standards for this project are tracked in `.context/standards/*.md` — one file per topic (error handling, security, resilience, testing, etc.), recording what's been decided, deferred, or ruled not applicable for this project specifically. These are durable project truth. See "Standards Structure" below for how project decisions and code conventions layer together.
 
 ---
 
@@ -387,17 +387,14 @@ Each file carries its own maturity signals. Read maturity from the content itsel
 
 Project standards decisions live in `.context/standards/*.md`. Each file records what's decided, deferred, or ruled not applicable for a cross-cutting concern (error handling, security, resilience, testing, etc.). These are durable project truth.
 
-### The Three-Layer Model
+### The Two-Layer Model
 
 | Layer | Location | Purpose | When written |
 |-------|----------|---------|-------------|
-| **Project decision files** | `.context/standards/*.md` | Record what's decided, deferred, or ruled not applicable for *this* project | During design or sprint scoping, when a cross-cutting concern is discussed |
+| **Project decision files** | `.context/standards/*.md` | Record what's decided, deferred, or ruled not applicable for *this* project. One file per topic | During design or sprint scoping, when a cross-cutting concern is discussed |
 | **Conventions** | `.context/project/implementation/conventions.md` | Terse actionable rules for how decisions look in code | During sprints, when a pattern is first implemented or changed |
-| **Reference handbook** *(optional)* | `dev-standards` skill — `topics/*.md` | Reference material: concepts, tradeoffs, code examples. Project-independent | Load on-demand when concepts are needed; this is reference, not project truth |
 
-The first two layers are project-specific and authoritative. Project decisions record *what was chosen*. Conventions record *how those decisions look in actual code*.
-
-The third layer (the `dev-standards` skill) is optional reference material alongside other on-demand skills like `dev-brainstorming` and `dev-diagrams`. Load a topic file when a production engineering question needs concepts, tradeoffs, or code examples. It doesn't drive decisions; it informs them.
+Both layers are project-specific and authoritative. Project decisions record *what was chosen*. Conventions record *how those decisions look in actual code*. Decisions inform code; patterns that emerge get recorded back as conventions.
 
 ### When to update `.context/standards/`
 
