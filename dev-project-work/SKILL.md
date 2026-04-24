@@ -1,3 +1,8 @@
+---
+name: dev-project-work
+description: Use when designing or building software projects end-to-end across the full lifecycle — design, research, sprint planning, implementation, and review. Entry point that routes between three roles (Lead, Implementer, Junior Developer) and consults production standards on-demand. Start here when the user wants project work but hasn't picked a specific sub-skill.
+---
+
 # Project Work
 
 A unified skill for designing and building software projects. Covers the full lifecycle from early design through implementation.
@@ -12,7 +17,7 @@ A unified skill for designing and building software projects. Covers the full li
 
 ## Standards
 
-Production engineering standards (`standards/`) are not a role. They are a handbook consulted on-demand when production engineering questions arise — error handling, security, resilience, testing, etc. See "Standards as Handbook" below.
+Production engineering standards live in the **`dev-standards` skill** — a separate handbook consulted on-demand when production engineering questions arise (error handling, security, resilience, testing, etc.). It is not a role. See "Standards as Handbook" below.
 
 ---
 
@@ -365,15 +370,15 @@ Each file carries its own maturity signals. Read maturity from the content itsel
 
 ## Standards as Handbook
 
-The standards skill is a reference handbook — not a role, not a phase. It contains production engineering knowledge organised by topic: error handling, security, resilience, testing, data integrity, and others. Each topic teaches the concept from the ground up, explains tradeoffs, and shows code examples.
+The `dev-standards` skill is a reference handbook — not a role, not a phase. It contains production engineering knowledge organised by topic: error handling, security, resilience, testing, data integrity, and others. Each topic teaches the concept from the ground up, explains tradeoffs, and shows code examples.
 
-It is consulted on-demand when production engineering questions arise during design or sprint work. It is never loaded in bulk — read only the topic relevant to the current discussion.
+It is consulted on-demand when production engineering questions arise during design or sprint work. It is never loaded in bulk — load only the topic file relevant to the current discussion.
 
 ### The Three-Layer Model
 
 | Layer | Location | Purpose | When written |
 |-------|----------|---------|-------------|
-| **Handbook topics** | `standards/topics/*.md` | Teach concepts, show patterns, explain tradeoffs. Project-independent | Permanent reference — part of the skill |
+| **Handbook topics** | `dev-standards` skill — `topics/*.md` | Teach concepts, show patterns, explain tradeoffs. Project-independent | Permanent reference — part of the `dev-standards` skill |
 | **Project decision files** | `.context/standards/*.md` | Record what was decided, deferred, or ruled not applicable for this project | During design or sprint scoping, when a cross-cutting concern is discussed |
 | **Conventions** | `.context/project/implementation/conventions.md` | Terse actionable rules for how decisions look in code | During sprints, when a pattern is first implemented or changed |
 

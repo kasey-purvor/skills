@@ -236,6 +236,40 @@ Rules enforced by the database itself, regardless of what code sent the data. In
 
 No single layer covers all scenarios. The gaps in one are filled by the others.
 
+### Where ORMs Fit in the Three Layers
+
+When using a relational database with an ORM (Drizzle, SQLAlchemy, Prisma), you end up with **two schema definitions** for the same entity — the ORM schema and the validation schema (Zod/Pydantic). This isn't redundancy. They serve different layers and catch different problems.
+
+**The ORM schema** (e.g., Drizzle's `pgTable`) defines what the database table looks like — columns, types, constraints. It serves two purposes: generating SQL migrations (Layer 3), and making queries type-safe at compile time (Layer 1).
+
+**The validation schema** (Zod/Pydantic) defines what the application expects data to look like at runtime. It validates data crossing boundaries (Layer 2) — API requests, database results, external payloads.
+
+```typescript
+// Drizzle schema — defines the DATABASE table (Layers 1 + 3)
+const courses = pgTable('courses', {
+  courseId: uuid('course_id').primaryKey(),
+  title: varchar('title').notNull(),
+  items: jsonb('items').notNull(),           // opaque JSON column to the DB
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull(),
+});
+
+// Zod schema — defines the APPLICATION contract (Layer 2)
+const CourseSchema = z.object({
+  courseId: z.string().uuid(),
+  title: z.string().min(1),
+  items: z.array(CourseItemSchema),           // validated nested structure
+  createdAt: z.string().datetime(),           // ISO string, not a Date
+});
+```
+
+Notice the differences: Drizzle says `items` is `jsonb` — the database stores it but doesn't inspect its contents. Zod says `items` is an array of `CourseItem` objects with specific fields — the application validates the structure inside the JSON. Drizzle says `createdAt` is a Postgres `timestamp`. Zod says it's an ISO 8601 string — the repository layer handles the conversion.
+
+**The repository layer is the bridge** — it sits between the ORM queries and the validation schemas. It queries via the ORM (type-safe SQL), then parses results through the Zod schema before returning to the rest of the application. Both checks happen, each catching what the other can't.
+
+**Why not just one schema?** Some ORMs (Prisma) try to be the single source of truth for both database structure and application types. This works until your database representation and application representation genuinely differ — a `jsonb` column containing a validated nested structure, a timestamp stored as a Date but serialised as a string, a composite key split into separate application fields. Two schemas let each side describe what it actually cares about without forcing the other to compromise.
+
+**JSON databases (MongoDB, DynamoDB) don't have this problem.** There's no second language to bridge — queries are JavaScript objects, results are JavaScript objects. The ORM layer exists specifically because SQL databases speak a different language than your application code. Zod alone handles validation for JSON databases; the ORM handles the SQL translation that JSON databases don't need.
+
 ---
 
 ## Validation Boundaries
