@@ -326,6 +326,7 @@ Sub-agent prompts live in `sub-agents/` at the skill root. Any role may dispatch
 | **Truthfulness Check** | `sub-agents/truthfulness-check-prompt.md` — docs vs code | Sprint Wrap-up; any time docs may have drifted from code | Post-sprint (implementation drift common). Context files haven't been updated in a while. User questions whether docs still reflect reality |
 | **Code Review** | `sub-agents/code-review-prompt.md` — chunk code quality | Sprint Review phase | Implementer dispatches during post-chunk review. Lead may dispatch in Direct mode if reviewing someone else's work |
 | **Spec Adherence** | `sub-agents/spec-adherence-prompt.md` — chunk plan compliance | Sprint Review phase | Implementer dispatches during post-chunk review |
+| **Handbook Audit** | *(prompt not yet written)* — for each handbook topic, dispatch a sub-agent to compare the codebase against that topic's patterns. Produces backlog-ready findings | Any mode | **User-triggered only. Expensive — never auto-fired or proactively suggested.** User explicitly asks for a codebase-vs-handbook audit |
 
 **Sub-agents report findings only.** Classification (fix-now, promote, backlog, defer, rule-out) is the Lead's responsibility with the user.
 
@@ -409,6 +410,8 @@ Implementation plans use Tasks (logical units) containing Steps (individual acti
 - `dev-brainstorming` — for chunk scoping discussions and design exploration
 - `dev-diagrams` — when user asks for a diagram
 - `dev-verification-before-completion` — when sprint is ending
+
+Also available: the production engineering handbook at `standards/topics/*.md` within this skill. Open a topic when a design discussion touches a cross-cutting concern and options deserve grounding (error handling, security, resilience, testing, etc.). Nothing mandates when.
 
 ---
 

@@ -17,7 +17,12 @@ A unified skill for designing and building software projects. Covers the full li
 
 ## Standards
 
-Standards for this project are tracked in `.context/standards/*.md` — one file per topic (error handling, security, resilience, testing, etc.), recording what's been decided, deferred, or ruled not applicable for this project specifically. These are durable project truth. See "Standards Structure" below for how project decisions and code conventions layer together.
+Two places carry standards material:
+
+- **Handbook** — `standards/topics/*.md` within this skill. Production engineering patterns (error handling, security, resilience, testing, etc.) as reference material. Project-independent. The Lead may consult a topic when grounding a design decision in established options
+- **Project decisions** — `.context/standards/*.md` in each project. One file per topic, recording what's been decided, deferred, or ruled not applicable for that project specifically. Durable project truth
+
+See "Standards Structure" below for the full three-layer model including code conventions.
 
 ---
 
@@ -308,7 +313,7 @@ All sections are project-specific — no mandatory sections. Create when relevan
 
 Actionable rules for writing code in this codebase. Terse entries (section heading + 3-5 rules) covering patterns like error handling, validation, logging, config access. Written during sprints when a pattern is established or changed — not populated upfront during design.
 
-**Not here:** Project-level decisions about which approach to use (-> `.context/standards/`) . Architecture or component structure (-> architecture.md) . Teaching or justification (-> standards topic files)
+**Not here:** Project-level decisions about which approach to use (-> `.context/standards/`) . Architecture or component structure (-> architecture.md) . Teaching or justification (-> `standards/topics/` handbook within this skill)
 
 #### backlog.md — Future work *(implementation support)*
 
@@ -385,16 +390,17 @@ Each file carries its own maturity signals. Read maturity from the content itsel
 
 ## Standards Structure
 
-Project standards decisions live in `.context/standards/*.md`. Each file records what's decided, deferred, or ruled not applicable for a cross-cutting concern (error handling, security, resilience, testing, etc.). These are durable project truth.
+Three layers, from general reference material down to specific code patterns.
 
-### The Two-Layer Model
+### The Three-Layer Model
 
 | Layer | Location | Purpose | When written |
 |-------|----------|---------|-------------|
-| **Project decision files** | `.context/standards/*.md` | Record what's decided, deferred, or ruled not applicable for *this* project. One file per topic | During design or sprint scoping, when a cross-cutting concern is discussed |
+| **Handbook** | `standards/topics/*.md` within this skill | Production engineering patterns with tradeoffs and examples. Reference material. Project-independent | Maintained at the skill level — not edited during project work |
+| **Project decisions** | `.context/standards/*.md` | Record what's decided, deferred, or ruled not applicable for *this* project. One file per topic | During design or sprint scoping, when a cross-cutting concern is discussed |
 | **Conventions** | `.context/project/implementation/conventions.md` | Terse actionable rules for how decisions look in code | During sprints, when a pattern is first implemented or changed |
 
-Both layers are project-specific and authoritative. Project decisions record *what was chosen*. Conventions record *how those decisions look in actual code*. Decisions inform code; patterns that emerge get recorded back as conventions.
+The handbook informs decisions; decisions inform code; patterns that emerge get recorded back as conventions. The Lead may reference handbook topics when grounding a design discussion, but nothing mandates when.
 
 ### When to update `.context/standards/`
 
