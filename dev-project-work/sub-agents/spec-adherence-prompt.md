@@ -24,8 +24,7 @@ Read these files to understand the project's design and constraints. Verify that
 - **data.md:** `.context/project/data.md` — schemas, models, data contracts
 - **domain.md:** `.context/project/domain.md` (if it exists) — domain knowledge the code relies on
 - **integrations.md:** `.context/project/integrations.md` — external service APIs, constraints, gotchas
-- **Relevant standards files:** `.context/standards/*.md` — project-specific cross-cutting engineering decisions for the area being verified
-- **conventions.md:** `.context/project/implementation/conventions.md` — implemented recurring code rules, if relevant to this chunk
+- **Relevant ADRs:** `.context/decisions/*.md` — decisions that may govern the area being verified. Read the ADRs whose titles touch the area
 
 ## Verify
 
@@ -33,7 +32,7 @@ Read these files to understand the project's design and constraints. Verify that
 2. **Accuracy** - Does the implementation match what was specified?
 3. **No Extras** - Was anything added that wasn't in the plan?
 4. **Deviations** - Are all deviations documented and justified?
-5. **Context File Consistency** - Does the implementation contradict any context file, standards decision, or implemented convention? Check:
+5. **Context File Consistency** - Does the implementation contradict any context file or recorded ADR? Check:
    - Business rules and workflows from design.md
    - Architectural patterns and constraints from architecture.md
    - Data schemas and contracts from data.md
@@ -72,5 +71,5 @@ Do NOT write findings that require intimate codebase knowledge to understand.
 |------|-------------|----------------|----------|
 
 **Findings That May Affect Durable Truth:**
-- [findings that the Lead should review for possible promotion into project docs or standards files. If none, write "None spotted."]
+- [findings that the Lead should review for possible promotion into project docs or new ADRs. If none, write "None spotted."]
 ```

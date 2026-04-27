@@ -11,7 +11,7 @@ You are verifying that the project's context files still accurately reflect the 
 
 ## Files to Read
 
-Read all files in `.context/project/` (root level and `.context/project/implementation/`), plus `.context/standards/*.md` if present. These are the durable-truth documents whose claims need verification.
+Read all files in `.context/project/` (root level only — no subfolders at project level), plus all ADRs in `.context/decisions/*.md` if present. These are the durable-truth documents whose claims need verification.
 
 ## Rules Reference
 

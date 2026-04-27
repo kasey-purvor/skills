@@ -531,7 +531,7 @@ Strict compiler settings are a data integrity tool:
 - **TypeScript:** `strict: true` in tsconfig (especially `strictNullChecks`). Without it, `null` and `undefined` flow silently through the entire codebase — the single biggest category of runtime crashes.
 - **Python:** mypy with strict settings + type annotations on all function signatures.
 
-Enable strict mode from day one. Retrofitting it is extremely expensive.
+Prefer enabling strict mode from day one. Retrofitting it onto an existing codebase is possible but painful — the volume of newly-surfaced errors scales with the amount of loose code already written, and fixes often cascade through call chains. The earlier you turn it on, the smaller the backlog.
 
 ---
 

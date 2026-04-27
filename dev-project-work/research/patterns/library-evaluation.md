@@ -22,5 +22,6 @@
 ## Findings Go To
 
 - Evaluation results → returned to conversation for discussion
-- Decided library choice + rationale → returned for recording in `architecture.md`
+- Decided library choice → returned for recording in `architecture.md` (the *what*, in the Component Map)
+- Rationale for the choice (if it passes the three-question filter: hard to reverse / surprising / real trade-off) → returned for recording as an ADR in `.context/decisions/` via the Lead's Record Decision action
 - Service-specific constraints discovered → returned for recording in `integrations.md`

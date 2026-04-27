@@ -126,7 +126,7 @@ Always use ISO 8601 format with timezone: `"2026-04-01T10:23:45.123Z"`. Never us
 
 ## Pagination
 
-Any endpoint that returns a list needs pagination. Without it, `GET /api/users` returns all 100,000 users — slow, memory-intensive, potentially crashes the client.
+Endpoints that return unbounded collections need pagination. Without it, `GET /api/users` on a 100,000-row table returns the lot — slow, memory-intensive, and liable to crash the client. The exception is small reference lists whose size is known to stay bounded (country codes, currency codes, status enums); returning these in one response is fine.
 
 ### Offset-Based (simpler)
 
@@ -167,7 +167,7 @@ The cursor is an opaque token (usually base64-encoded) pointing to the last item
 }
 ```
 
-**No duplicates, no missed items**, even with concurrent inserts.
+With a deterministic sort order, cursor pagination avoids the duplicate/missed-item problem of offset pagination. "Deterministic" means the sort column combined with a tiebreaker (typically the primary key) produces a total order that doesn't shift between requests. If the sort is on a mutable column (`updated_at`, `score`) without a tiebreaker, rows can still move across cursor boundaries between pages — the guarantee is "no drift from concurrent inserts assuming stable ordering," not absolute.
 
 ### When to Use Which
 

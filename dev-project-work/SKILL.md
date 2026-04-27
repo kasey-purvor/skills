@@ -15,27 +15,28 @@ A unified skill for designing and building software projects. Covers the full li
 | **Implementer** | Detailed implementation plans, tactical gap-filling, post-chunk review | `sprint/implementer.md` |
 | **Junior Developer** | Execute implementation plans exactly | `sprint/junior.md` |
 
-## Standards
+## Standards & Decisions
 
-Two places carry standards material:
+Two layers carry engineering decision material:
 
 - **Handbook** — `standards/topics/*.md` within this skill. Production engineering patterns (error handling, security, resilience, testing, etc.) as reference material. Project-independent. The Lead may consult a topic when grounding a design decision in established options
-- **Project decisions** — `.context/standards/*.md` in each project. One file per topic, recording what's been decided, deferred, or ruled not applicable for that project specifically. Durable project truth
+- **Project decisions** — `.context/decisions/NNNN-*.md` in each project. ADRs (Architecture Decision Records) — one decision per file, numbered sequentially, immutable. Each ADR captures *why* a non-obvious, hard-to-reverse choice was made. The handbook informs the discussion; the resulting decision is recorded as an ADR
 
-See "Standards Structure" below for the full three-layer model including code conventions.
+See "Decisions Structure" below for when to write an ADR and the format.
 
 ---
 
 ## Sub-agents
 
-Four sub-agent prompts live in `sub-agents/` at the skill root. Any role may invoke any sub-agent when needed; each role file describes role-specific guidance for when invocation is appropriate.
+Five sub-agent prompts live in `sub-agents/` at the skill root. Any role may invoke any sub-agent when needed; each role file describes role-specific guidance for when invocation is appropriate.
 
 | Sub-agent | Purpose | Typical caller |
 |---|---|---|
-| `consistency-check-prompt.md` | Reads context files and verifies cross-references, boundary rules, no duplication, mandatory sections present. Reports findings only | Lead, at wrap-up or after significant doc changes across multiple files |
+| `consistency-check-prompt.md` | Reads context files and verifies cross-references, boundary rules, no duplication, mandatory sections present, vocabulary adherence between context files, and ADR structural integrity (Date / Status / Context / Decision / Consequences). Reports findings only | Lead, at wrap-up or after significant doc changes across multiple files |
 | `truthfulness-check-prompt.md` | Reads context files for concrete claims (paths, functions, schemas, libraries, routes) and verifies each against the actual codebase. Reports accuracy, staleness, and gaps | Lead, post-sprint or when docs may have drifted from reality |
-| `code-review-prompt.md` | Reads a completed chunk's code for quality, correctness, edge cases, and context-file consistency | Implementer, during post-chunk review |
+| `code-review-prompt.md` | Reads a completed chunk's code for quality, correctness, edge cases, context-file consistency, and vocabulary adherence in code | Implementer, during post-chunk review |
 | `spec-adherence-prompt.md` | Reads a completed chunk against the implementation plan. Reports what deviates and whether it's justified | Implementer, during post-chunk review |
+| `vocabulary-audit-prompt.md` | Comprehensive sweep over docs + code together for vocabulary discipline. Reports misuse, drift, **gaps** (recurring concepts without canonical names), stale entries, and incomplete coverage. Distinct from inline discipline and other sub-agents in that it is *expected* to surface gaps | Lead, on-demand vocabulary sweep — Sprint Wrap-up or before a Sharpen Vocabulary session to gather evidence |
 
 Sub-agents report findings only. Classification (fix-now, promote, backlog, defer, rule-out) is the Lead's responsibility with the user.
 
@@ -90,12 +91,14 @@ Lead explores & researches           Lead scopes chunks from durable truth
          │                                    │
          ▼                                    ▼
 Context files (durable truth)        PLAN.md chunk scopes (execution mirror)
-  design.md                                   │
-  architecture.md                             ▼
-  data.md                            Implementer writes implementation plans
-  domain.md                                   │
-  integrations.md                             ▼
-  .context/standards/*.md            Junior Developer executes
+  vocabulary.md                               │
+  design.md                                   ▼
+  architecture.md                    Implementer writes implementation plans
+  data.md                                     │
+  domain.md                                   ▼
+  integrations.md                    Junior Developer executes
+  backlog.md
+  .context/decisions/*.md (ADRs)
                                               │
          ▲                                    ▼
          │                           Discoveries & deviations
@@ -119,7 +122,7 @@ Information flows downward from durable truth into execution artifacts. Discover
 When the Lead transitions from design to sprint, it uses one of two entry modes:
 
 - **Vertical-slice entry** — enough clarity exists to build one thin slice safely. Core workflow is described, the touched area has enough structure to avoid guessing, and any major assumptions are explicitly marked provisional.
-- **Broader sprint-ready entry** — the target area is mostly settled. Workflows, structure, contracts, and relevant standards decisions are documented or consciously deferred.
+- **Broader sprint-ready entry** — the target area is mostly settled. Workflows, structure, contracts, and relevant ADRs are recorded or consciously deferred.
 
 The Lead records the entry mode in HANDOFF.md when transitioning to sprint mode, along with which context files or sections are still provisional.
 
@@ -142,15 +145,15 @@ If current work depends on the correction, promote before continuing. If the cha
 ```
 .context/
 ├── project/
+│   ├── vocabulary.md
 │   ├── design.md
 │   ├── architecture.md
 │   ├── data.md
 │   ├── domain.md                    (optional)
 │   ├── integrations.md
-│   └── implementation/
-│       ├── conventions.md
-│       └── backlog.md
-├── standards/
+│   └── backlog.md
+├── decisions/
+│   └── NNNN-<slug>.md               (ADRs — sequential, immutable)
 ├── reference/
 ├── wip/
 ├── sprints/
@@ -169,17 +172,17 @@ If current work depends on the correction, promote before continuing. If the cha
 
 | File | Purpose | Authority |
 |------|---------|-----------|
+| `vocabulary.md` | What we call things — canonical terms with definitions, aliases to avoid, and term relationships | Durable truth |
 | `design.md` | What we're building and why — behaviour, workflows, business rules, user experience | Durable truth |
-| `architecture.md` | How it's built — patterns, libraries, structure, naming conventions | Durable truth |
+| `architecture.md` | The shape of the system — system overview and component map. *Description, not decisions* — rationale lives in ADRs | Durable truth |
 | `data.md` | What the data looks like — schemas, models, contracts, concrete examples | Durable truth |
-| `domain.md` | What the real world looks like — entities, lifecycles, terminology *(optional)* | Durable truth |
+| `domain.md` | What the real world looks like — entities, lifecycles, processes *(optional)* | Durable truth |
 | `integrations.md` | What we connect to — external APIs, auth, tested behaviour, constraints | Durable truth |
-| `conventions.md` | How we write code — terse actionable rules for implemented patterns | Durable truth |
 | `backlog.md` | Future work — concrete items deferred during sprints, grouped by priority | Durable truth |
-| `.context/standards/*.md` | Cross-cutting engineering decisions — one file per topic (error handling, security, etc.) | Durable truth |
+| `.context/decisions/NNNN-*.md` | ADRs — one decision per file, numbered sequentially, immutable. Context, decision, consequences. Captures *why* a non-obvious, hard-to-reverse choice was made | Durable truth |
 | `PLAN.md` | Sprint execution plan — chunk scopes, sprint goal, guardrails | Execution artifact |
 | `CURRENT-STATE.md` | Sprint working memory — progress, blockers, deviations, promotion queue | Execution artifact |
-| `implementation/*.md` | Chunk implementation plans — exact tasks and steps for the Junior Developer | Execution artifact |
+| `sprints/<sprint>/implementation/*.md` | Chunk implementation plans — exact tasks and steps for the Junior Developer | Execution artifact |
 | `SPRINT-SUMMARY.md` | Sprint retrospective — outcomes, what was built, carry-forward items | Execution artifact |
 | `ACTIVE-SPRINT` | Pointer to current sprint folder | Execution artifact |
 | `HANDOFF.md` | **Inter-session bridge** (written at any session end, not just sprint boundaries) — what changed, what's *proposed* next, what's provisional. Proposals not mandates | Bridge (Lead-only) |
@@ -198,6 +201,33 @@ Execution artifacts may restate durable truth for clarity, but must never become
 - **Section menus are not exhaustive** — suggest new sections not on the menu if the project needs them, with user approval
 - **Context files are pure content** — no guidance blocks, no HTML comments, no meta-commentary. All guidance lives in skill files
 - **Nothing is permanently locked** — all decisions can be revisited as the project evolves
+
+#### vocabulary.md — What we call things
+
+**Boundary:** Canonical terms (domain and software-internal), one-line definitions, aliases to avoid, term relationships, resolved ambiguities.
+**Not here:** Real-world entity structure, lifecycles, or processes (-> domain.md) . Behavioural rules using terms (-> design.md) . Schemas modelling terms (-> data.md)
+
+| Section | Purpose | Mandatory? |
+|---------|---------|-----------|
+| Glossary | Canonical terms with one-line definitions and aliases to avoid | Yes |
+| Relationships | Light cardinality between terms (e.g., a Sprint contains one or more Chunks) | Optional |
+| Recently Resolved Ambiguities | Terms previously ambiguous, with how they were resolved | Optional |
+
+**Notes:**
+- **Reading is mandatory.** Lead and Implementer read this file at startup. The file itself is created lazily — the first canonical term resolved triggers creation
+- **Inline discipline is always on.** The Lead calls out terminology drift the moment it appears in conversation and updates `vocabulary.md` as canonical terms resolve. This is ambient Lead behaviour, not an action
+- **Sharpen Vocabulary** is the on-demand Lead action for a focused grilling pass — see `lead.md` Actions
+- **Be opinionated.** When multiple words exist for one concept, pick one canonical term and list the rest as `_Avoid_` aliases
+- **Definitions are one sentence.** What it IS, not what it does
+- **Both domain and software-internal terms belong here.** "Customer" sits next to "Chunk". `domain.md` owns *structural* domain knowledge (entities, lifecycles, processes); `vocabulary.md` owns *naming*
+- **Code review enforces vocabulary always-on when this file exists.** It flags misuse of *defined* terms (e.g., `task` used where `chunk` is canonical) and aliases that should be replaced. It does NOT flag undefined identifiers or absence of coverage — the file documents what's been decided, not everything that exists
+
+**Example entry:**
+
+```markdown
+**Chunk**: a unit of work scoped by the Lead and handed to the Implementer.
+_Avoid_: task, ticket, slice
+```
 
 #### design.md — What we're building and why
 
@@ -230,28 +260,79 @@ Naming technologies or libraries in passing while describing behaviour is fine. 
 **Example — RIGHT in design.md:**
 > "Rate limited to a configurable RPM. Requests exceeding the limit are queued, not dropped. 429 responses are retried with backoff."
 
-#### architecture.md — How it's built and with what
+#### architecture.md — The shape of the system
 
-**Boundary:** Design patterns and rationale, concurrency model, library/technology choices, structural constraints.
-**Not here:** User workflows/business rules (-> design.md) . Schemas/examples (-> data.md) . External API details (-> integrations.md)
+**Boundary:** *Description only* — system overview, component map. What exists, not why it exists that way. Rationale and trade-offs live in ADRs (`.context/decisions/`).
+**Not here:** Why we chose X over Y (-> ADR) . User workflows/business rules (-> design.md) . Schemas/examples (-> data.md) . External API details (-> integrations.md)
 
 | Section | Purpose | Mandatory? |
 |---------|---------|-----------|
-| System Overview | System type, language, packaging, entry point | Yes |
-| Component Map | Components with responsibilities, dependency tree, rationale subsections | Yes |
+| System Overview | System type, language, packaging, entry point. One short paragraph | Yes |
+| Component Map | Components with one-line responsibilities and a dependency tree. **No rationale subsections** — link to ADRs instead | Yes |
 
-**Optional sections:** Concurrency Model . Data Flow . External Dependencies . Key Constraints . Resolved Architectural Questions . Any project-specific topic
+**Optional sections:** Concurrency Model (description) . Data Flow (description) . Naming Conventions (description of *what* the convention is, with link to the ADR that decided it) . Any project-specific descriptive topic
 
 **Notes:**
-- **Only resolved decisions** — if it's not settled, it stays in `design.md` Open Questions even if the topic is architectural
-- Stabilises once implementation begins; revisited when fundamental changes are needed or new components are added
-- **Naming conventions are mandatory.** When discussing file layout or component structure, establish explicit naming rules before naming any files. The convention should cover: file casing (language-appropriate defaults), prefix pattern (what comes before the suffix — typically an entity noun), suffix inventory (the complete list of role suffixes used in the project, e.g., `.model.ts`, `.repository.ts`), and folder grouping rationale (by feature, by layer, or hybrid — and the threshold for when to split). Record the agreed convention in a dedicated section of architecture.md. All subsequent file naming must follow it. If a new file doesn't fit the convention, that's a signal to revisit the convention, not to invent a one-off name
+- **Description, not decisions.** If you find yourself writing "we chose X because Y" in architecture.md, stop, write an ADR, and link to it from architecture.md. Re-bloating with rationale is the failure mode this structure exists to prevent
+- **Stabilises once implementation begins**; revisited when fundamental components are added or removed
+- **Cross-reference ADRs liberally.** Each component or pattern in the map can link to the ADRs that drove its existence. Architecture.md is the snapshot; ADRs are the log
+- **Naming conventions are descriptive here, decisional in an ADR.** Record the *current* convention in architecture.md (file casing, prefix pattern, suffix inventory, folder grouping). The *reasoning* behind it lives in an ADR — link from architecture.md
 
 **Example — WRONG in architecture.md:**
-> "Output at `output/{key}/run_{N}/` containing `config.yaml`, `results/{doc_id}.json`, `aggregation.json`."
+> "We use a token bucket rate limiter because constant-rate limiting amplified outages during the 2026-01 incident."
 
 **Example — RIGHT in architecture.md:**
-> "Result Writer generates disk output in the structure defined in `data.md` Output Schemas."
+> "Rate Limiter sits between the Orchestrator and the LLM Client. Token bucket strategy — see [ADR-0007](../decisions/0007-token-bucket-rate-limiter.md)."
+
+#### .context/decisions/NNNN-*.md — ADRs
+
+**Boundary:** A single architectural or cross-cutting engineering decision per file. Captures *what* was decided and *why*, at the moment it was made. Immutable once written.
+**Not here:** Description of the current shape (-> architecture.md) . Behavioural rules (-> design.md) . Schemas (-> data.md) . Naming definitions (-> vocabulary.md)
+
+**Format** (minimum — most ADRs need only this):
+
+```markdown
+# NNNN: [Short title of the decision]
+
+**Date:** YYYY-MM-DD
+**Status:** Accepted
+
+## Context
+[1-2 sentences: what was the situation that forced a choice?]
+
+## Decision
+[1-2 sentences: what we decided.]
+
+## Consequences
+[1-3 bullets: what follows from this — what we accept, what we lose.]
+```
+
+**The three-question filter — write an ADR only when ALL THREE are true:**
+
+1. **Hard to reverse?** Cost of changing your mind later is meaningful (quarter+ to swap, not a few-line change)
+2. **Surprising without context?** A future reader looking at the code would wonder "why on earth did we do it this way?"
+3. **Result of a real trade-off?** Genuine alternatives existed and were rejected for specific reasons
+
+If any of the three is missing, skip. The bar is intentionally high. ADRs that don't pass the filter are exactly what creates dumping grounds.
+
+**What qualifies:** Architectural shape ("event-sourced write model"). Integration patterns between subsystems. Technology choices that carry lock-in (database, message bus, auth). Boundary decisions ("Customer data owned by Customer subsystem"). Deliberate deviations from the obvious path. Constraints not visible in the code (compliance, partner SLAs).
+
+**What doesn't qualify:** Library choices that are easily swapped. Coding patterns within a module. Configuration values (timeouts, retries). Conventions enforced automatically by linter or types.
+
+**Status values:**
+- `Accepted` — active state when written
+- `Superseded by ADR-NNNN` — replaced; old ADR stays in place for history
+- `Deprecated` — no longer relevant, no replacement (rare)
+
+When superseding, write a new ADR referencing the old, then edit *only the status line* of the old. Never edit other content of an ADR after it's accepted.
+
+**Numbering:** Sequential. Scan `.context/decisions/` for the highest existing number, increment by one. Never reuse numbers.
+
+**Cross-references:** Other context files reference ADRs by short link rather than restating reasoning. Example in design.md or architecture.md:
+
+> "Errors propagate via Result, never thrown. See [ADR-0007](../decisions/0007-result-pattern.md)."
+
+See `lead/record-decision.md` for the full ADR playbook (loaded on demand when the Lead's Record Decision action fires).
 
 #### data.md — What the data looks like
 
@@ -275,18 +356,18 @@ All sections are project-specific — no mandatory sections. Create when relevan
 
 #### domain.md — What the real world looks like *(optional file)*
 
-**Boundary:** Real-world systems, entity types, relationships, lifecycles, terminology. Independent of the software.
-**Not here:** How the software uses domain knowledge (-> design.md) . Technical API access details (-> integrations.md) . Data schemas for modelling domain entities (-> data.md)
+**Boundary:** Real-world systems, entity types, relationships, lifecycles, processes. Independent of the software.
+**Not here:** Canonical names and definitions of domain terms (-> vocabulary.md) . How the software uses domain knowledge (-> design.md) . Technical API access details (-> integrations.md) . Data schemas for modelling domain entities (-> data.md)
 
 | Section | Purpose | Mandatory? |
 |---------|---------|-----------|
 | Domain Overview | What real-world system, why it matters for this project | Yes (if file exists) |
-| Terminology & Glossary | Domain-specific terms with precise meanings | Yes (if file exists) |
 
 **Optional sections:** Entity Types & Relationships . Lifecycle & Processes . Cross-References & Linkages . Any domain-specific topic
 
 **Notes:**
 - **Optional file** — only create for projects with non-trivial domains
+- **Naming and definitions live in `vocabulary.md`, not here.** This file owns *structural* knowledge — how entities work, how processes unfold, how things relate in the real world. When introducing a domain entity, define the canonical name in `vocabulary.md` first, then describe its structure here using that canonical name
 - Researched iteratively as different project areas need domain understanding
 - Can be revisited when new features touch new domain concepts
 - Only verified domain knowledge goes here — uncertain claims live in `design.md` Open Questions
@@ -307,39 +388,25 @@ All sections are project-specific — no mandatory sections. Create when relevan
 - Per-service maturity: services with "Tested behaviour" dates are reliable; services documented only from official docs need verification during implementation
 - A local database might be 3 lines. A complex cloud API might need a full page. Document what matters
 
-#### conventions.md — How we write code *(implementation support)*
+#### backlog.md — Future work
 
-**Location:** `.context/project/implementation/conventions.md`
-
-Actionable rules for writing code in this codebase. Terse entries (section heading + 3-5 rules) covering patterns like error handling, validation, logging, config access. Written during sprints when a pattern is established or changed — not populated upfront during design.
-
-**Not here:** Project-level decisions about which approach to use (-> `.context/standards/`) . Architecture or component structure (-> architecture.md) . Teaching or justification (-> `standards/topics/` handbook within this skill)
-
-#### backlog.md — Future work *(implementation support)*
-
-**Location:** `.context/project/implementation/backlog.md`
+**Location:** `.context/project/backlog.md`
 
 Concrete items surfaced during sprint work that aren't worth fixing now. Grouped by priority: before-production, next-time-we-touch-this, nice-to-have.
 
 **Not here:** Unresolved truth discrepancies (-> `design.md` Open Questions or the appropriate owning file) . Raw questions or open decisions (-> `design.md` Open Questions)
 
-#### .context/standards/*.md — Cross-cutting engineering decisions
-
-**Boundary:** Project-wide decisions about how to handle cross-cutting concerns — error handling strategy, logging approach, security posture, testing philosophy. These answer: "How does this project handle [X] across the board?"
-
-**Not here:** Component-specific structure decisions (-> architecture.md) . Feature behaviour or business rules (-> design.md) . Data shapes (-> data.md) . Code patterns already implemented (-> conventions.md)
-
-One file per topic. Each file uses: Decided / Deferred / Not Applicable sections. See "Standards Structure" for the full three-layer model.
-
 ### The Boundary Rule
 
-> **If you changed it, would the user experience change, the code structure change, the shape of data change, is it about an external service, or does it describe how the real world works?**
+> **If you changed it, would the user experience change, the code shape change, the shape of data change, is it about an external service, does it describe how the real world works, does it define what we *call* something, or does it record *why* a non-obvious choice was made?**
 >
 > - User experience -> `design.md`
-> - Code structure -> `architecture.md`
+> - Code shape (description) -> `architecture.md`
 > - Data shape -> `data.md`
 > - External service details -> `integrations.md`
 > - Real-world domain knowledge -> `domain.md`
+> - What we call something -> `vocabulary.md`
+> - Why we chose X over Y (decision provenance) -> ADR in `.context/decisions/`
 
 When in doubt, apply this test.
 
@@ -349,10 +416,14 @@ When a topic spans multiple files, one file **owns** the detail and others **ref
 
 | Overlap | How to split |
 |---------|-------------|
+| Vocabulary + Domain | `vocabulary.md` owns canonical names and one-line definitions . `domain.md` owns *structural* knowledge — how the entity works, its lifecycle, how it relates to other entities — using the canonical names |
+| Vocabulary + everywhere else | `vocabulary.md` owns the term . Other files use the canonical name when describing behaviour, structure, schemas, etc. — they do not redefine it |
+| Architecture + ADRs | `architecture.md` owns the *description* of the current shape (component map, layout, naming) . ADRs own the *reasoning* for why each significant piece exists or was chosen. Architecture cross-references ADRs; it does not restate their reasoning |
+| ADRs + everywhere | An ADR captures a single decision with provenance. Other files cross-reference the ADR by short link rather than restating context, alternatives, or rationale |
 | Domain + Design | `domain.md` owns how the real world works . `design.md` owns how the software uses that knowledge |
 | Domain + Integrations | `domain.md` owns what an entity IS . `integrations.md` owns how to technically access it |
 | Design + Data | `design.md` owns the behavioural rule . `data.md` owns the schema |
-| Architecture + Data | `architecture.md` owns the pattern/library choice . `data.md` owns the data contract |
+| Architecture + Data | `architecture.md` owns the component-shape description . `data.md` owns the data contract |
 | Architecture + Integrations | `architecture.md` owns how your code connects . `integrations.md` owns what the service requires |
 
 ### Cross-Reference Format
@@ -380,53 +451,48 @@ Each file carries its own maturity signals. Read maturity from the content itsel
 
 | File | How to read maturity | How it evolves |
 |------|---------------------|----------------|
+| `vocabulary.md` | Number of canonical terms with definitions = coverage. Recently Resolved Ambiguities entries = signs of active vocabulary work. Empty or missing file = no terminology discipline yet | Grows iteratively as terms are resolved during design, sprint, or Sharpen Vocabulary actions |
 | `domain.md` | Sections with cited sources = researched. Empty/missing sections = unresearched | Iterative — revisited as different project areas need domain understanding |
 | `integrations.md` | Per-service: "Tested behaviour" dates = reliable. No dates = assumed from docs | Services mature individually as they're tested during implementation |
 | `design.md` | Open Questions count = maturity indicator. Content sections = decided | Constantly evolving. The living document. Never "done" |
-| `architecture.md` | Sections with rationale = resolved. Empty/missing sections = not yet decided | Stabilises once implementation begins. Revisited for fundamental changes or new components |
+| `architecture.md` | Component map populated with one-line responsibilities = current shape known. Cross-references to ADRs = decisions are recorded. Empty Component Map = structure not yet shaped | Stabilises once implementation begins. Revisited for fundamental changes or new components. Re-bloating with rationale is the failure mode — decisions belong in ADRs |
+| `.context/decisions/*.md` | Number of accepted ADRs = decisions captured. Superseded chains = areas that have evolved. Empty `decisions/` early in a project is normal — ADRs are sparse | Grows as decisions arise that pass the three-question filter. Append-only — old ADRs remain as historical record even when superseded |
 | `data.md` | Schemas with concrete examples = solid. Schemas with TBD fields = provisional | Lags behind design. Fills in during implementation as real data shapes emerge |
 
 ---
 
-## Standards Structure
+## Decisions Structure
 
-Three layers, from general reference material down to specific code patterns.
+Two layers — reference material and project record. There is no third "conventions" layer; patterns enforced automatically by linter, types, or sub-agent prompts don't need a separate doc.
 
-### The Three-Layer Model
+### The Two-Layer Model
 
 | Layer | Location | Purpose | When written |
 |-------|----------|---------|-------------|
 | **Handbook** | `standards/topics/*.md` within this skill | Production engineering patterns with tradeoffs and examples. Reference material. Project-independent | Maintained at the skill level — not edited during project work |
-| **Project decisions** | `.context/standards/*.md` | Record what's decided, deferred, or ruled not applicable for *this* project. One file per topic | During design or sprint scoping, when a cross-cutting concern is discussed |
-| **Conventions** | `.context/project/implementation/conventions.md` | Terse actionable rules for how decisions look in code | During sprints, when a pattern is first implemented or changed |
+| **Project decisions (ADRs)** | `.context/decisions/NNNN-*.md` | One decision per file, numbered sequentially, immutable. Captures *why* a non-obvious, hard-to-reverse choice was made | When a decision arises that meets the three-question filter (see ADR section above) |
 
-The handbook informs decisions; decisions inform code; patterns that emerge get recorded back as conventions. The Lead may reference handbook topics when grounding a design discussion, but nothing mandates when.
+The handbook informs the discussion; the resulting decision — if it passes the filter — is recorded as an ADR. The Lead may reference handbook topics when grounding a design discussion, but nothing mandates when.
 
-### When to update `.context/standards/`
+### When to write an ADR
 
-- During design when the discussion naturally raises a production concern ("how should we handle errors?", "what about retries?")
-- During sprint scoping when the Lead or Implementer hits a question about how to handle a cross-cutting concern
-- During sprint prep to check whether upcoming work touches areas without decisions yet
-- When the user asks about production hardening, security, or "what are we missing?"
+When all three are true:
 
-### Project Decision File Format
+1. **Hard to reverse** — meaningful cost to change later
+2. **Surprising without context** — a future reader would wonder "why did we do it this way?"
+3. **Result of a real trade-off** — alternatives existed and were rejected
 
-Each project decision file in `.context/standards/` uses:
+Naturally arising during:
 
-```markdown
-# [Topic Name] — Project Decisions
+- Design discussions that resolve a production concern with a non-obvious choice
+- Sprint scoping when a cross-cutting question forces a project-level commitment
+- Architectural shifts (component boundaries, technology lock-in)
 
-## Decided
-- [Concrete decisions with chosen tools, patterns, and project-specific details]
+If a topic comes up and **doesn't** pass the filter, don't write an ADR. Note the choice inline in the relevant context file (architecture.md component description, design.md behaviour, etc.) without ceremony. The filter is the whole point — bypassing it recreates the dumping-ground problem.
 
-## Deferred
-- [Decisions intentionally postponed, with reason and revisit trigger]
+### Why one decision per file
 
-## Not Applicable
-- [Topics considered but determined not relevant, with brief reason]
-```
-
-Not every topic needs a project file. If a topic isn't relevant, either omit the file entirely or include a one-liner explaining why it was skipped.
+Recording each decision as its own immutable file (rather than appending to a per-topic doc) gives every decision its own provenance — context, alternatives considered, date, status — and prevents the dumping-ground problem where a multi-decision doc loses the *why* behind individual entries as it gets edited over time. Code-level patterns enforced automatically (by linter, types, code-review sub-agent) don't get a separate doc.
 
 ---
 

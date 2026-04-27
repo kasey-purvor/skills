@@ -28,3 +28,4 @@ For each standard, work through these layers:
 - What the standard IS and how it works → returned for recording in `domain.md`
 - Infrastructure/hosting/API requirements for implementation → returned for recording in `integrations.md`
 - Design implications (what the software must do to comply) → returned flagged for `design.md`
+- Compliance-driven choices that constrain the architecture (e.g. mandated crypto, hosting commitments, version pinning) — when they pass the three-question filter — → returned for recording as an ADR in `.context/decisions/` via the Lead's Record Decision action

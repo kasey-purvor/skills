@@ -412,86 +412,14 @@ For every endpoint that modifies or returns sensitive data, ask:
 
 ### Authentication Implementation
 
-The AuthN/AuthZ distinction above tells you *what* to check. Here's *how* to implement authentication.
+The AuthN/AuthZ distinction above tells you *what* to check. The *how* — token shapes, OIDC flows, JWT verification with JWKS, session strategies, managed vs self-hosted identity providers — is covered in depth in [Authentication & Authorization](./authentication-authorization.md). That chapter is the canonical reference for the implementation side.
 
-**JWT (JSON Web Token) — the most common API auth pattern:**
+From a security-chapter standpoint, a few JWT-specific concerns are worth calling out here because they're common attack surfaces:
 
-A JWT is a signed token that contains user information. The server creates it during login, the client sends it with every request, and the server verifies it without needing a database lookup.
-
-```typescript
-// Login endpoint — creates a JWT
-import jwt from 'jsonwebtoken';
-
-app.post('/api/login', async (req, res) => {
-  const { email, password } = req.body;
-  const user = await db.findUserByEmail(email);
-  if (!user || !await bcrypt.compare(password, user.passwordHash)) {
-    throw new AuthenticationError("Invalid credentials");
-  }
-
-  const token = jwt.sign(
-    { userId: user.id, role: user.role },  // payload — don't put secrets here
-    env.JWT_SECRET,                         // signing key from config
-    { expiresIn: '24h' },                  // token expires
-  );
-  res.json({ token });
-});
-
-// Auth middleware — verifies JWT on protected routes
-function requireAuth(req: Request, res: Response, next: NextFunction) {
-  const header = req.headers.authorization;
-  if (!header?.startsWith('Bearer ')) {
-    throw new AppError("Missing authorization header", 401);
-  }
-
-  try {
-    const token = header.slice(7);  // remove "Bearer " prefix
-    const payload = jwt.verify(token, env.JWT_SECRET);
-    req.user = payload;  // attach user info to request
-    next();
-  } catch {
-    throw new AppError("Invalid or expired token", 401);
-  }
-}
-
-// Usage
-app.get('/api/users/:id', requireAuth, getUser);
-```
-
-```python
-# FastAPI — dependency-based auth
-from fastapi import Depends, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-import jwt
-
-security = HTTPBearer()
-
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> dict:
-    try:
-        payload = jwt.decode(credentials.credentials, settings.jwt_secret, algorithms=["HS256"])
-        return payload
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-
-# Usage — inject as a dependency
-@app.get("/api/users/{user_id}")
-async def get_user(user_id: str, current_user: dict = Depends(get_current_user)):
-    # current_user is the verified JWT payload
-    ...
-```
-
-**Session-based auth** — an alternative to JWTs where the server stores session data. The client receives a session cookie. More common in traditional web apps (server-rendered HTML), less common in API-first apps. Frameworks like NextAuth/Auth.js handle this.
-
-**Delegated auth (OAuth providers)** — instead of managing passwords yourself, let a third-party handle authentication: Auth0, Clerk, Supabase Auth, NextAuth. This is often the pragmatic choice for startups — authentication is hard to get right, and security incidents from homegrown auth are common.
-
-**When to use which:**
-| Approach | Best for | Tradeoff |
-|----------|----------|----------|
-| **JWT** | API-first apps, mobile clients, microservices | You manage token storage, expiry, refresh |
-| **Sessions** | Server-rendered apps, traditional web | Requires server-side session store |
-| **OAuth provider** | When you don't want to manage passwords at all | Vendor dependency, cost at scale |
+- **Pin allowed algorithms explicitly.** `jwt.verify(token, key)` in some libraries historically accepted `alg: "none"` tokens — unsigned tokens that any attacker could forge. Always pass an explicit `algorithms: ["RS256"]` (or whichever you actually use) to the verifier.
+- **Validate `iss` and `aud`.** A token issued for Service A can be replayed against Service B if Service B doesn't check the audience. A token issued by a dev-environment IdP can be replayed against production if the issuer isn't validated.
+- **Check `exp`.** Libraries generally do this by default, but flags that disable expiry checking exist — don't use them.
+- **Never put secrets in the payload.** JWTs are signed, not encrypted. Anyone who captures the token (from a log, a referer, a browser extension) can base64-decode the payload. Put identifiers there, not credentials or PII.
 
 ---
 

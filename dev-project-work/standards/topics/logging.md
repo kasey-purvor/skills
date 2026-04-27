@@ -171,7 +171,7 @@ Note the difference: structlog's `.bind()` returns a new logger that carries con
 
 ## Correlation IDs
 
-When a request flows through your system, you need to connect all log entries for that request. A **correlation ID** (also called trace ID or request ID) is a unique identifier generated at the entry point and attached to every log entry for that request.
+When a request flows through your system, you need to connect all log entries for that request. A **correlation ID** (the generic term — distributed tracing systems call a closely-related concept a "trace ID") is a unique identifier generated at the entry point and attached to every log entry for that request.
 
 ```
 Request arrives → Generate ID: req_abc123
@@ -182,21 +182,32 @@ Request arrives → Generate ID: req_abc123
 
 Search for `traceId=req_abc123` and you get the complete story.
 
+### Relationship to distributed tracing
+
+Before implementing correlation IDs from scratch, decide whether you're going to adopt OpenTelemetry (see [Monitoring](./monitoring.md)). If you are, **use OTel's trace ID as your log correlation ID** — OTel auto-instrumentation generates a trace ID per request and propagates it across services via the W3C `traceparent` header. Both `pino` and `structlog` can be wired to read the current OTel trace ID and include it in every log entry. That way, clicking a trace in Jaeger / Datadog / Grafana Tempo lands you on the matching logs for free.
+
+If you're not using OTel (yet, or at all), run your own correlation ID — generate one per request, propagate it downstream, stamp it on every log line. The pattern below works regardless of which ID you're carrying, and swaps cleanly to OTel's trace ID later.
+
 ### Automatic Propagation
 
-You don't want to pass the trace ID to every function manually. Use language-level context storage:
+You don't want to pass the correlation ID to every function manually. Use language-level context storage:
 
 **TypeScript — AsyncLocalStorage:**
 
 ```typescript
 import { AsyncLocalStorage } from 'async_hooks';
 
-// Create a context store
+// Create a context store. The key name (traceId) is arbitrary —
+// the point is that it travels with the request automatically.
 const requestContext = new AsyncLocalStorage<{ traceId: string }>();
 
-// Middleware: generate ID and store in async-local context
+// Middleware: pick up an incoming ID or generate one, then store in context.
+// Choose the incoming header based on your stack: OTel uses `traceparent`;
+// a custom setup might use `x-request-id` or `x-correlation-id`. Pick one
+// and be consistent across your services.
 app.use((req, res, next) => {
-  const traceId = req.headers['x-trace-id'] as string || crypto.randomUUID();
+  const incoming = req.headers['x-request-id'] as string | undefined;
+  const traceId = incoming ?? crypto.randomUUID();
   requestContext.run({ traceId }, () => next());
 });
 
@@ -224,10 +235,12 @@ import uuid
 # Create a context variable
 trace_id_var: contextvars.ContextVar[str] = contextvars.ContextVar('trace_id', default='no-trace')
 
-# Middleware: generate ID and store in context
+# Middleware: pick up an incoming header or generate one.
+# As above, the header name is a project decision — align it with whatever
+# your other services send, or adopt OTel and let it own propagation.
 @app.middleware("http")
 async def trace_middleware(request: Request, call_next):
-    trace_id = request.headers.get("x-trace-id", str(uuid.uuid4()))
+    trace_id = request.headers.get("x-request-id", str(uuid.uuid4()))
     token = trace_id_var.set(trace_id)
     response = await call_next(request)
     trace_id_var.reset(token)
@@ -256,18 +269,7 @@ structlog.configure(
 
 ### Cross-Service Propagation
 
-When Service A calls Service B, include the trace ID in the HTTP request header:
-
-```typescript
-// Service A — outgoing request
-const response = await fetch('https://service-b/api/data', {
-  headers: { 'x-trace-id': getTraceId() },
-});
-
-// Service B — incoming request (the middleware above reads x-trace-id)
-```
-
-This way, logs from both services share the same trace ID. Search for one ID and you see the full cross-service story. This concept is formalized in distributed tracing (see [Monitoring](./monitoring.md)).
+When Service A calls Service B, include the correlation ID in a request header and have Service B's middleware pick it up. The specific header name is a project choice — use the same one consistently across services. If you go OTel, its SDKs inject and extract `traceparent` automatically; you don't write the propagation code yourself.
 
 ---
 

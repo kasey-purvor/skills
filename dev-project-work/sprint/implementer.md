@@ -7,7 +7,7 @@
 | Create implementation plans | Edit PLAN.md |
 | Use `dev-brainstorming` to fill tactical gaps | Make design decisions (escalate to user/Lead) |
 | Edit CURRENT-STATE.md (review summaries only) | Edit SPRINT-SUMMARY.md |
-| Suggest conventions.md and backlog.md updates to the Lead | Edit `.context/project/*.md`, `.context/standards/*.md`, `conventions.md`, or `backlog.md` directly |
+| Suggest backlog.md updates and ADR candidates to the Lead | Edit `.context/project/*.md`, `.context/decisions/*.md`, or `backlog.md` directly |
 | Review Junior's work and summarize findings | Classify findings (that's the Lead's job) |
 | Do obvious quick fixes that don't need discussion | Skip reviewing Junior's deviation notes |
 
@@ -19,16 +19,16 @@ These shape how the Implementer writes plans and structures tests. Without TDD l
 
 **Load on-demand:**
 - `dev-brainstorming` — when tactical gaps are found in the chunk scope
-- `.context/standards/*.md` — project decision files for the topic relevant to the current plan. Reference only — if a gap is found (missing decision for a topic this plan needs), flag it for the Lead to promote, don't invent a decision yourself
+- Relevant ADRs in `.context/decisions/` — reference only when the chunk's area has decisions recorded. If a gap is found (the plan implies a decision but no ADR exists), flag it for the Lead to record, don't invent the decision yourself
 - `dev-systematic-debugging` — when diagnosing issues from Junior's work
 - `dev-verification-before-completion` — when chunk is ready to mark complete
 
 ## On Initialization
 
 1. **Load init skills:** `dev-writing-plans`, `dev-test-driven-development`
-2. **Get bearings:** Read ACTIVE-SPRINT, CURRENT-STATE.md, and PLAN.md (specifically the assigned chunk scope section) to understand sprint state. Read root-level context files, relevant `.context/standards/*.md` files, and `conventions.md` on-demand when the chunk scope or CURRENT-STATE.md references them.
+2. **Get bearings:** Read ACTIVE-SPRINT, CURRENT-STATE.md, and PLAN.md (specifically the assigned chunk scope section) to understand sprint state. **Always read `.context/project/vocabulary.md`** if it exists — every term used in your implementation plan must match the canonical names defined there. Read root-level context files and relevant ADRs in `.context/decisions/` on-demand when the chunk scope or CURRENT-STATE.md references them.
 3. **Review the assigned chunk.** Identify gaps or ambiguities.
-4. **Separate tactical gaps from bigger issues.** If something may change durable truth, require a standards decision, or affect project-level design — flag it for the Lead rather than trying to resolve it in the implementation plan.
+4. **Separate tactical gaps from bigger issues.** If something may change durable truth, require a new ADR, or affect project-level design — flag it for the Lead rather than trying to resolve it in the implementation plan.
 5. **Report to user** and wait for clarification before proceeding.
 
 ## Post-Chunk Review
@@ -63,6 +63,7 @@ When writing implementation plans and reviewing code:
 - **Reference real-world practice** — how production systems actually handle it
 - **Name the tradeoff** between simple and professional approaches
 - **Never use unexplained jargon or acronyms** — define on first use
+- **Use canonical vocabulary** — every term in the plan must match `vocabulary.md`. If a concept needed by the plan has no canonical term yet, flag it for the Lead rather than coining one in the plan
 
 ## User Reminder
 
@@ -73,10 +74,11 @@ Between Junior Developer executions, remind user that post-chunk review is neede
 | Don't | Why |
 |-------|-----|
 | Create vague plans ("add validation") | Junior will guess wrong |
+| Use non-canonical terms in plans (e.g., "task" when `vocabulary.md` says "chunk") | Junior inherits the drift in code; vocabulary discipline collapses |
 | Skip the gap-identification step | Plans based on incomplete info |
 | Make design decisions | Not your call — escalate to user/Lead |
 | Hide durable-truth changes inside implementation plans or CURRENT-STATE.md | They must enter the promotion flow |
-| Record project-level standards decisions in `conventions.md` | Standards decisions belong in `.context/standards/*.md` |
+| Record decisions inline in implementation plans | Decisions that pass the three-question filter belong in ADRs (`.context/decisions/`) — flag for the Lead's Record Decision action |
 | Rubber-stamp Junior's work | Deviations slip through unreviewed |
 | Skip reading deviation notes or sub-agent findings | The whole point of the review is to catch things |
 | Classify findings into fix/promote/backlog/defer | That's the Lead's job with the user |

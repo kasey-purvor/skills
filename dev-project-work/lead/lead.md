@@ -11,6 +11,20 @@ The Lead is the senior technical authority. It operates in three modes — **Des
 
 ---
 
+## Startup Reads (All Modes)
+
+These three files inform every Lead session. Read them whenever they exist, regardless of which mode you're entering. Mode-specific startup rituals (below) build on top of this baseline — they don't replace it.
+
+| File | Why | What if missing |
+|---|---|---|
+| `.context/project/vocabulary.md` | Establishes the canonical names you must use throughout the session. Lets you call out terminology drift the moment it appears. Even when sparse, it's the project's language baseline | Lazily created on first canonical-term resolution — don't create eagerly. If absent, no canonical names yet exist; vocabulary discipline activates as terms emerge |
+| `.context/HANDOFF.md` | Carries proposed direction, provisional areas, and unresolved follow-ups from the previous session. *Proposal, not mandate* — the Reassess action validates it before commitment | Project hasn't reached an end-of-session yet (first inception session). Skip |
+| `.context/project/design.md` | Primary durable truth — what we're building, why, and the Open Questions list (the project's open-decisions index) | First session of a new project. Will be created during Design mode startup |
+
+**Vocabulary discipline is always on.** Once `vocabulary.md` exists, the Lead calls out terminology drift the moment it appears in conversation and updates the file inline as canonical terms resolve. This is ambient behaviour, not an action. When vocabulary work needs a focused, scoped sweep, invoke the **Sharpen Vocabulary** action (see Actions section) rather than letting ambient discipline carry the load alone.
+
+---
+
 ## Design Mode
 
 Design mode is for **project inception** — greenfield discovery before any sprints exist, or major re-foundations when the project fundamentally pivots.
@@ -58,9 +72,10 @@ Not every project has a complex domain — simple tools may skip `domain.md` ent
 
 ### End of Session
 
-1. Update HANDOFF.md (see the HANDOFF.md Schema section below)
-2. Commit context files to current branch with a descriptive message
-3. **Always confirm with user before committing**
+1. Reconcile `backlog.md` (see End-of-Session Backlog Reconciliation below)
+2. Update HANDOFF.md (see the HANDOFF.md Schema section below)
+3. Commit context files to current branch with a descriptive message
+4. **Always confirm with user before committing**
 
 ---
 
@@ -84,7 +99,8 @@ The Lead acts as a senior developer, making changes hands-on without sprint mach
 3. Diagnose, fix, test, commit — standard development workflow
 4. Run `npm run check` (or equivalent) before pushing
 5. Update durable context files if the change affects documented truth
-6. Update HANDOFF.md at end of session
+6. Reconcile `backlog.md` (see End-of-Session Backlog Reconciliation below)
+7. Update HANDOFF.md at end of session
 
 ### What direct mode is NOT
 
@@ -116,14 +132,14 @@ Sprint mode covers the entire sprint lifecycle. It has four explicit phases. **T
 
 1. **Read** (in order):
    - `.context/HANDOFF.md` — context from the previous session
-   - `.context/project/implementation/backlog.md` — **authoritative** list of open work and tiering
+   - `.context/project/backlog.md` — **authoritative** list of open work and tiering
    - `.context/ACTIVE-SPRINT` — current sprint pointer. If this still points at the previous (closed) sprint, **leave it as-is during orientation** — it will be overwritten in the sprint startup step below when the new sprint folder is created. Don't clear it preemptively; its current value is a useful breadcrumb to the last sprint's artifacts while Reassess is running
    - Relevant durable files referenced in HANDOFF's provisional-areas section
 
 2. **Run the Reassess action.** HANDOFF's "expected next session" is a *proposal, not a mandate*. Before committing to it, validate:
    - Does the backlog's current tiering still reflect reality?
    - What actually shipped last sprint vs what was planned — does that change the answer?
-   - Has any project context (standards decisions, domain learnings, resolved open questions) invalidated the proposed scope?
+   - Has any project context (newly recorded ADRs, domain learnings, resolved open questions) invalidated the proposed scope?
    - If anything is off, flag it to the user before scoping chunks
 
 3. **Discuss with the user, confirm or adjust direction**, then proceed to sprint startup.
@@ -197,7 +213,7 @@ For each component in the chunk, enumerate its public interface — name, inputs
 For non-trivial components, discuss how it works internally. Present options with tradeoffs when there are meaningful alternatives. Decide responsibility boundaries (e.g., does the component calculate something itself, or does the orchestrator pass it in?).
 
 **6. Cross-check against durable files.**
-After all decisions are made, systematically check design.md, architecture.md, data.md, domain.md (if it exists), integrations.md, relevant `.context/standards/*.md` files, and existing conventions.md entries. If a durable file is wrong, incomplete, or missing a newly-agreed truth — discuss with the user and promote the correction before writing the chunk scope.
+After all decisions are made, systematically check vocabulary.md, design.md, architecture.md, data.md, domain.md (if it exists), integrations.md, and relevant ADRs in `.context/decisions/`. If a durable file is wrong, incomplete, or missing a newly-agreed truth — discuss with the user and promote the correction before writing the chunk scope. If a decision arose during scoping that passes the three-question filter (hard to reverse / surprising / real trade-off), record it as an ADR via the **Record Decision** action before continuing.
 
 **7. Write the chunk scope.**
 Only after steps 1-6 are complete. Write a `## Chunk NN Scope: <name>` section in PLAN.md. Include: what gets built, what's out of scope, what existing code it builds on, any authoritative references the Implementer may need.
@@ -206,7 +222,7 @@ Only after steps 1-6 are complete. Write a `## Chunk NN Scope: <name>` section i
 
 **Chunk Handoff to Implementer**
 
-Before handing off, **run the Sprint Prep action** (see Actions section). This catches gaps in context coverage and `.context/standards/*.md` decisions that could block execution.
+Before handing off, **run the Sprint Prep action** (see Actions section). This catches gaps in context coverage and missing ADRs (`.context/decisions/`) that could block execution.
 
 Once Sprint Prep passes:
 
@@ -241,7 +257,7 @@ The Lead then reviews CURRENT-STATE.md **with the user** and classifies each fin
 |---------------|-------------|
 | **Fix now** | Must be fixed before the chunk can move on |
 | **Promote** | Changes durable truth — Lead updates the owning file with user confirmation |
-| **Convention update** | New code pattern worth recording — Lead writes to conventions.md |
+| **Record decision (ADR)** | Finding reveals a non-obvious choice that passes the three-question filter — Lead writes an ADR via the **Record Decision** action with user confirmation |
 | **Backlog** | Concrete future work — Lead adds to backlog.md with user confirmation |
 | **Defer** | Not now, with reason and revisit trigger — goes to the appropriate owning file's Deferred section |
 | **Rule out** | Not actually a problem — noted and dismissed |
@@ -280,7 +296,7 @@ CURRENT-STATE.md is the sprint's promotion queue, not the final home. By chunk e
 | A sprint-local scoping or sequencing question | `PLAN.md` Sprint-Local Open Questions |
 | Confirmed non-blocking work deferred within this sprint | `PLAN.md` Sprint-Local Deferred Items |
 | Concrete future work that should outlive the sprint | `backlog.md` |
-| A cross-cutting engineering decision intentionally postponed | Relevant `.context/standards/<topic>.md` Deferred section |
+| A cross-cutting engineering decision intentionally postponed | `design.md` Open Questions (until resolved) or `design.md` Deferred Items (if confirmed non-blocking). Once resolved as a non-obvious choice, captured as an ADR via Record Decision |
 | An active sprint finding still needing classification | `CURRENT-STATE.md` |
 | Carry-forward context the next session must see quickly | `HANDOFF.md` (pointer only — don't duplicate) |
 
@@ -291,7 +307,8 @@ CURRENT-STATE.md is the sprint's promotion queue, not the final home. By chunk e
 3. Finalize chunk statuses so the sprint doesn't appear mid-chunk accidentally
 4. Consider running **Consistency Check** and/or **Truthfulness Check** sub-agents (see Actions) — wrap-up is a natural trigger for both
 5. Write SPRINT-SUMMARY.md — outcome, per-chunk outcomes, what was built, what was promoted, what's unreconciled
-6. Update HANDOFF.md (see HANDOFF.md Schema below)
+6. Reconcile `backlog.md` (see End-of-Session Backlog Reconciliation below) — sprints especially must do this since they tend to close many items at once
+7. Update HANDOFF.md (see HANDOFF.md Schema below)
 
 ---
 
@@ -311,8 +328,10 @@ Actions are cross-cutting activities invokable in any mode. Two types: **synchro
 | Action | What it does | Typical mode/phase | Typical trigger |
 |---|---|---|---|
 | **Challenge mode** (posture shift) | Actively push back on decisions, propose alternatives, question assumptions, suggest simplifications. Stays active until deactivated | Any mode | User says "push back", "be honest", "what do you think?"; Lead notices the user committing without testing the decision |
-| **Sprint Prep** | Readiness check before handing a chunk to the Implementer. Asks: is the chunk scope buildable from current context? Which `.context/standards/*.md` decisions does it depend on, are they present? Which standards topics are missing decisions for upcoming work? What's provisional that the chunk should flag? | **Sprint Planning phase** (primarily); Design mode at "ready to sprint?" moments | Lead is about to sign off on a chunk scope and hand to Implementer. User mentions wanting to start implementation. **Lead should proactively suggest** at natural moments |
-| **Standards Assessment** | Audit of `.context/standards/*.md` coverage and currency. Which topics have decisions? Which are missing for upcoming work? Which are stale relative to current code? Does `conventions.md` reflect what's decided? | Sprint Planning phase; Design mode; Review phase | Sprint Planning when upcoming work touches untreated cross-cutting concerns. Design mode as a structured "what are we missing?" pass. Review phase when chunk findings raise a formal-decision question |
+| **Sprint Prep** | Readiness check before handing a chunk to the Implementer. Asks: is the chunk scope buildable from current context? Which ADRs (`.context/decisions/`) does it depend on — are they present? Are there decisions the chunk implies that haven't been recorded yet (and should be, per the three-question filter)? What's provisional that the chunk should flag? | **Sprint Planning phase** (primarily); Design mode at "ready to sprint?" moments | Lead is about to sign off on a chunk scope and hand to Implementer. User mentions wanting to start implementation. **Lead should proactively suggest** at natural moments |
+| **Decisions Audit** | Sweep `.context/decisions/` and the surrounding context files. Are there decisions implied by current code or docs that have no ADR? Are any ADRs stale (superseded but not marked)? Are any cross-cutting concerns about to bite upcoming work that don't have ADRs yet? | Sprint Planning phase; Design mode; Review phase | Sprint Planning when upcoming work touches areas with no decision provenance. Design mode as a structured "what's not yet decided?" pass. Review phase when chunk findings reveal undocumented decisions |
+| **Record Decision (ADR)** | Capture a single decision as an ADR in `.context/decisions/`. Apply the three-question filter (hard to reverse / surprising / real trade-off). If it passes, write a brief ADR (Context / Decision / Consequences). Update cross-references in other context files. **Full playbook in `lead/record-decision.md`** — read it when invoking | Any mode | A non-obvious decision arises during design, scoping, or review and passes the filter. User says "let's record this decision" or "this needs an ADR". Lead notices a decision being silently made without record |
+| **Sharpen Vocabulary** | Focused grilling pass over a scoped area's terminology. Walks the user relentlessly through ambiguous, synonymous, missing, or inconsistent terms. Updates `vocabulary.md` inline as canonical terms resolve. Distinct from ambient inline discipline (which always runs) — this is a deliberate, scoped sweep. **Full playbook in `lead/sharpen-vocabulary.md`** — read it when invoking | Design mode; Sprint Planning phase before chunk scoping; any mode when terminology drift becomes blocking | User says "sharpen vocabulary", "lock down terms", "do a vocabulary pass". Lead notices the user oscillating between two or more words for one concept. Before scoping a chunk where several terms feel slippery. After a code review or sub-agent finding flags terminology drift |
 | **Reassess** | Revisit plan/assumptions. Read backlog + HANDOFF + current circumstances, ask "does the plan still make sense?", surface anything that has drifted since the plan was written. Prompt user to confirm or adjust direction | **Auto-fires at Sprint Planning phase startup when the Lead is about to plan a new sprint (including *before* the sprint folder is created — the auto-fire happens during orientation, informing whether to create the folder at all). Does not auto-fire when resuming an in-progress sprint mid-execution**; any mode on user prompt | Sprint Planning phase startup (auto). User says "is this approach wise?". Contradictory info surfaces from Verify or review |
 | **Verify** | Read-only ground-truth check against code, files, or reality. No edits. Produces a ground-truth summary | **Any mode, any phase** — very common in Sprint Planning (before scoping a chunk), Review (validating findings), Design (grounding assumptions), Direct (investigating) | Lead is about to make claims about code state. User asks "what do we actually have today?". Brainstorm needs grounding |
 
@@ -326,9 +345,32 @@ Sub-agent prompts live in `sub-agents/` at the skill root. Any role may dispatch
 | **Truthfulness Check** | `sub-agents/truthfulness-check-prompt.md` — docs vs code | Sprint Wrap-up; any time docs may have drifted from code | Post-sprint (implementation drift common). Context files haven't been updated in a while. User questions whether docs still reflect reality |
 | **Code Review** | `sub-agents/code-review-prompt.md` — chunk code quality | Sprint Review phase | Implementer dispatches during post-chunk review. Lead may dispatch in Direct mode if reviewing someone else's work |
 | **Spec Adherence** | `sub-agents/spec-adherence-prompt.md` — chunk plan compliance | Sprint Review phase | Implementer dispatches during post-chunk review |
-| **Handbook Audit** | *(prompt not yet written)* — for each handbook topic, dispatch a sub-agent to compare the codebase against that topic's patterns. Produces backlog-ready findings | Any mode | **User-triggered only. Expensive — never auto-fired or proactively suggested.** User explicitly asks for a codebase-vs-handbook audit |
+| **Vocabulary Audit** | `sub-agents/vocabulary-audit-prompt.md` — comprehensive sweep over docs + code together. Surfaces misuse, drift, **gaps** (recurring concepts without canonical names — the one thing inline discipline and other sub-agents deliberately don't flag), stale entries, incomplete coverage. Default scope full repo; can be scoped to an area | Any mode; commonly Sprint Wrap-up or Design mode | User asks for a vocabulary sweep. Lead notices terminology drift across multiple files. Before a Sharpen Vocabulary action, to gather evidence the grilling will resolve |
 
 **Sub-agents report findings only.** Classification (fix-now, promote, backlog, defer, rule-out) is the Lead's responsibility with the user.
+
+---
+
+## End-of-Session Backlog Reconciliation
+
+At the end of every Lead session — regardless of mode and regardless of whether a sprint boundary was crossed — reconcile `backlog.md` against what the session actually shipped. This pairs with writing HANDOFF.md.
+
+**Why this matters:** the backlog is the authoritative answer to "what's left before production-ready" and drives future scoping. Stale backlogs overstate remaining work, cause re-doing of completed work, and silently degrade trust in scope estimates.
+
+**Steps:**
+
+1. **List candidates.** What did this session do that might close (in part or in full) one or more open backlog items? Cross-reference against the cluster tables in `backlog.md`.
+
+2. **Verify before marking.** For each candidate, read the actual file / run a grep / check that the gap is closed. Distinguish "fully resolved" from "partially resolved with residuals." Do not trust your own session-memory or prior handoff claims — handoff summaries have a known failure mode of overstating closure that did not survive verification.
+
+3. **Update the backlog:**
+   - Strike through the cluster row and append `→ Resolved R<n>` (plus a residual UF-ID where applicable)
+   - Add a new row in the Resolved table at the bottom with closure detail and date
+   - For partial closures, create a residual entry in the appropriate cluster with a new UF-XX ID; mark the Audits column with the suffix `(YYYY-MM-DD reconciliation)`
+
+4. **HANDOFF correlation.** A HANDOFF follow-up from a prior session that is now resolved should be reflected in the new HANDOFF — either explicitly noted as closed or simply absent from the new follow-up list.
+
+The Lead is the only role that edits `backlog.md`. Implementer and Junior surface candidates via implementation plans and CURRENT-STATE.md; the Lead does the reconciliation.
 
 ---
 
@@ -396,10 +438,9 @@ Implementation plans use Tasks (logical units) containing Steps (individual acti
 | ACTIVE-SPRINT | Create, Edit |
 | HANDOFF.md | Read, Edit |
 | `.context/project/*.md` | Read, Edit (promotion with user confirmation) |
-| `.context/standards/*.md` | Read, Edit (promotion with user confirmation) |
-| `conventions.md` | Read, Edit |
-| `backlog.md` | Read, Edit |
-| Implementation plans | Read (does not create — that's the Implementer) |
+| `.context/decisions/*.md` (ADRs) | Read, Create new ADRs via Record Decision action. Edit only the Status line of an existing ADR (e.g., to mark superseded) — content is otherwise immutable |
+| `.context/project/backlog.md` | Read, Edit |
+| Implementation plans | Read only (creation is the Implementer's responsibility) |
 | Source code | Read, Edit (direct mode only) |
 
 ---

@@ -107,48 +107,20 @@ From Tom Wilkie (Grafana/Weaveworks), inspired by Google SRE's Four Golden Signa
 - **Errors** — How many of those requests fail?
 - **Duration** — How long do requests take?
 
-These three numbers describe the health of your API at a glance:
+These three numbers describe the health of your API at a glance. In a middleware that fires *after* routing resolves, you record:
 
-```typescript
-// Rate: counter
-const requestRate = meter.createCounter('http_requests_total');
+- A counter incremented per request, labelled `{method, route, status}` — this is both the rate source and (when filtered to `status >= 500`) the error source.
+- A histogram recording the request duration, labelled the same way.
 
-// Errors: counter (subset of rate)
-const errorRate = meter.createCounter('http_errors_total');
+**Cardinality warning — read before choosing labels.** Label values must be bounded. Use the *route pattern* (`/users/:id`) as the `route` label, not the literal URL (`/users/123`). Literal URLs produce one label combination per unique ID — effectively unbounded cardinality. Datadog, Prometheus, and CloudWatch all charge or impose limits based on unique label combinations, and the cost of getting this wrong is real (series counts in the millions, query latency, dashboard timeouts).
 
-// Duration: histogram
-const requestDuration = meter.createHistogram('http_request_duration_ms');
+**How each framework exposes the route pattern:**
 
-// In middleware — measure all three automatically
-app.use((req, res, next) => {
-  const start = Date.now();
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    const labels = { method: req.method, path: req.route?.path || req.path, status: String(res.statusCode) };
-    requestRate.add(1, labels);
-    if (res.statusCode >= 500) errorRate.add(1, labels);
-    requestDuration.record(duration, labels);
-  });
-  next();
-});
-```
+- **Express:** `req.route?.path` — populated after the route matcher runs, so middleware that reads it must either be registered *after* `app.use(router)` or use `res.on('finish')` to capture the label after routing completes.
+- **FastAPI:** `request.scope["route"].path` — similarly, available after routing resolves.
+- **Next.js route handlers:** the dynamic-segment template (`/api/users/[id]`) from the file path.
 
-```python
-# FastAPI middleware
-@app.middleware("http")
-async def metrics_middleware(request: Request, call_next):
-    start = time.monotonic()
-    response = await call_next(request)
-    duration = (time.monotonic() - start) * 1000
-
-    labels = {"method": request.method, "path": request.url.path, "status": str(response.status_code)}
-    request_counter.add(1, labels)
-    if response.status_code >= 500:
-        error_counter.add(1, labels)
-    request_duration.record(duration, labels)
-
-    return response
-```
+Most observability libraries (`@opentelemetry/instrumentation-express`, `@opentelemetry/instrumentation-fastapi`, Datadog APM) capture these labels correctly out of the box — **prefer the auto-instrumentation package over hand-written middleware** for this exact reason. OTel's HTTP semantic conventions define the canonical label names (`http.request.method`, `http.route`, `http.response.status_code`) that dashboards expect.
 
 ### USE Method — For Resources (CPU, memory, disk, network)
 

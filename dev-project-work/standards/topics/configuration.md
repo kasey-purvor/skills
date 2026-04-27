@@ -35,10 +35,18 @@ The same schema validation pattern you use for API data works for configuration.
 // src/config/env.ts — ONE file, loaded ONCE at startup
 import { z } from 'zod';
 
+// Safe boolean parser — avoids z.coerce.boolean()'s JS-truthiness trap
+// (z.coerce.boolean() treats "false" and "0" as true, since any non-empty
+// string is truthy in JavaScript. Feature flags and security toggles can
+// silently flip on.)
+const booleanFromEnv = z
+  .enum(['true', 'false', '1', '0'])
+  .transform((v) => v === 'true' || v === '1');
+
 const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   PORT: z.coerce.number().default(3000),      // coerce "3000" → 3000
-  DEBUG: z.coerce.boolean().default(false),    // coerce "true" → true
+  DEBUG: booleanFromEnv.default('false'),      // explicit string allowlist
   API_KEY: z.string().min(1),                  // required, non-empty
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 });
@@ -324,7 +332,9 @@ In the [Data Integrity](./data-integrity.md) topic, we discuss strict vs coercin
 - You want `env.PORT` to be the number `3000`
 - Rejecting `"3000"` because it's not a number would be absurdly pedantic
 
-Both Zod (`z.coerce.number()`) and pydantic-settings (coerces by default) handle this correctly. This is one of the rare cases where coercion makes more sense than strict validation.
+`z.coerce.number()` in Zod and pydantic-settings' default coercion both handle numbers correctly. Booleans are the exception: `z.coerce.boolean()` follows JavaScript truthiness — any non-empty string becomes `true`, so `"false"` and `"0"` silently coerce to `true`. Use an explicit allowlist (see the `booleanFromEnv` helper at the top of this topic). pydantic-settings v2 handles boolean strings correctly on its own (`"true"`/`"false"`/`"1"`/`"0"`), so the Python side doesn't need the same workaround.
+
+This is one of the rare cases where type coercion makes more sense than strict validation — provided the coercion itself is safe.
 
 ---
 

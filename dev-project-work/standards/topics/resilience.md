@@ -46,73 +46,21 @@ Give up, return error to caller
 
 Each wait doubles. Add a small random jitter (±100ms) so that if 1000 clients all retry at the same time, they spread out instead of stampeding.
 
-### TypeScript
+### What to Configure
 
-```typescript
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  options: {
-    maxAttempts?: number;
-    baseDelay?: number;
-    shouldRetry?: (error: unknown) => boolean;
-  } = {},
-): Promise<T> {
-  const { maxAttempts = 3, baseDelay = 1000, shouldRetry = () => true } = options;
+Three parameters drive retry behaviour, regardless of which library you use:
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      if (attempt === maxAttempts || !shouldRetry(error)) throw error;
+- **`maxAttempts`** — typically 3 to 5. Beyond 5, the extra attempts rarely succeed and you're better off failing loudly so an alert fires.
+- **Backoff schedule** — exponential base delay (1s → 2s → 4s → 8s) with added jitter. AWS's ["full jitter"](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/) (`random(0, base × 2^attempt)`) spreads retries better than a fixed ±100ms window if many clients retry simultaneously.
+- **Retry predicate** — which errors are retryable (see table below). Default should be *not* retrying; opt specific errors in. Many retry libraries default to retrying everything, which is a trap — validation errors, 401s, and 404s will never succeed on retry and just consume attempts.
 
-      const delay = baseDelay * Math.pow(2, attempt - 1);
-      const jitter = Math.random() * 200 - 100;  // ±100ms
-      await new Promise(r => setTimeout(r, delay + jitter));
-    }
-  }
-  throw new Error("unreachable");
-}
+### Libraries
 
-// Usage
-const result = await withRetry(
-  () => paymentService.charge(amount),
-  {
-    maxAttempts: 3,
-    shouldRetry: (err) => {
-      // Only retry server errors and timeouts, not client errors
-      if (err instanceof AppError) return err.statusCode >= 500;
-      return true;
-    },
-  },
-);
-```
+In practice, use a library rather than hand-rolling the loop:
 
-### Python
-
-```python
-import asyncio
-import random
-
-async def with_retry(fn, max_attempts=3, base_delay=1.0, should_retry=None):
-    should_retry = should_retry or (lambda _: True)
-
-    for attempt in range(1, max_attempts + 1):
-        try:
-            return await fn()
-        except Exception as e:
-            if attempt == max_attempts or not should_retry(e):
-                raise
-            delay = base_delay * (2 ** (attempt - 1))
-            jitter = random.uniform(-0.1, 0.1)
-            await asyncio.sleep(delay + jitter)
-
-# Usage
-result = await with_retry(
-    lambda: payment_service.charge(amount),
-    max_attempts=3,
-    should_retry=lambda e: isinstance(e, ExternalServiceError),
-)
-```
+- **Python:** `tenacity` — the standard. Exponential backoff, jitter, conditional retries, async operations.
+- **TypeScript:** `p-retry` or `cockatiel`. The AWS SDK (`@aws-sdk/middleware-retry`) and many HTTP clients have their own retry layer — check before adding a second one.
+- **HTTP clients:** `axios-retry`, `got`'s built-in retry, `httpx` + tenacity.
 
 ### What's Retryable?
 
@@ -130,8 +78,6 @@ result = await with_retry(
 | **503** Service Unavailable | Yes | Service might recover |
 | **Connection timeout** | Yes | Network blip |
 | **Connection refused** | Maybe | Service might be restarting |
-
-In practice, most teams use a library rather than a hand-rolled function. In Python, `tenacity` is the standard. In TypeScript, `p-retry` or `cockatiel` are popular.
 
 ---
 
@@ -243,57 +189,21 @@ An **idempotent** operation produces the same result whether you execute it once
 
 ### The Idempotency Key Pattern
 
-The client sends a unique key with each request. The server uses this key to detect duplicates:
+The client sends a unique `Idempotency-Key` header with each request (e.g., `Idempotency-Key: order-abc-123-payment`). The server stores the key alongside the operation's result. On retry, the server returns the stored result instead of repeating the side effect.
 
-```typescript
-// Client sends:
-// POST /payments
-// Idempotency-Key: order-abc-123-payment
-// { "amount": 1000 }
+**Key generation.** The client derives the key from (entity + operation): `order-{orderId}-payment`, `user-{userId}-signup-email`. Using the same derivation on every retry means the same logical operation always produces the same key.
 
-app.post('/payments', async (req, res) => {
-  const idempotencyKey = req.headers['idempotency-key'];
-  if (!idempotencyKey) {
-    throw new ValidationError("Idempotency-Key header is required");
-  }
+**The implementation trap — check-then-act races.** The naive implementation (look up the key; if not found, do the work; then save) is subject to a race condition: two concurrent retries both observe the key as absent, both perform the side effect, and both save. That's exactly the duplicate charge the pattern is supposed to prevent.
 
-  // Check if we've already processed this key
-  const existing = await db.findPaymentByIdempotencyKey(idempotencyKey);
-  if (existing) {
-    // Return the same result as before — don't charge again
-    return res.json(existing);
-  }
+**The correct implementation enforces uniqueness at the storage layer, not in application code.** Common shapes:
 
-  // Process the payment
-  const payment = await paymentService.charge(req.body.amount);
+- **Insert-then-commit.** Write a row keyed on the idempotency key with a `UNIQUE` constraint *before* the side effect runs, inside a transaction that wraps the side effect. A retry attempting the same insert hits the conflict branch, which fetches the stored result and returns it.
+- **Distributed lock on the key.** Acquire a lock (Redis `SET NX`, Postgres advisory lock) keyed on the idempotency key; release when the operation completes. Concurrent retries queue or fail fast.
+- **Provider-native idempotency.** Stripe, Shopify, and most modern payment APIs accept an `Idempotency-Key` header on their side, so retries against them are safe without adding a second layer of keys in your app.
 
-  // Store the result keyed by the idempotency key
-  await db.savePayment({ ...payment, idempotencyKey });
+**Retention.** Store idempotency records long enough to cover realistic retry windows — typically 24 hours. Stripe keeps them for 24h; shorter windows leave a gap where a delayed retry creates a duplicate. Longer windows balloon storage without benefit.
 
-  return res.status(201).json(payment);
-});
-```
-
-```python
-@app.post("/payments")
-async def create_payment(request: Request, body: PaymentRequest):
-    idempotency_key = request.headers.get("idempotency-key")
-    if not idempotency_key:
-        raise ValidationError("Idempotency-Key header is required")
-
-    # Check for duplicate
-    existing = await db.find_payment_by_idempotency_key(idempotency_key)
-    if existing:
-        return existing  # same result, no side effects
-
-    # Process
-    payment = await payment_service.charge(body.amount)
-    await db.save_payment({**payment, "idempotency_key": idempotency_key})
-
-    return payment
-```
-
-**Key generation:** The client generates the key, typically from the entity + operation: `order-{orderId}-payment`, `user-{userId}-signup-email`. This ensures the same logical operation always produces the same key, regardless of retries.
+**Edge cases to think about.** What does your server return if a retry arrives *while* the original is still in flight? What if the original succeeded but the stored-result write failed? What does "same result" mean if the original returned a non-deterministic payload (a generated ID)? These are the questions that make idempotency non-trivial — the pattern shape is simple; the edge cases are where production bugs live. Stripe's API reference is the most thorough public treatment of these cases.
 
 ---
 
@@ -308,50 +218,20 @@ When you deploy new code, the platform sends your process a `SIGTERM` signal —
 3. Database connections left hanging — might cause connection pool exhaustion on the next startup
 4. Queue messages being processed are lost — work needs to be redone
 
-### With Graceful Shutdown
+### With Graceful Shutdown — Ordering Matters
 
-1. Stop accepting new connections (close the server socket)
-2. Wait for in-flight requests to finish (with a hard timeout so you don't wait forever)
-3. Close database connections cleanly
-4. Flush any buffered logs
-5. Exit with code 0
+The correct sequence on SIGTERM:
 
-### TypeScript (Node.js / Express)
+1. **Stop accepting new connections.** Close the server socket so the load balancer sees the instance go unhealthy and routes new traffic away.
+2. **Drain in-flight requests.** Wait for the requests already mid-flight to finish. Bound this with a hard timeout (typically 30s) so a hung request can't block shutdown forever.
+3. **Close dependencies.** Only after all in-flight requests are done: disconnect the database pool, close queue consumers, flush buffered logs.
+4. **Exit cleanly.** Exit code 0 signals to the process manager that shutdown was orderly.
 
-```typescript
-const server = app.listen(env.PORT);
-
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, starting graceful shutdown');
-
-  // 1. Stop accepting new connections
-  server.close(() => {
-    logger.info('HTTP server closed');
-  });
-
-  // 2. Hard timeout — don't wait forever
-  const shutdownTimeout = setTimeout(() => {
-    logger.error('Graceful shutdown timed out, forcing exit');
-    process.exit(1);
-  }, 30_000);
-
-  try {
-    // 3. Close dependencies cleanly
-    await db.disconnect();
-    await messageQueue.close();
-    await logger.flush();
-
-    logger.info('Graceful shutdown complete');
-    clearTimeout(shutdownTimeout);
-    process.exit(0);
-  } catch (err) {
-    logger.error({ err }, 'Error during shutdown');
-    process.exit(1);
-  }
-});
-```
+**The common bug: closing dependencies before requests drain.** In Node.js, `server.close(callback)` is non-blocking — it returns immediately and fires the callback after draining. Calling `await db.disconnect()` right after `server.close(...)` disconnects the database while requests are still handling — those requests fail with connection errors. The fix is to promisify `server.close` (or `util.promisify(server.close.bind(server))()`) and `await` it before closing dependencies.
 
 ### Python (FastAPI with lifespan)
+
+FastAPI's lifespan context manager handles the ordering for you — setup code runs before `yield`, teardown code after, and uvicorn coordinates signal handling and request draining around the lifespan. Put dependency open/close inside the lifespan context:
 
 ```python
 from contextlib import asynccontextmanager
@@ -359,17 +239,18 @@ from fastapi import FastAPI
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    logger.info("Starting up")
     await db.connect()
     yield
-    # Shutdown (triggered by SIGTERM)
-    logger.info("Shutting down gracefully")
     await db.disconnect()
-    logger.info("Shutdown complete")
 
 app = FastAPI(lifespan=lifespan)
 ```
+
+Uvicorn will catch SIGTERM, stop accepting new connections, wait for in-flight requests, *then* run the post-yield shutdown code. If you run with a process manager (gunicorn + uvicorn workers, supervisord), tune its shutdown grace period to at least match the longest reasonable request duration.
+
+### Node.js libraries worth using
+
+Rather than hand-rolling the SIGTERM handler, libraries like [`stoppable`](https://github.com/hunterloftis/stoppable) or the built-in `server.closeAllConnections()` + `server.closeIdleConnections()` (Node 18.2+) handle the tricky parts (keep-alive sockets that would otherwise extend drain time indefinitely).
 
 ### Why This Matters in Practice
 

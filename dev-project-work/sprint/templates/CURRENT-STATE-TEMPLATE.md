@@ -4,7 +4,6 @@
 **Last Updated:** YYYY-MM-DD HH:MM
 **Updated By:** [agent role / person]
 **Sprint Goal:** [one sentence]
-**Jira:** [ticket/epic link]
 
 ## Sprint Health / Risk Status
 
@@ -28,9 +27,13 @@
 <!-- Implementer writes a review summary here after post-chunk review. -->
 <!-- Lead classifies each finding with the user (fix now, promote, defer, backlog, rule out). -->
 
-| Task | Summary | Next Action |
-|------|---------|-------------|
-| | | |
+| Task | Source | Summary | Next Action |
+|------|--------|---------|-------------|
+| | | | |
+
+<!-- Source examples: junior deviation note, code-review sub-agent, consistency-check sub-agent, -->
+<!-- vocabulary-audit sub-agent, implementer quick fix. -->
+
 
 ## Active Blockers Requiring Resolution
 
@@ -44,7 +47,7 @@
 <!-- Junior discovers them in the implementation plan. Implementer summarizes them here. -->
 <!-- Lead classifies and promotes into the owning file with user confirmation when needed. -->
 <!-- Likely Owner examples: design.md, architecture.md, data.md, domain.md, integrations.md, -->
-<!-- .context/standards/<topic>.md, conventions.md, backlog.md. -->
+<!-- vocabulary.md, backlog.md, or a new ADR in .context/decisions/. -->
 <!-- Status examples: promote now, awaiting user, deferred, promoted, ruled out. -->
 <!-- Only unresolved or newly-important findings should be copied into HANDOFF.md at session/sprint end. -->
 

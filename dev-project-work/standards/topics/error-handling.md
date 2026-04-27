@@ -129,9 +129,13 @@ class NotFoundError(AppError):
         super().__init__(f"{resource} '{id}' not found", status_code=404)
 
 class ExternalServiceError(AppError):
-    def __init__(self, service: str, cause: Exception | None = None):
+    def __init__(self, service: str):
         super().__init__(f"{service} request failed", status_code=502)
-        self.__cause__ = cause  # preserves error chain (same as raise...from)
+    # To preserve the original exception, raise with `from`:
+    # raise ExternalServiceError("database") from original_err
+    # — see "Error Chaining" below. Do not assign self.__cause__ in __init__;
+    # `raise ... from` is the idiomatic form and also sets __suppress_context__
+    # so tracebacks render cleanly.
 
 class AuthenticationError(AppError):
     def __init__(self, message: str = "Authentication required"):
@@ -203,9 +207,9 @@ User clicks "Place Order"
 try {
   await db.execute(query);
 } catch (err) {
-  throw new ExternalServiceError("database", { cause: err });
-  //                                         ^^^^^^^^^^^^^^^^
-  // { cause: err } preserves the original error in the chain
+  // The ExternalServiceError constructor (shown above) accepts cause
+  // positionally and forwards it to the Error constructor as { cause }.
+  throw new ExternalServiceError("database", err instanceof Error ? err : undefined);
 }
 
 // When you log the full error:
@@ -213,7 +217,7 @@ try {
 //   [cause]: DatabaseTimeoutError: connection timed out to postgres:5432
 ```
 
-The `{ cause }` option was added in ES2022 and is supported in all modern runtimes. It's passed as the second argument to the `Error` constructor (via `ErrorOptions`).
+Behind the scenes, the `ErrorOptions` { cause } form was added in ES2022 and is supported by all modern runtimes. Your error classes can accept the cause in whatever shape makes sense for their call sites (a positional `Error` argument here) and forward it to `super(message, { cause })` — the important thing is that the signatures line up.
 
 ### Python
 
@@ -277,8 +281,11 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     type: "InternalError",
     title: "Internal server error",
     status: 500,
-    // NEVER include the actual error message or stack trace in production
-    // — it can leak internal details to attackers
+    // Don't include the raw error message or stack trace in responses to
+    // untrusted clients — it can leak internal details to attackers. Stack
+    // traces still belong in your server logs and in your error-tracking
+    // service (Sentry, Datadog); they just shouldn't be in the HTTP response
+    // body a public caller receives.
   });
 });
 ```
@@ -538,7 +545,7 @@ async def get_user(user_id: str):
 |-------|-----------|-----|
 | `throw new Error("not found")` — generic errors with message strings | `throw new NotFoundError("User", id)` — typed error classes | String matching is fragile; class matching is type-safe |
 | Catch-and-ignore: `catch (e) { /* do nothing */ }` | At minimum, log the error | Swallowed errors hide bugs and make debugging impossible |
-| Catch-and-rethrow without context: `catch (e) { throw e }` | Add context: `throw new AppError("order failed", { cause: e })` | Naked rethrow adds no value; wrapping adds context |
+| Catch-and-rethrow without context: `catch (e) { throw e }` | Wrap with a typed error that forwards the cause (e.g. `throw new ExternalServiceError("payments", e)`) | Naked rethrow adds no value; wrapping adds context and preserves the chain |
 | Expose stack traces to clients: `res.json({ stack: err.stack })` | Return safe, generic messages to clients | Stack traces leak internal code paths — security and UX issue |
 | Handle errors in every route handler individually | Use a global error handler | DRY — one place to maintain error→response mapping |
 | Use HTTP status codes inconsistently (404 sometimes, 400 other times for same thing) | Define the mapping once in the error hierarchy | Inconsistent codes confuse frontend developers and monitoring |

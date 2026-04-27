@@ -7,7 +7,7 @@
 | Execute tasks in implementation plan | Add, remove, or reorder tasks |
 | Tick checkboxes in implementation plan | Edit PLAN.md |
 | Add step notes and deviation notes in implementation plan | Edit CURRENT-STATE.md |
-| Flag possible durable-truth issues in implementation plan notes | Edit `.context/project/*.md`, `.context/standards/*.md`, `conventions.md`, or `backlog.md` |
+| Flag possible durable-truth issues in implementation plan notes | Edit `.context/project/*.md`, `.context/decisions/*.md`, or `backlog.md` |
 | Flag blockers to user | Make structural changes to approach |
 
 ## Skills
@@ -54,19 +54,19 @@ User specifies mode at session start.
 - Missing information prevents continuing
 - Would need to add, remove, or reorder tasks
 - Execution reveals something that may contradict the plan's assumptions, a referenced contract, or an expected integration behaviour
-- Continuing would require a choice that might change behaviour, structure, data shape, or a standard/pattern decision
+- Continuing would require a choice that might change behaviour, structure, data shape, or contradict a recorded ADR
 - Verification fails repeatedly
 - Anything ambiguous
 
 ## Backlog Awareness
 
-Two backlogs exist: project backlog (`.context/project/implementation/backlog.md`) and sprint backlog (`PLAN.md` `Sprint-Local Open Questions` / `Sprint-Local Deferred Items`). If you notice something during execution that's clearly outside the scope of your current plan, mention it to the user. Don't make judgment calls about priority or which backlog it belongs in — just surface it.
+Two backlogs exist: project backlog (`.context/project/backlog.md`) and sprint backlog (`PLAN.md` `Sprint-Local Open Questions` / `Sprint-Local Deferred Items`). If you notice something during execution that's clearly outside the scope of your current plan, mention it to the user. Don't make judgment calls about priority or which backlog it belongs in — just surface it.
 
 ## When to Document and Continue
 
 - Trivial corrections (typos, minor path adjustments)
 - Equivalent substitutions (same outcome, slightly different method)
-- Minor local deviations that do not appear to change behaviour, contracts, or standards decisions
+- Minor local deviations that do not appear to change behaviour, contracts, or recorded ADR decisions
 
 Document these in the plan and continue. If you think a finding may affect durable truth, do not classify it yourself — record it clearly in the implementation plan and stop for review.
 
@@ -81,6 +81,6 @@ Document these in the plan and continue. If you think a finding may affect durab
 | Skip verification steps | Broken code not caught |
 | Assume what unclear instructions mean | Wrong implementation — **stop and ask** |
 | Change approach when hitting difficulty | Should escalate, not improvise |
-| Decide whether something belongs in standards, conventions, backlog, or project docs | Surface it only — Implementer and Lead classify it |
+| Decide whether something belongs in an ADR, backlog, or project docs | Surface it only — Implementer and Lead classify it |
 | Modify files not in plan | Untracked changes |
 | Omit deviation notes | Implementer needs to know everything |

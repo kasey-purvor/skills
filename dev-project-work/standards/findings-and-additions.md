@@ -1,5 +1,7 @@
 # Findings and Future Additions
 
+> **Superseded.** This file is a legacy consolidation. New findings should be added as a dated review file under `Internal skill review/`, not here. See `standards/README.md` ("Iterative nature") for the current process.
+
 Consolidated from the 2026-04-14 internal skill review and the 2026-04-16 production audit. This is the single source of truth for "what could be improved in this skill." The original review files in `Internal skill review/` are historical reference.
 
 Last updated: 2026-04-17

@@ -22,10 +22,14 @@
 ## Durable Updates Promoted / Still Awaiting Reconciliation
 
 <!-- This summary is retrospective only, not a source-of-truth file. -->
-<!-- Durable project or standards updates should already have been promoted -->
-<!-- into their owning files during the sprint where possible. -->
+<!-- Durable project updates should already have been promoted into their owning -->
+<!-- files during the sprint where possible. Decisions captured during the sprint -->
+<!-- should be recorded as ADRs in .context/decisions/ via the Lead's Record Decision action. -->
 
-**Promoted into owning durable files during sprint**
+**Durable files updated** (design.md, architecture.md, data.md, domain.md, integrations.md, vocabulary.md, backlog.md)
+- ...
+
+**ADRs newly written** (`.context/decisions/NNNN-*.md`)
 - ...
 
 **Still unreconciled / pointed to from HANDOFF**
