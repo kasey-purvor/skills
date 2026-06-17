@@ -1,6 +1,6 @@
 ---
-name: dev-writing-skills
-description: Use when creating new skills, editing existing skills, or verifying skills work before deployment - applies TDD to process documentation by testing with subagents before writing, iterating until bulletproof against rationalization
+name: writing-skills
+description: Use when creating new skills, editing existing skills, or verifying skills work before deployment
 ---
 
 # Writing Skills
@@ -9,13 +9,13 @@ description: Use when creating new skills, editing existing skills, or verifying
 
 **Writing skills IS Test-Driven Development applied to process documentation.**
 
-**Personal skills live in agent-specific directories (`~/.claude/skills` for Claude Code, `~/.codex/skills` for Codex)** 
+**Personal skills live in agent-specific directories (`~/.claude/skills` for Claude Code, `~/.agents/skills/` for Codex)** 
 
 You write test cases (pressure scenarios with subagents), watch them fail (baseline behavior), write the skill (documentation), watch tests pass (agents comply), and refactor (close loopholes).
 
 **Core principle:** If you didn't watch an agent fail without the skill, you don't know if the skill teaches the right thing.
 
-**REQUIRED BACKGROUND:** You MUST understand test-driven-development before using this skill. That skill defines the fundamental RED-GREEN-REFACTOR cycle. This skill adapts TDD to documentation.
+**REQUIRED BACKGROUND:** You MUST understand superpowers:test-driven-development before using this skill. That skill defines the fundamental RED-GREEN-REFACTOR cycle. This skill adapts TDD to documentation.
 
 **Official guidance:** For Anthropic's official skill authoring best practices, see anthropic-best-practices.md. This document provides additional patterns and guidelines that complement the TDD-focused approach in this skill.
 
@@ -56,35 +56,7 @@ The entire skill creation process follows RED-GREEN-REFACTOR.
 - One-off solutions
 - Standard practices well-documented elsewhere
 - Project-specific conventions (put in CLAUDE.md)
-
-## Before Creating: Ask About Location
-
-**Always ask the user where the skill should live:**
-
-| Location | Path | Scope | Use Case |
-|----------|------|-------|----------|
-| **Personal** | `~/.claude/skills/` | Only this user | Personal workflows, experiments, preferences |
-| **Project** | `<repo>/.claude/skills/` | Anyone on the team | Team conventions, project-specific knowledge, shared workflows |
-
-**Project skills get committed to git** — teammates using Claude Code in that repo automatically get access.
-
-**Ask:** "Should this be a personal skill (just for you) or a project skill (shared with your team)?"
-
-## Optional Frontmatter: `allowed-tools`
-
-You can restrict which tools Claude can use while a skill is active:
-
-```yaml
----
-name: dev-writing-skills
-description: Review code without making changes
-allowed-tools: Read, Grep, Glob
----
-```
-
-**Caveat:** This may be advisory rather than enforced — Anthropic's official docs don't mention it. Treat it as a hint to Claude, not a hard restriction.
-
-**Use cases:** Read-only review skills, analysis-only skills, security-conscious workflows.
+- Mechanical constraints (if it's enforceable with regex/validation, automate it—save documentation for judgment calls)
 
 ## Skill Types
 
@@ -121,18 +93,19 @@ skills/
 ## SKILL.md Structure
 
 **Frontmatter (YAML):**
-- Only two fields supported: `name` and `description`
+- Two required fields: `name` and `description` (see [agentskills.io/specification](https://agentskills.io/specification) for all supported fields)
 - Max 1024 characters total
 - `name`: Use letters, numbers, and hyphens only (no parentheses, special chars)
-- `description`: Third-person, includes BOTH what it does AND when to use it
+- `description`: Third-person, describes ONLY when to use (NOT what it does)
   - Start with "Use when..." to focus on triggering conditions
   - Include specific symptoms, situations, and contexts
+  - **NEVER summarize the skill's process or workflow** (see CSO section for why)
   - Keep under 500 characters if possible
 
 ```markdown
 ---
-name: dev-writing-skills
-description: Use when [specific triggering conditions and symptoms] - [what the skill does and how it helps, written in third person]
+name: Skill-Name-With-Hyphens
+description: Use when [specific triggering conditions and symptoms]
 ---
 
 # Skill Name
@@ -172,7 +145,31 @@ Concrete results
 
 **Purpose:** Claude reads description to decide which skills to load for a given task. Make it answer: "Should I read this skill right now?"
 
-**Format:** Start with "Use when..." to focus on triggering conditions, then explain what it does
+**Format:** Start with "Use when..." to focus on triggering conditions
+
+**CRITICAL: Description = When to Use, NOT What the Skill Does**
+
+The description should ONLY describe triggering conditions. Do NOT summarize the skill's process or workflow in the description.
+
+**Why this matters:** Testing revealed that when a description summarizes the skill's workflow, Claude may follow the description instead of reading the full skill content. A description saying "code review between tasks" caused Claude to do ONE review, even though the skill's flowchart clearly showed TWO reviews (spec compliance then code quality).
+
+When the description was changed to just "Use when executing implementation plans with independent tasks" (no workflow summary), Claude correctly read the flowchart and followed the two-stage review process.
+
+**The trap:** Descriptions that summarize workflow create a shortcut Claude will take. The skill body becomes documentation Claude skips.
+
+```yaml
+# ❌ BAD: Summarizes workflow - Claude may follow this instead of reading skill
+description: Use when executing plans - dispatches subagent per task with code review between tasks
+
+# ❌ BAD: Too much process detail
+description: Use for TDD - write test first, watch it fail, write minimal code, refactor
+
+# ✅ GOOD: Just triggering conditions, no workflow summary
+description: Use when executing implementation plans with independent tasks in the current session
+
+# ✅ GOOD: Triggering conditions only
+description: Use when implementing any feature or bugfix, before writing implementation code
+```
 
 **Content:**
 - Use concrete triggers, symptoms, and situations that signal this skill applies
@@ -180,6 +177,7 @@ Concrete results
 - Keep triggers technology-agnostic unless the skill itself is technology-specific
 - If skill is technology-specific, make that explicit in the trigger
 - Write in third person (injected into system prompt)
+- **NEVER summarize the skill's process or workflow**
 
 ```yaml
 # ❌ BAD: Too abstract, vague, doesn't include when to use
@@ -191,11 +189,11 @@ description: I can help you with async tests when they're flaky
 # ❌ BAD: Mentions technology but skill isn't specific to it
 description: Use when tests use setTimeout/sleep and are flaky
 
-# ✅ GOOD: Starts with "Use when", describes problem, then what it does
-description: Use when tests have race conditions, timing dependencies, or pass/fail inconsistently - replaces arbitrary timeouts with condition polling for reliable async tests
+# ✅ GOOD: Starts with "Use when", describes problem, no workflow
+description: Use when tests have race conditions, timing dependencies, or pass/fail inconsistently
 
 # ✅ GOOD: Technology-specific skill with explicit trigger
-description: Use when using React Router and handling authentication redirects - provides patterns for protected routes and auth state management
+description: Use when using React Router and handling authentication redirects
 ```
 
 ### 2. Keyword Coverage
@@ -210,7 +208,7 @@ Use words Claude would search for:
 
 **Use active voice, verb-first:**
 - ✅ `creating-skills` not `skill-creation`
-- ✅ `testing-skills-with-subagents` not `subagent-skill-testing`
+- ✅ `condition-based-waiting` not `async-test-helpers`
 
 ### 4. Token Efficiency (Critical)
 
@@ -282,8 +280,8 @@ wc -w skills/path/SKILL.md
 **When writing documentation that references other skills:**
 
 Use skill name only, with explicit requirement markers:
-- ✅ Good: `**REQUIRED SUB-SKILL:** Use test-driven-development`
-- ✅ Good: `**REQUIRED BACKGROUND:** You MUST understand systematic-debugging`
+- ✅ Good: `**REQUIRED SUB-SKILL:** Use superpowers:test-driven-development`
+- ✅ Good: `**REQUIRED BACKGROUND:** You MUST understand superpowers:systematic-debugging`
 - ❌ Bad: `See skills/testing/test-driven-development` (unclear if required)
 - ❌ Bad: `@skills/testing/test-driven-development/SKILL.md` (force-loads, burns context)
 
@@ -316,6 +314,12 @@ digraph when_flowchart {
 - Labels without semantic meaning (step1, helper2)
 
 See @graphviz-conventions.dot for graphviz style rules.
+
+**Visualizing for your human partner:** Use `render-graphs.js` in this directory to render a skill's flowcharts to SVG:
+```bash
+./render-graphs.js ../some-skill           # Each diagram separately
+./render-graphs.js ../some-skill --combine # All diagrams in one SVG
+```
 
 ## Code Examples
 
@@ -386,7 +390,7 @@ Edit skill without testing? Same violation.
 - Don't "adapt" while running tests
 - Delete means delete
 
-**REQUIRED BACKGROUND:** The test-driven-development skill explains why this matters. Same principles apply to documentation.
+**REQUIRED BACKGROUND:** The superpowers:test-driven-development skill explains why this matters. Same principles apply to documentation.
 
 ## Testing All Skill Types
 
@@ -549,7 +553,7 @@ Run same scenarios WITH skill. Agent should now comply.
 
 Agent found new rationalization? Add explicit counter. Re-test until bulletproof.
 
-**REQUIRED SUB-SKILL:** Use testing-skills-with-subagents for the complete testing methodology:
+**Testing methodology:** See @testing-skills-with-subagents.md for the complete testing methodology:
 - How to write pressure scenarios
 - Pressure types (time, sunk cost, authority, exhaustion)
 - Plugging holes systematically
@@ -600,7 +604,7 @@ Deploying untested skills = deploying untested code. It's a violation of quality
 
 **GREEN Phase - Write Minimal Skill:**
 - [ ] Name uses only letters, numbers, hyphens (no parentheses/special chars)
-- [ ] YAML frontmatter with only name and description (max 1024 chars)
+- [ ] YAML frontmatter with required `name` and `description` fields (max 1024 chars; see [spec](https://agentskills.io/specification))
 - [ ] Description starts with "Use when..." and includes specific triggers/symptoms
 - [ ] Description written in third person
 - [ ] Keywords throughout for search (errors, symptoms, tools)
