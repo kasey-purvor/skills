@@ -39,13 +39,13 @@ DELETE /api/users/123           POST   /api/deleteUser
 
 ### HTTP Methods
 
-| Method | Purpose | Idempotent? | Request body? | Example |
-|--------|---------|:-----------:|:------------:|---------|
-| **GET** | Read a resource | Yes | No | `GET /api/users/123` |
-| **POST** | Create a new resource | No | Yes | `POST /api/users` |
-| **PUT** | Replace a resource entirely | Yes | Yes | `PUT /api/users/123` |
-| **PATCH** | Partially update a resource | No* | Yes | `PATCH /api/users/123` |
-| **DELETE** | Remove a resource | Yes | No | `DELETE /api/users/123` |
+| Method     | Purpose                     | Idempotent? | Request body? | Example                 |
+| ---------- | --------------------------- | :---------: | :-----------: | ----------------------- |
+| **GET**    | Read a resource             | Yes         | No            | `GET /api/users/123`    |
+| **POST**   | Create a new resource       | No          | Yes           | `POST /api/users`       |
+| **PUT**    | Replace a resource entirely | Yes         | Yes           | `PUT /api/users/123`    |
+| **PATCH**  | Partially update a resource | No*         | Yes           | `PATCH /api/users/123`  |
+| **DELETE** | Remove a resource           | Yes         | No            | `DELETE /api/users/123` |
 
 *PATCH can be made idempotent depending on implementation.
 
@@ -105,9 +105,11 @@ Always use the RFC 9457 Problem Details format defined in [Error Handling](./err
 
 ```json
 {
-  "type": "NotFoundError",
-  "title": "User '999' not found",
-  "status": 404
+  "type": "about:blank",
+  "code": "NOT_FOUND",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "User '999' not found"
 }
 ```
 
@@ -229,16 +231,16 @@ Cleaner URLs but harder to test in a browser and less visible.
 
 ### What Constitutes a Breaking Change?
 
-| Change | Breaking? | How to handle |
-|--------|-----------|---------------|
-| Add a new field to a response | No | Clients should ignore unknown fields |
-| Add a new optional query parameter | No | Existing requests still work |
-| Add a new endpoint | No | Existing endpoints unchanged |
-| Remove a field from a response | **Yes** | Deprecate first, remove in next version |
-| Rename a field | **Yes** | Add new name, keep old name, deprecate old |
-| Change a field's type | **Yes** | Add new field with new type, deprecate old |
-| Make an optional field required | **Yes** | This rejects previously valid requests |
-| Change the URL structure | **Yes** | Keep old URLs working, redirect if possible |
+| Change                             | Breaking? | How to handle                               |
+| ---------------------------------- | --------- | ------------------------------------------- |
+| Add a new field to a response      | No        | Clients should ignore unknown fields        |
+| Add a new optional query parameter | No        | Existing requests still work                |
+| Add a new endpoint                 | No        | Existing endpoints unchanged                |
+| Remove a field from a response     | **Yes**   | Deprecate first, remove in next version     |
+| Rename a field                     | **Yes**   | Add new name, keep old name, deprecate old  |
+| Change a field's type              | **Yes**   | Add new field with new type, deprecate old  |
+| Make an optional field required    | **Yes**   | This rejects previously valid requests      |
+| Change the URL structure           | **Yes**   | Keep old URLs working, redirect if possible |
 
 ---
 
@@ -313,39 +315,32 @@ async def get_user(user_id: str) -> UserResponse:
 # and /redoc (ReDoc)
 ```
 
-### When to Use Which
+---
 
-| Situation | Recommendation |
-|-----------|---------------|
-| TypeScript frontend + TypeScript backend | **tRPC** — type safety with zero overhead |
-| Python backend + any frontend | **OpenAPI** via FastAPI — auto-generated from type hints |
-| Public API consumed by third parties | **OpenAPI** — language-agnostic, generates client libraries |
-| Multi-language team | **OpenAPI** — the universal API description language |
+## Testing the API Contract
+
+The contract is a promise about *shape* and *status*, so the tests assert exactly those two things against the running endpoints — not the business logic behind them:
+
+- **Consistent response shape.** Every endpoint returns the project's chosen shape from **Response Shape Consistency** — a bare array if it adopted Direct Response, or the `{ data, pagination }` envelope (with `hasMore`) if it needs metadata — and no endpoint drifts to an ad-hoc third shape. Pick the shape once; let a test catch the drift.
+- **Status matches method.** Mutations return the status their HTTP method promises — a create returns 201, not a generic 200 — which is just the **HTTP Methods** table asserted at runtime.
+- **Empty-collection edge case.** A query that legitimately matches nothing returns 200 with an empty collection (`[]`, or `{ "data": [] }` per the chosen shape), not a 404: "no rows" is a successful empty collection, not a missing endpoint. The same discipline covers the other **Pagination** boundaries (last page, invalid cursor) and the additive-change rule from **API Versioning** — a response that grew a field is still backwards-compatible; one that dropped or renamed a field is not.
+
+These run as integration tests that drive the real endpoint end to end — see [Testing](./testing.md) for the real-handler-against-a-real-database harness.
 
 ---
 
 ## Anti-Patterns
 
-| Don't | Do Instead | Why |
-|-------|-----------|-----|
-| Use verbs in URLs: `/api/getUsers` | Use nouns: `GET /api/users` | The HTTP method is the verb |
-| Return different response shapes per endpoint | Pick one pattern (direct or envelope) and use it everywhere | Clients need one response-handling function, not per-endpoint parsing |
-| Return all fields always | Support sparse fieldsets or have summary vs detail endpoints | Returning 50 fields when the client needs 3 wastes bandwidth |
-| Return a list without pagination | Always paginate collections | Unbounded lists cause memory issues and slow responses |
-| Make breaking changes without versioning | Use additive changes; version only when breaking changes are unavoidable | Breaking changes break clients |
-| Let clients sort by any field | Whitelist allowed sort fields | Sorting by unindexed columns kills database performance |
-| Use different date formats across endpoints | Always use ISO 8601 with timezone | Inconsistent formats cause parsing bugs |
-| Return raw database IDs in URLs without validation | Validate ID format in your schema | Prevents injection and makes errors clearer |
-
----
-
-## Deciding for Your Project
-
-1. **REST or tRPC?** If TypeScript full-stack → tRPC. If multi-language or public API → REST with OpenAPI.
-2. **Response format?** Direct for simple APIs, envelope when you need pagination metadata.
-3. **Pagination style?** Cursor for user-facing lists, offset for admin tools.
-4. **Versioning strategy?** Additive changes by default. URL versioning when breaking changes are truly necessary.
-5. **Field naming?** camelCase for TypeScript APIs, snake_case for Python APIs.
+| Don't                                              | Do Instead                                                               | Why                                                                   |
+| -------------------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| Use verbs in URLs: `/api/getUsers`                 | Use nouns: `GET /api/users`                                              | The HTTP method is the verb                                           |
+| Return different response shapes per endpoint      | Pick one pattern (direct or envelope) and use it everywhere              | Clients need one response-handling function, not per-endpoint parsing |
+| Return all fields always                           | Support sparse fieldsets or have summary vs detail endpoints             | Returning 50 fields when the client needs 3 wastes bandwidth          |
+| Return a list without pagination                   | Always paginate collections                                              | Unbounded lists cause memory issues and slow responses                |
+| Make breaking changes without versioning           | Use additive changes; version only when breaking changes are unavoidable | Breaking changes break clients                                        |
+| Let clients sort by any field                      | Whitelist allowed sort fields                                            | Sorting by unindexed columns kills database performance               |
+| Use different date formats across endpoints        | Always use ISO 8601 with timezone                                        | Inconsistent formats cause parsing bugs                               |
+| Return raw database IDs in URLs without validation | Validate ID format in your schema                                        | Prevents injection and makes errors clearer                           |
 
 ---
 
@@ -356,3 +351,4 @@ async def get_user(user_id: str) -> UserResponse:
 - **API security** — see [Security](./security.md) for CORS, authentication, authorization, and rate limiting
 - **API metrics** — see [Monitoring](./monitoring.md) for RED method (Rate, Errors, Duration) applied to API endpoints
 - **Schema changes** — see [Schema Evolution](./schema-evolution.md) for how database changes affect API response shapes
+- **Contract testing** — see [Testing](./testing.md) for round-trip and schema-to-reality tests that prove the API matches its consumers

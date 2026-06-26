@@ -73,6 +73,14 @@ Setting `Access-Control-Allow-Origin: *` on production endpoints because it's th
 
 ---
 
+## When Designing an API or Error Contract
+
+### The Class-Name Error Contract
+Setting the RFC 9457 `type` field (or any identifier clients branch on) to your internal error *class name*, welding the public wire contract to your code's class hierarchy. Rename `InvalidLicenseError` in a refactor and every client switching on it breaks — a purely internal change becomes a breaking API change. Using `type`-as-URI also implies hosting a docs page per error type, which most teams never do.
+**Instead:** Expose a stable, machine-readable `code` (e.g. `LICENSE_REVOKED`), chosen independently of class names, for clients to dispatch on; keep `type` as an optional documentation URI (`about:blank` until you actually host docs). See `dev-standards` > error-handling.md.
+
+---
+
 ## When Building UI Components
 
 ### The Monolith Component
@@ -97,11 +105,31 @@ Mapping database column names to UI property names inside a component's render b
 
 ### Trust the Caller
 Accepting a `tenant_id` parameter from the client and using it to scope database queries, without verifying server-side that the authenticated user actually belongs to that tenant. Any authenticated user can pass a different tenant's ID and access their data.
-**Instead:** Derive tenant_id from the authenticated session server-side. Never trust client-supplied tenant identifiers for authorisation decisions. See `dev-standards` > security.md.
+**Instead:** Derive tenant_id from the authenticated session server-side. Never trust client-supplied tenant identifiers for authorisation decisions. See `dev-standards` > multi-tenant-isolation.md.
 
 ### The Security Bypass
 Using elevated database privileges (SECURITY DEFINER in PostgreSQL, service role keys in Supabase) that skip row-level security, then trusting caller-supplied parameters to scope the query correctly. The RLS policies exist but are being bypassed by the functions the frontend actually calls.
-**Instead:** Prefer SECURITY INVOKER (let RLS handle access). If SECURITY DEFINER is necessary, verify the caller's tenant membership inside the function. See `dev-standards` > security.md.
+**Instead:** Prefer SECURITY INVOKER (let RLS handle access). If SECURITY DEFINER is necessary, verify the caller's tenant membership inside the function. See `dev-standards` > multi-tenant-isolation.md.
+
+### RLS Silently Off
+Enabling row-level security policies but connecting the application's pool as a superuser or the table's owner. Those roles bypass RLS by default, so every policy you wrote is silently inert — the system looks protected and isn't, and no error ever fires to tell you.
+**Instead:** Connect as an unprivileged role that is subject to policies; reserve any bypass-capable role for deliberate, audited admin paths. See `dev-standards` > multi-tenant-isolation.md.
+
+### The Read-Only Policy
+Writing a row-level policy with only a read predicate (PostgreSQL's `USING`) and no write predicate (`WITH CHECK`). Reads are isolated, but a session scoped to tenant A can still INSERT or UPDATE a row stamped for tenant B — a cross-tenant write smuggle.
+**Instead:** Mirror the tenant predicate in both the read rule and the write rule, so writes are constrained as tightly as reads. See `dev-standards` > multi-tenant-isolation.md.
+
+### The Fail-Open Predicate
+Writing a tenant predicate that returns every row (or raises an error) when the session's tenant context is unset or empty. A request that reaches the database without tenant context then sees all tenants' data — one missing-context bug becomes a full leak.
+**Instead:** Make the predicate fail closed: missing or empty context must match zero rows. Read the session value as missing-ok and normalise empty to NULL so the comparison excludes everything. See `dev-standards` > multi-tenant-isolation.md.
+
+### The Interpolated Tenant Setting
+Building the statement that sets the per-session tenant value by string-concatenating a user-derived tenant ID, because `SET`/`SET LOCAL` cannot take bind parameters. This re-introduces SQL injection on the exact value your whole isolation model depends on.
+**Instead:** Set it parameter-safely — on PostgreSQL, `set_config('app.tenant_id', $1, true)` is bind-parameterisable and transaction-local. Never interpolate the value into a `SET LOCAL` string. See `dev-standards` > multi-tenant-isolation.md.
+
+### The Leaky Pooled Connection
+Setting the tenant context on a connection but not confining it to the transaction. Connection pools hand the same physical connection to the next request, which inherits the previous request's tenant scope — an intermittent cross-tenant leak that is brutal to reproduce.
+**Instead:** Bind the tenant value to the transaction (transaction-local), so it is established at the start of each transaction and cannot outlive it. See `dev-standards` > multi-tenant-isolation.md.
 
 ---
 
@@ -122,3 +150,19 @@ An entire serverless function or API handler in one file: auth, validation, busi
 ### Duplicated Boilerplate
 Every serverless function or API route re-implements auth verification, CORS headers, error formatting, and client creation from scratch. They drift apart over time — one gets a bug fix, the others don't.
 **Instead:** Create shared middleware or utility modules. Auth, CORS, error formatting, and client creation should be defined once and imported. See `dev-standards` > error-handling.md.
+
+---
+
+## When Writing Tests
+
+### The Replay That Lost Its Grant
+A migration-replay test (drop everything, replay from an empty schema) recreates the `public` schema — but on PostgreSQL 15+ a freshly-created `public` schema no longer carries the old implicit `GRANT … TO PUBLIC`. The replayed database silently lacks the `USAGE`/`CREATE` grants the application role needs: objects exist, the role can't use them, and the failure looks nothing like a missing grant.
+**Instead:** have the replay harness re-issue the schema grant explicitly after recreating `public`, instead of relying on the pre-15 implicit default. See `dev-standards` > schema-evolution.md.
+
+### High-Value Tests Gated Out of CI
+The integration tests that need Docker or a real database get put behind a separate opt-in command, and CI runs only the fast unit suite. The tests that prove your hardest guarantees — tenant isolation, migration parity, concurrency — then never run in CI and decay into checks nobody executes. Related: a runner told to pass when it matches no files (`--passWithNoTests`, or a glob that quietly matches nothing) turns a green pipeline into one that ran zero tests.
+**Instead:** wire the real-database/integration command into CI as a required step, and fail the build if zero tests were collected. See `dev-standards` > testing.md.
+
+### The Test Pool That Hid the Deadlock
+Running tests with a connection-pool shape unlike production's — a roomy test pool (`max: 10`) when production runs lean (`max: 1` per instance). Self-deadlocks and pool-saturation bugs that only bite at the production shape never surface, because the test pool always has a spare connection to hand out. Green in CI, hung in prod.
+**Instead:** when testing concurrency, deadlock, or connection-exhaustion behaviour, size the test harness's pool the way production is sized. See `dev-standards` > testing.md.

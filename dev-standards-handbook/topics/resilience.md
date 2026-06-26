@@ -116,13 +116,22 @@ With a circuit breaker:
 - The payment service gets zero additional load while recovering
 - Users see a fast, clean error message instead of a hanging page
 
-**In practice**, you'd use a library. The concept is the important part — the implementation details vary by language and framework.
+**In practice**, you'd use a library rather than hand-roll the state machine — `cockatiel` or `opossum` (TypeScript), `pybreaker` (Python):
+
+```typescript
+// Wrap the risky call; when the circuit is open, fail fast to a fallback
+const breaker = circuitBreaker({ failureThreshold: 0.5, resetTimeout: 30_000 });
+const charge = await breaker.execute(() => paymentService.charge(order))
+  .catch(() => ({ status: 'unavailable' }));
+```
+
+The state machine is the concept; the exact API varies by library.
 
 ---
 
 ## Timeouts
 
-Every external call needs a timeout. Without one, a single slow service can hang your entire application. If your database hangs and you have no timeout, every request that touches the database hangs too — and your connection pool fills up, and new requests can't get connections, and your entire service becomes unresponsive.
+Every external call needs a timeout. Without one, a single slow service can hang your entire application. If your database hangs and you have no timeout, every request that touches the database hangs too — and your connection pool fills up, and new requests can't get connections, and your entire service becomes unresponsive. (Pool sizing and exhaustion are covered in [Deployment](./deployment.md).)
 
 ```typescript
 // BAD: no timeout — if the service hangs, this request hangs forever
@@ -340,6 +349,17 @@ The endpoints are just HTTP routes in your app — framework-agnostic. Where the
 
 ---
 
+## Testing Resilience
+
+Assert the behaviours with a clear before/after contract — not the timing-dependent internals of backoff or circuit breakers (leave those to the library). Both high-value targets need a real database:
+
+- **Liveness/readiness split.** With a dependency forced down, readiness returns 503 with a not-ready body (it actually probes the dependency, not a hardcoded 200) while liveness still returns 200 (a dead dependency routes traffic away instead of triggering a restart loop). Test both halves against a dependency you can actually stop.
+- **Idempotency de-duplicates.** Two requests with the same key produce one effect; the second returns the stored result, not a duplicate. Drive them *concurrently* — a sequential test false-greens against the broken implementation, because the failure mode is the check-then-act race from "The implementation trap".
+
+See [Testing](./testing.md) for the real-database test setup.
+
+---
+
 ## Anti-Patterns
 
 | Don't | Do Instead | Why |
@@ -374,3 +394,4 @@ When starting a new project, determine:
 - **Monitoring resilience** — see [Monitoring](./monitoring.md) for metrics to track: retry rates, circuit breaker trips, timeout frequency, error budgets
 - **Config for timeouts** — see [Configuration](./configuration.md) for making timeouts and retry counts configurable
 - **Deployment patterns** — see [Deployment](./deployment.md) for how graceful shutdown fits into deploy pipelines
+- **Testing resilience** — see [Testing](./testing.md) for the real-database setup the health-check and idempotency tests need

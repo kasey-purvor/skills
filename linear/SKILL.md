@@ -173,6 +173,24 @@ create_attachment_from_upload({ issue, assetUrl: prep.assetUrl, title: filename 
 ```
 The `prep.finalize` field literally returns the next tool name + pre-filled inputs. Use the deprecated `create_attachment` (base64 body) only for tiny files — it consumes agent context.
 
+### Embed an image inline in a description (renders in-line, not just a panel attachment)
+
+For **visual evidence** — UI screenshots, before/after, stylistic changes — put the image *in the description body* so it renders automatically, instead of (or as well as) the attachments panel. Same 2-phase upload; the `assetUrl` doubles as the markdown image source.
+```
+issue = get_issue({ id: "CLO-119" })            // fetch the CURRENT description — there is NO append API
+prep  = prepare_attachment_upload({ issue: "CLO-119", filename, contentType, size })
+// PUT raw bytes to prep.uploadRequest.url with prep.uploadRequest.headers VERBATIM (60s expiry!)
+save_issue({ id: "CLO-119",
+  description: issue.description + "\n\n## Verification evidence\n\n![alt text](" + prep.assetUrl + ")" })
+// optional: also create_attachment_from_upload({ issue, assetUrl: prep.assetUrl }) to add the panel row too
+```
+- **`![alt](url)` is an image; `[alt](url)` is a link** — the leading `!` is what makes it render inline.
+- **One upload, two homes.** The same `prep.assetUrl` works for both the inline embed AND `create_attachment_from_upload` — for headline proof (e.g. a UAT verification shot), do both from a single PUT.
+- **`save_issue` overwrites the whole description** (no append API) — fetch it first and concatenate, keeping real newlines. On save Linear **re-signs** the asset URL (`?signature=…`, short-lived) and **re-linkifies bare issue refs** (`CLO-119` → markup), so send bare refs, not `<issue …>` markup.
+- **Scoped per issue:** `prepare_attachment_upload` ties the asset to the `issue` you pass — re-upload (don't reuse an `assetUrl`) when embedding the same image into another ticket.
+
+**Inline vs panel:** inline for anything worth *seeing at a glance* (screenshots, diagrams, stylistic before/after); panel for supplementary files (logs, larger artifacts); both for headline verification evidence.
+
 ### Threaded comment reply
 ```
 save_comment({ parentId: rootCommentId, body: "Reply..." })   // no issueId needed

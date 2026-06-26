@@ -8,7 +8,7 @@ Write a handoff document summarising the current conversation so a fresh agent c
 
 Include a "suggested skills" section in the document, which suggests skills that the agent should invoke.
 
-Do not duplicate content already captured in other artifacts (PRDs, plans, ADRs, issues, commits, diffs). Reference them by path or URL instead.
+Do not duplicate content already captured in other artifacts (PRDs, plans, ADRs, issues/tickets, commits, diffs). Reference them by path or URL instead.
 
 The handoff is the home for **transient session state** — branch/push state, commits ahead, what's left to do, known-flaky tests, parked stashes, "where the cursor is." That's exactly the bookkeeping that must **not** clutter the ticket (which records decisions + state transitions, not session status — see AGENTS.md § Lifecycle, step 4). Durable decisions belong in the ticket and are *referenced* here by id/URL; transient status belongs **here** and nowhere else.
 

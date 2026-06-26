@@ -237,7 +237,7 @@ ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'member';
 
 New rows get `role = 'member'` automatically. But what about existing rows? Behaviour varies:
 
-- **PostgreSQL (modern):** `DEFAULT` backfills existing rows
+- **PostgreSQL:** a constant `DEFAULT` has always backfilled existing rows — and since PG 11 it does so without rewriting the table
 - **MySQL:** behaviour varies by version
 - **Some ORMs:** set defaults in application code only, not at the database level — existing rows get `NULL`
 
@@ -310,6 +310,17 @@ Keep them in separate migration files. Schema migrations are straightforward to 
 
 ---
 
+## Testing Migrations
+
+Safety rule #2 — *test against production-like data* — is the floor. Two kinds of migration test catch the failures that slip through review:
+
+- **Behavioural tests — does the migration actually do what it claims?** Assert the *effect*, red-before/green-after: a new `CHECK` or `NOT NULL` constraint must reject the rows it's meant to (on both `INSERT` *and* `UPDATE` — it's easy to guard one and forget the other); a backfill must leave no nulls behind; a dropped column must actually be gone. A migration that runs without error isn't the same as one that did the right thing.
+- **Replay-parity tests — does a clean build reproduce production's shape?** Drop the schema and replay every migration from empty, then assert the seeded reference data matches the same source-of-truth constant the application reads. This catches the slow drift where a hand-applied production fix was never captured as a migration, so a fresh environment comes up subtly different.
+
+Both run against a real database engine — see [Testing](./testing.md) for the real-database test setup (containers, truncate-and-reseed, running these in CI).
+
+---
+
 ## Keeping Application Schemas in Sync
 
 When your database schema changes, your application schemas (Zod, Pydantic) need to change too. This is a coordination problem:
@@ -357,3 +368,4 @@ When starting a new project, determine:
 - **When migrations fail** — see [Error Handling](./error-handling.md) for rollback procedures and incident response
 - **Migrations and deployment** — see [Deployment](./deployment.md) for how migration phases fit into deploy pipelines
 - **Database constraints** — see [Data Integrity](./data-integrity.md) for the database-level integrity layer that migrations must maintain
+- **Testing migrations** — see [Testing](./testing.md) for the real-database setup behavioural and replay-parity migration tests need

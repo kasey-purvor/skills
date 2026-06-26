@@ -166,12 +166,12 @@ db.insert("users", user.model_dump())
 
 ### Key Differences from Zod
 
-| Aspect | Zod (TypeScript) | Pydantic (Python) |
-|--------|------------------|-------------------|
-| Schema definition | Values: `z.string()`, `z.object({...})` | Classes: `class User(BaseModel)` |
-| Validation trigger | Explicit: call `.parse()` or `.safeParse()` | On construction: `User(**data)` |
-| Type inference | Inferred from schema: `z.infer<typeof Schema>` | The class IS the type |
-| Forgetting to validate | Possible (if you skip `.parse()`) | Impossible (construction IS validation) |
+| Aspect                 | Zod (TypeScript)                               | Pydantic (Python)                       |
+| ---------------------- | ---------------------------------------------- | --------------------------------------- |
+| Schema definition      | Values: `z.string()`, `z.object({...})`        | Classes: `class User(BaseModel)`        |
+| Validation trigger     | Explicit: call `.parse()` or `.safeParse()`    | On construction: `User(**data)`         |
+| Type inference         | Inferred from schema: `z.infer<typeof Schema>` | The class IS the type                   |
+| Forgetting to validate | Possible (if you skip `.parse()`)              | Impossible (construction IS validation) |
 
 Pydantic's "validate on construction" means you can't create an invalid instance. If you have a `User` object, it was validated. This is a strong safety property.
 
@@ -189,6 +189,7 @@ class CoercingUser(BaseModel):
 ```
 
 **When to use which:**
+
 - **Strict:** API boundaries where you control the client (your own frontend). The client should send correct types.
 - **Coercing:** Environment variables (always strings), form data (always strings), third-party APIs with inconsistent types.
 
@@ -211,6 +212,7 @@ TypeScript interfaces, Python type annotations, strict compiler settings. Checke
 Zod schemas (TypeScript), Pydantic models (Python). Code that runs and inspects actual data at runtime. Applied at **boundaries** — the moment data enters or leaves your system.
 
 **What a boundary is:** The line between code you control and data you don't:
+
 - An API request arrives from a client → validate the JSON body
 - A database returns a record → validate it matches your schema
 - A third-party webhook sends data → validate the payload
@@ -225,14 +227,14 @@ Rules enforced by the database itself, regardless of what code sent the data. In
 
 ### Why All Three Layers
 
-| Scenario | Layer 1 (Types) | Layer 2 (Schemas) | Layer 3 (DB) |
-|----------|:---:|:---:|:---:|
-| Developer writes wrong type in code | Catches | - | - |
-| Client sends malformed JSON | - | Catches | - |
-| Migration script writes bad data directly | - | - | Catches |
-| Field renamed in code but not in DB | - | Catches | - |
-| Two services write conflicting data | - | - | Catches |
-| Code deploys with a bug that skips validation | - | - | Catches |
+| Scenario                                      | Layer 1 (Types) | Layer 2 (Schemas) | Layer 3 (DB) |
+| --------------------------------------------- | :-------------: | :---------------: | :----------: |
+| Developer writes wrong type in code           | Catches         | -                 | -            |
+| Client sends malformed JSON                   | -               | Catches           | -            |
+| Migration script writes bad data directly     | -               | -                 | Catches      |
+| Field renamed in code but not in DB           | -               | Catches           | -            |
+| Two services write conflicting data           | -               | -                 | Catches      |
+| Code deploys with a bug that skips validation | -               | -                 | Catches      |
 
 No single layer covers all scenarios. The gaps in one are filled by the others.
 
@@ -276,15 +278,15 @@ Notice the differences: Drizzle says `items` is `jsonb` — the database stores 
 
 Validate data when it crosses a trust boundary:
 
-| Boundary | Example | Validation |
-|----------|---------|------------|
-| **External API → App** | Third-party response | Parse through typed schema |
-| **User input → App** | Form submission, API request body | Validate with schema |
-| **File → App** | CSV/JSON import | Validate each record |
-| **App → Database** | Insert/update | Schema ensures correct shape before write |
-| **Database → App** | Query result | Parse through schema (proves DB returns what you expect) |
-| **Service → Service** | RPC response, webhook | Parse through boundary contract |
-| **Environment → App** | Config / env vars | Parse through config schema (see [Configuration](./configuration.md)) |
+| Boundary               | Example                           | Validation                                                            |
+| ---------------------- | --------------------------------- | --------------------------------------------------------------------- |
+| **External API → App** | Third-party response              | Parse through typed schema                                            |
+| **User input → App**   | Form submission, API request body | Validate with schema                                                  |
+| **File → App**         | CSV/JSON import                   | Validate each record                                                  |
+| **App → Database**     | Insert/update                     | Schema ensures correct shape before write                             |
+| **Database → App**     | Query result                      | Parse through schema (proves DB returns what you expect)              |
+| **Service → Service**  | RPC response, webhook             | Parse through boundary contract                                       |
+| **Environment → App**  | Config / env vars                 | Parse through config schema (see [Configuration](./configuration.md)) |
 
 **The principle:** Full validation at boundaries. Trust internally. The boundary is where untrusted becomes trusted.
 
@@ -297,6 +299,7 @@ Validate data when it crosses a trust boundary:
 Build complex structures from simple building blocks:
 
 **TypeScript (Zod):**
+
 ```typescript
 const AddressSchema = z.object({
   street: z.string(),
@@ -312,6 +315,7 @@ type User = z.infer<typeof UserSchema>;
 ```
 
 **Python (Pydantic):**
+
 ```python
 class Address(BaseModel):
     street: str
@@ -328,6 +332,7 @@ class User(BaseModel):
 Don't use loose strings when only specific values are valid:
 
 **TypeScript:**
+
 ```typescript
 const OrderSchema = z.object({
   status: z.enum(["pending", "confirmed", "shipped", "delivered"]),
@@ -336,6 +341,7 @@ const OrderSchema = z.object({
 ```
 
 **Python:**
+
 ```python
 from typing import Literal
 
@@ -349,6 +355,7 @@ class Order(BaseModel):
 Handle data that can be one of several types, distinguished by a field:
 
 **TypeScript:**
+
 ```typescript
 const EventSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("click"), x: z.number(), y: z.number() }),
@@ -359,6 +366,7 @@ const EventSchema = z.discriminatedUnion("type", [
 ```
 
 **Python:**
+
 ```python
 from pydantic import BaseModel
 from typing import Literal, Union
@@ -385,6 +393,7 @@ Event = Union[ClickEvent, KeypressEvent, ScrollEvent]
 Generate IDs and timestamps automatically:
 
 **TypeScript:**
+
 ```typescript
 const RecordSchema = z.object({
   id: z.string().default(() => crypto.randomUUID()),
@@ -394,6 +403,7 @@ const RecordSchema = z.object({
 ```
 
 **Python:**
+
 ```python
 from datetime import datetime, timezone
 from secrets import token_hex
@@ -412,13 +422,13 @@ Application-layer validation (Zod, Pydantic) protects the happy path. Database c
 
 ### Enforce at Both Layers
 
-| Constraint | Application Layer | Database Layer |
-|------------|-------------------|----------------|
-| **Required fields** | Schema validation | `NOT NULL` |
-| **Valid values** | Enum/literal types | `CHECK` constraints |
-| **Relationships** | Type references | `FOREIGN KEY` constraints |
-| **Uniqueness** | Pre-check before insert | `UNIQUE` constraints |
-| **Data format** | String parsing, regex | `CHECK` with regex or domain types |
+| Constraint          | Application Layer       | Database Layer                     |
+| ------------------- | ----------------------- | ---------------------------------- |
+| **Required fields** | Schema validation       | `NOT NULL`                         |
+| **Valid values**    | Enum/literal types      | `CHECK` constraints                |
+| **Relationships**   | Type references         | `FOREIGN KEY` constraints          |
+| **Uniqueness**      | Pre-check before insert | `UNIQUE` constraints               |
+| **Data format**     | String parsing, regex   | `CHECK` with regex or domain types |
 
 Application validation gives good error messages. Database constraints prevent bad data. Both are needed.
 
@@ -481,6 +491,7 @@ If your code throws an error between `BEGIN` and `COMMIT`, the database rolls ba
 ### In Application Code
 
 **TypeScript (using a pool/client):**
+
 ```typescript
 const client = await pool.connect();
 try {
@@ -497,6 +508,7 @@ try {
 ```
 
 **Python (SQLAlchemy async session):**
+
 ```python
 async with async_session() as session:
     async with session.begin():  # auto-commits on success, auto-rolls-back on exception
@@ -512,6 +524,7 @@ async with async_session() as session:
 ### When to Use Transactions
 
 Any time you have multiple database operations that must succeed or fail together:
+
 - Transferring between accounts (debit + credit)
 - Creating an order (insert order + insert order items + decrement inventory)
 - User signup (create user + create profile + send welcome email record)
@@ -537,31 +550,29 @@ Prefer enabling strict mode from day one. Retrofitting it onto an existing codeb
 
 ## Testing Data Correctness
 
-Zod and Pydantic validate data at runtime — but they only help if your schemas are correct and actually wired in. There are four distinct testing concerns for data:
+Zod and Pydantic only help if your schemas are correct and actually wired in — testing that `z.string().parse("hello")` works is testing the library, not your system. Four things are worth asserting, each mapping to a layer or boundary defined above:
 
-1. **Schema-to-reality alignment** — Does your schema match what the database/API actually sends? (contract tests)
-2. **Validation wiring** — Is the validation actually being called in your route handlers? (integration tests)
-3. **Transformation correctness** — Data enters valid but gets transformed at multiple stages (DB → API → hook → component). Each transformation can mangle data. (unit/integration tests)
-4. **Complex schema logic** — Custom refinements, discriminated unions, conditional validation have logic that can be wrong. (unit tests)
+- **Schema-to-reality alignment.** Parse real rows from the tables you own (and real responses from the APIs you consume) against your schema — a contract test that proves the schema matches what the store actually sends, not what you assume. This is also where lossy serialization hides (a value that parses but changes shape on the round trip through `jsonb` or timezone normalisation), which matters most at the repository-layer bridge, where the ORM and application representations deliberately differ.
+- **Validation wiring.** A schema that is never called protects nothing. Drive an endpoint with an invalid payload and assert it is rejected at the boundary — a missing required field returns a 400, not a 500 or a silent insert. (The *shape* of that 400 — the RFC 9457 envelope and its field-level error array — is Error Handling's to verify.)
+- **Transformation correctness.** Data enters valid but is reshaped at every stage (DB row → API → hook → component props), and each stage can mangle it — so test the stages that derive or aggregate, not the ones that just pass through.
+- **Complex schema logic.** Any hand-written schema logic — a `.refine()`, a discriminated union, conditional validation — has branches that can be wrong, so assert both the accept and the reject case (the classic trap: a percentage discount must be 0–100 but a fixed discount may exceed 100).
 
-**Don't test that Zod or Pydantic work** — `z.string().parse("hello")` is the library's job. **Do test** that your schemas match reality, that validation is wired in, that transformations produce correct output, and that custom schema logic behaves as expected.
-
-See [Testing](./testing.md) for full examples, code patterns, and the testing checklist for data integrity concerns.
+These all lean on a real database rather than a mock — see [Testing](./testing.md) for the real-database test setup and the broader test craft.
 
 ---
 
 ## Anti-Patterns
 
-| Don't | Do Instead | Why |
-|-------|-----------|-----|
-| Pass raw dicts/objects between functions | Define schemas for data structures | Raw objects have no contract — any function can put anything in them |
-| Use `any` or `unknown` without parsing | Parse through a schema, then use the typed result | `any` turns off all type safety — it's an escape hatch, not a strategy |
-| Use loose strings for constrained values | Use `z.enum()` / `Literal` types | Loose strings accept typos: `"actve"` instead of `"active"` |
-| Scatter validation throughout code | Validate once at the boundary, trust internally | Redundant validation clutters code and creates maintenance burden |
-| Skip validation for "trusted" internal data | Trust the model, validate at entry | Internal data was external data once — the boundary is where trust is established |
-| Store unvalidated external data | Always parse through a schema first | Garbage in, garbage out — but worse, garbage stored permanently |
-| Use TypeScript `as` type assertions | Use `.parse()` — assertions skip validation | `as User` tells the compiler to trust you; `.parse()` actually checks |
-| Validate at the database layer only | Validate at the application boundary too | DB errors are cryptic ("constraint violation on column X") vs schema errors ("email must be valid") |
+| Don't                                       | Do Instead                                        | Why                                                                                                 |
+| ------------------------------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Pass raw dicts/objects between functions    | Define schemas for data structures                | Raw objects have no contract — any function can put anything in them                                |
+| Use `any` or `unknown` without parsing      | Parse through a schema, then use the typed result | `any` turns off all type safety — it's an escape hatch, not a strategy                              |
+| Use loose strings for constrained values    | Use `z.enum()` / `Literal` types                  | Loose strings accept typos: `"actve"` instead of `"active"`                                         |
+| Scatter validation throughout code          | Validate once at the boundary, trust internally   | Redundant validation clutters code and creates maintenance burden                                   |
+| Skip validation for "trusted" internal data | Trust the model, validate at entry                | Internal data was external data once — the boundary is where trust is established                   |
+| Store unvalidated external data             | Always parse through a schema first               | Garbage in, garbage out — but worse, garbage stored permanently                                     |
+| Use TypeScript `as` type assertions         | Use `.parse()` — assertions skip validation       | `as User` tells the compiler to trust you; `.parse()` actually checks                               |
+| Validate at the database layer only         | Validate at the application boundary too          | DB errors are cryptic ("constraint violation on column X") vs schema errors ("email must be valid") |
 
 ---
 

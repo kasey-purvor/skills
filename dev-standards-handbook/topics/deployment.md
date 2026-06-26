@@ -69,6 +69,7 @@ if (featureFlags.isEnabled('new-checkout', { userId: user.id })) {
 ```
 
 The workflow:
+
 1. Deploy with flag off (code is in production but nobody can reach it)
 2. Enable for internal users (your team tests in production)
 3. Enable for 10% of users (canary-like, but at the feature level)
@@ -83,12 +84,12 @@ The workflow:
 
 ### When to Use Which
 
-| Pattern | Best for | Complexity |
-|---------|----------|-----------|
-| **Simple deploy** (just push new code) | Solo projects, early stage, can tolerate brief downtime | Low |
-| **Blue-green** | Zero-downtime requirement, need instant rollback | Medium |
-| **Canary** | High traffic, need to detect issues before they affect all users | Medium-High |
-| **Feature flags** | Decoupling deploy from release, gradual rollouts, A/B testing | Medium |
+| Pattern                                | Best for                                                         | Complexity  |
+| -------------------------------------- | ---------------------------------------------------------------- | ----------- |
+| **Simple deploy** (just push new code) | Solo projects, early stage, can tolerate brief downtime          | Low         |
+| **Blue-green**                         | Zero-downtime requirement, need instant rollback                 | Medium      |
+| **Canary**                             | High traffic, need to detect issues before they affect all users | Medium-High |
+| **Feature flags**                      | Decoupling deploy from release, gradual rollouts, A/B testing    | Medium      |
 
 For most projects starting out: **simple deploy + feature flags** gets you 80% of the benefit with minimal infrastructure.
 
@@ -128,21 +129,24 @@ Every project depends on code written by other people. Managing those dependenci
 
 ### Lockfiles
 
-`package-lock.json`, `poetry.lock`, `uv.lock` — record the exact version of every dependency and sub-dependency. They ensure:
+`pnpm-lock.yaml`, `package-lock.json`, `poetry.lock`, `uv.lock` — record the exact version of every dependency and sub-dependency. They ensure:
+
 - Everyone on the team gets identical versions
 - CI builds are reproducible
 - A library releasing a buggy patch doesn't silently break your build
 
 **Always commit your lockfile.**
 
-### npm ci vs npm install
+### Reproducible installs
 
-| Command | When to use | What it does |
-|---------|------------|--------------|
-| `npm install` | Development — adding/updating packages | Reads `package.json`, may update `package-lock.json` |
-| `npm ci` | CI/CD pipelines | Reads `package-lock.json` exactly, fails if out of sync |
+For TypeScript, **pnpm is the default**. It differs from npm in three ways that matter: a content-addressable global store hard-linked into each project (faster installs, far less disk), a strict non-flat `node_modules` that blocks *phantom dependencies* (you can only import what `package.json` declares), and first-class workspaces for monorepos. npm and yarn remain common alternatives — the install discipline is identical for all three.
 
-In CI, always use `npm ci`. It guarantees your build uses exactly what the lockfile says. `npm install` can silently resolve to different versions.
+| Command                          | When to use                            | What it does                                                              |
+| -------------------------------- | -------------------------------------- | ------------------------------------------------------------------------ |
+| `pnpm install`                   | Development — adding/updating packages | Reads `package.json`, may update `pnpm-lock.yaml`                         |
+| `pnpm install --frozen-lockfile` | CI/CD pipelines                        | Installs the lockfile exactly, fails if out of sync (`npm ci` equivalent) |
+
+In CI, always use the frozen install (`pnpm install --frozen-lockfile`; `npm ci` if you're on npm). It guarantees the build uses exactly what the lockfile says — a plain install can silently resolve different versions.
 
 Python equivalents: `uv sync` (reads lockfile exactly), `poetry install --no-update`.
 
@@ -150,27 +154,28 @@ Python equivalents: `uv sync` (reads lockfile exactly), `poetry install --no-upd
 
 ```
 "lodash": "4.17.21"      → exact pin — most conservative
-"lodash": "^4.17.21"     → caret — allows minor/patch updates (npm default)
+"lodash": "^4.17.21"     → caret — allows minor/patch updates (default)
 "lodash": "~4.17.21"     → tilde — allows only patch updates
 ```
 
-Most teams use `^` (the default) and rely on the lockfile for reproducibility, then update intentionally with `npm update`.
+Most teams use `^` (the default) and rely on the lockfile for reproducibility, then update intentionally with `pnpm update`.
 
 ### Update Cadence
 
 Update dependencies regularly — monthly is a common cadence. The longer you wait:
+
 - More breaking changes accumulate
 - Security vulnerabilities go unpatched
 - The update becomes a scary, risky event instead of routine maintenance
 
-**Process:** Once a month, run `npm outdated` (or `uv pip list --outdated`), update packages, run tests, create a PR. Dependabot can automate this.
+**Process:** Once a month, run `pnpm outdated` (or `uv pip list --outdated`), update packages, run tests, create a PR. Dependabot can automate this.
 
 ### Vulnerability Scanning
 
 ```bash
-# npm — built-in
-npm audit
-npm audit fix        # auto-fix where possible
+# pnpm / npm — built-in
+pnpm audit                 # report known vulnerabilities
+pnpm update <pkg>          # bump a flagged package to a patched version
 
 # Python
 pip-audit            # pip install pip-audit
@@ -227,6 +232,7 @@ COMMIT;
 ```
 
 **When to use which:**
+
 - **Optimistic:** Conflicts are rare, you don't want to block users (most web apps)
 - **Pessimistic:** Conflicts are common, correctness is critical (financial transactions)
 
@@ -270,6 +276,7 @@ results = await asyncio.gather(
 ```
 
 **When to use which:**
+
 - `Promise.all` / `asyncio.gather()`: When all results are needed and any failure should abort
 - `Promise.allSettled` / `asyncio.gather(return_exceptions=True)`: When results are independent and partial success is useful
 
@@ -335,11 +342,11 @@ CI/CD (Continuous Integration / Continuous Deployment) automates your build, tes
 Developer pushes code
         ↓
 CI Pipeline runs:
-  1. Install dependencies (npm ci)
+  1. Install dependencies (pnpm install --frozen-lockfile)
   2. Lint code
   3. Type check (tsc --noEmit)
   4. Run tests
-  5. Security scan (npm audit)
+  5. Security scan (pnpm audit)
   6. Build
         ↓
 CD Pipeline runs (if CI passes):
@@ -350,29 +357,38 @@ CD Pipeline runs (if CI passes):
 ```
 
 **Key principles:**
+
 - **Fast feedback:** The pipeline should tell you about failures in minutes, not hours.
 - **Fail fast:** Run the cheapest checks first (lint, type check) before expensive ones (tests, build).
-- **Reproducible:** Use lockfiles, pin tool versions, run `npm ci` not `npm install`.
+- **Reproducible:** Use lockfiles, pin tool versions, run the frozen install (`pnpm install --frozen-lockfile`) not a plain install.
 - **Gated:** Production deploy only happens if all previous steps pass.
 
 **Tools:** GitHub Actions (most common for GitHub repos), GitLab CI, CircleCI, Jenkins.
+
+### Environment promotion
+
+Modern teams run **trunk-based**: one long-lived branch (`main`), short-lived feature branches merged via PR — no permanent `staging`/`prod` branches. Every merge to `main` auto-deploys to a non-prod environment (UAT/staging); production is a **gated promotion**, not another branch merge.
+
+- **Build once, promote the same artifact.** Promote the exact build that passed UAT to production — never rebuild for prod (a rebuild can resolve different versions, or surface "works in staging, breaks in prod").
+- **Gate the promotion.** Production waits behind an approval — e.g. GitHub Environments' required-reviewer rule — and runs with environment-scoped secrets.
+- **Smoke-gate each step.** The smoke tests after each deploy should be an automated pipeline step that fails the deploy on any non-2xx — not a suite someone runs by hand. In a promotion model, a failing staging smoke blocks promotion to prod. Probe the real public entry point with a generous per-endpoint retry window so cold starts don't read as failures, and keep health endpoints unauthenticated so the probe can reach them.
 
 ---
 
 ## Anti-Patterns
 
-| Don't | Do Instead | Why |
-|-------|-----------|-----|
-| Deploy directly to production without testing | Deploy to staging first, run smoke tests | Untested deploys are the #1 cause of outages |
-| Drop database columns in the same deploy as code changes | Use expand-and-contract (separate deploys) | Makes rollback impossible |
-| Deploy with `npm install` in CI | Use `npm ci` — reproducible builds | `npm install` can resolve different versions than your lockfile |
-| Wait 6 months to update dependencies | Update monthly (or enable Dependabot) | Deferred updates become high-risk big-bang migrations |
-| Ignore `npm audit` findings | Run audit in CI as a gate | Known vulnerabilities are the easiest attack vector |
-| Use `Promise.all` when partial success is acceptable | Use `Promise.allSettled` for independent operations | `Promise.all` throws away successful results when one fails |
-| Leave feature flags in code after full rollout | Remove flags in the sprint after full rollout | Stale flags become confusing dead code |
-| Create a new DB connection per request | Use a connection pool | Per-request connections are slow and exhaust DB limits |
-| Acquire locks in inconsistent order | Always lock resources in the same order (e.g., by ID) | Inconsistent ordering causes deadlocks |
-| Skip rollback planning | Document rollback steps before deploying | Improvising rollback during an incident wastes critical time |
+| Don't                                                    | Do Instead                                            | Why                                                             |
+| -------------------------------------------------------- | ----------------------------------------------------- | --------------------------------------------------------------- |
+| Deploy directly to production without testing            | Deploy to staging first, run smoke tests              | Untested deploys are the #1 cause of outages                    |
+| Drop database columns in the same deploy as code changes | Use expand-and-contract (separate deploys)            | Makes rollback impossible                                       |
+| Deploy with `npm install` in CI                          | Use `npm ci` — reproducible builds                    | `npm install` can resolve different versions than your lockfile |
+| Wait 6 months to update dependencies                     | Update monthly (or enable Dependabot)                 | Deferred updates become high-risk big-bang migrations           |
+| Ignore `npm audit` findings                              | Run audit in CI as a gate                             | Known vulnerabilities are the easiest attack vector             |
+| Use `Promise.all` when partial success is acceptable     | Use `Promise.allSettled` for independent operations   | `Promise.all` throws away successful results when one fails     |
+| Leave feature flags in code after full rollout           | Remove flags in the sprint after full rollout         | Stale flags become confusing dead code                          |
+| Create a new DB connection per request                   | Use a connection pool                                 | Per-request connections are slow and exhaust DB limits          |
+| Acquire locks in inconsistent order                      | Always lock resources in the same order (e.g., by ID) | Inconsistent ordering causes deadlocks                          |
+| Skip rollback planning                                   | Document rollback steps before deploying              | Improvising rollback during an incident wastes critical time    |
 
 ---
 
@@ -395,3 +411,4 @@ CD Pipeline runs (if CI passes):
 - **Deploy metrics** — see [Monitoring](./monitoring.md) for tracking deploy frequency, failure rate, and rollback frequency
 - **Secrets in CI/CD** — see [Configuration](./configuration.md) and [Security](./security.md) for managing secrets in pipelines
 - **Dependency vulnerabilities** — see [Security](./security.md) for scanning and supply chain security
+- **Deploy smoke tests** — see [Testing](./testing.md) for what a post-deploy smoke test should assert
