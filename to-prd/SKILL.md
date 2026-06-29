@@ -1,11 +1,9 @@
 ---
 name: to-prd
-description: Turn the current conversation context into a PRD and publish it to the project issue tracker. Use when user wants to create a PRD from the current context.
+description: Turn the current conversation context into a PRD and write it to docs/PRD/ as a markdown file. Use when user wants to create a PRD from the current context.
 ---
 
 This skill takes the current conversation context and codebase understanding and produces a PRD. Do NOT interview the user — just synthesize what you already know.
-
-The issue tracker and triage label vocabulary should have been provided to you — run `/setup-matt-pocock-skills` if not.
 
 ## Process
 
@@ -17,7 +15,9 @@ A deep module (as opposed to a shallow module) is one which encapsulates a lot o
 
 Check with the user that these modules match their expectations. Check with the user which modules they want tests written for.
 
-3. Write the PRD using the template below, then publish it to the project issue tracker. Apply the `ready-for-agent` triage label - no need for additional triage.
+3. Write the PRD using the template below, then save it as `docs/PRD/YYYY-MM-DD-<feature-slug>.md` in the repo. Use today's date (YYYY-MM-DD format) and a kebab-case feature slug. Example: `docs/PRD/2026-05-27-tenant-invite-quota.md`.
+
+The PRD is a planning artifact, not an implementable issue — do not create a Linear issue for it. The follow-up `/to-issues` skill breaks the PRD into implementable Linear issues that reference back to this file.
 
 <prd-template>
 

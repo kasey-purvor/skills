@@ -88,6 +88,8 @@ async def test_create_user(client, db):
 **What integration tests prove:** Components actually work together — the handler validates, writes to the DB, returns the right response.
 **What they don't prove:** That the system handles load, that the UI renders correctly, that the deploy works.
 
+**When the deploy unit isn't a server.** The `request(app)` pattern above assumes a long-running HTTP server. If your deploy unit is a function the platform invokes (a serverless handler), the equivalent integration test invokes the *real exported handler* with a synthetic provider event (e.g. an API-Gateway request object built by a typed factory), running the whole middleware chain — routing, auth, validation, handler — against a real database, mocking only the composition root. Test the unit you actually deploy: if that's `handler(event)`, drive `handler(event)`, not a server you only construct in tests.
+
 ### Contract Tests — "Does my code match what external data actually looks like?"
 
 A contract test runs your schemas against real or snapshot data to prove they match reality:
@@ -110,6 +112,8 @@ def test_user_schema_matches_api(client):
 
 **What contract tests prove:** Your schemas match the real world — not just what you think the data looks like.
 
+**Round-trip contract tests.** A parse-only contract test (does the schema accept the data?) misses *lossy* serialization — a value that survives parsing but changes on the way through the store (JSON/`jsonb` coercion, date/timezone normalisation, composite keys). To catch it, write a value in through the application's own query/serialization path, read it back through the read path, and assert it both parses against the schema *and* deep-equals the original input. This matters most for schemas **shared** between services (e.g. backend and frontend) — see [API Design](./api-design.md) for defining that shared contract.
+
 ### End-to-End Tests — "Does the whole system work from the user's perspective?"
 
 An E2E test drives the actual UI (or the API from outside) and verifies the full flow:
@@ -128,6 +132,23 @@ test('user can sign up and see their dashboard', async ({ page }) => {
 
 **What E2E tests prove:** The system works as a user experiences it.
 **What they cost:** Slow, flaky (UI changes break them), expensive to maintain. Use sparingly for critical paths only.
+
+### Concurrency and Race-Condition Tests — "Does the guard hold when two callers race?"
+
+A race condition — two requests reading the same row before either writes (a time-of-check-to-time-of-use, or TOCTOU, gap) — is invisible to ordinary tests, because the dangerous interleaving only fires under precise timing. Make it deterministic instead of hoping to catch it: inject a synchronization barrier at the check step that parks every caller until all of them have read, then releases them together, so the worst-case ordering happens on *every* run.
+
+```typescript
+test('two concurrent creates cannot both pass the uniqueness check', async () => {
+  const barrier = makeBarrier(2);                 // releases once both callers arrive
+  onRead(repo, () => barrier.arriveAndWait());    // park each caller after it reads
+
+  const results = await Promise.allSettled([createDraft(input), createDraft(input)]);
+
+  expect(results.filter(r => r.status === 'fulfilled')).toHaveLength(1);  // exactly one wins
+});
+```
+
+The guarded implementation makes the barrier unsatisfiable for more than one caller (only one ever reaches the read), so the test turns green — put a timeout on the barrier so a green run can't hang. This is the opposite of waiting out a flaky test: you're *forcing* the bad interleaving, not polling for an expected state.
 
 ### The Testing Pyramid
 
@@ -148,312 +169,43 @@ The pyramid doesn't mean E2E tests are less important — it means they're more 
 
 ## What to Test for Each Production Concern
 
-This is the systems view. For each production topic in this skill, here's what needs testing and why.
+This is the systems view. For each production concern below, here's what needs testing — the detail of *what to verify and why* lives in that concern's own topic (linked from each entry); the test *craft* (how to write them) stays here.
 
 ### Data Integrity Tests
 
-See [Data Integrity](./data-integrity.md) for the concepts these tests verify.
+See [Data Integrity](./data-integrity.md) for what to verify: that your schema matches reality (parse real rows from the tables this concern owns against the schema — the contract-test pattern shown above), that validation is actually wired in (an invalid payload is rejected at the boundary with a 400, not silently inserted), that each stage of the transformation pipeline (DB row → API → hook → component) produces correct output, and that hand-written schema logic — custom refinements, discriminated unions, conditional validation — behaves on both its accept and reject branches. The contract and wiring tests run against a real database — see the **Test Database — Use a Real One** setup below.
 
-**Schema-to-reality alignment:**
-```typescript
-// Does our schema match what the database actually returns?
-test('UserSchema matches database rows', async () => {
-  const rows = await db.query('SELECT * FROM users LIMIT 10');
-  for (const row of rows) {
-    expect(() => UserSchema.parse(row)).not.toThrow();
-  }
-});
-```
+### Migration Tests
 
-**Validation wiring — is validation actually being called?**
-```typescript
-// Send invalid data → expect rejection
-test('POST /api/users rejects missing email', async () => {
-  const response = await request(app)
-    .post('/api/users')
-    .send({ name: 'Kasey' });  // no email
-  expect(response.status).toBe(400);
-  expect(response.body.errors).toBeDefined();
-});
-```
-
-**Data transformation correctness — the data pipeline:**
-
-Data enters valid but gets transformed at multiple stages. Each transformation needs testing:
-
-```
-DB row → API serialization → Frontend fetch → Hook/transform → Component props
-  ↑            ↑                   ↑               ↑                ↑
- test         test               test            test             test
-```
-
-```typescript
-// Testing a React hook that transforms API data
-test('useUserGroups groups users by role', () => {
-  const apiUsers = [
-    { id: 1, name: 'Alice', role: 'admin' },
-    { id: 2, name: 'Bob', role: 'member' },
-    { id: 3, name: 'Carol', role: 'admin' },
-  ];
-
-  const { result } = renderHook(() => useUserGroups(apiUsers));
-
-  expect(result.current.admin).toHaveLength(2);
-  expect(result.current.member).toHaveLength(1);
-});
-```
-
-```python
-# Testing a service function that derives data
-def test_calculate_order_summary():
-    orders = [
-        Order(id=1, amount=50.00, status="completed"),
-        Order(id=2, amount=30.00, status="pending"),
-        Order(id=3, amount=20.00, status="completed"),
-    ]
-
-    summary = calculate_order_summary(orders)
-
-    assert summary.total_completed == 70.00
-    assert summary.count_pending == 1
-```
-
-**Complex schema logic:**
-```typescript
-// Custom refinements have logic that can be wrong — test them
-const DiscountSchema = z.object({
-  type: z.enum(["percentage", "fixed"]),
-  value: z.number(),
-}).refine(
-  (d) => d.type !== "percentage" || (d.value >= 0 && d.value <= 100),
-  "Percentage discount must be 0-100"
-);
-
-test('rejects percentage discount over 100', () => {
-  const result = DiscountSchema.safeParse({ type: "percentage", value: 150 });
-  expect(result.success).toBe(false);
-});
-
-test('allows fixed discount over 100', () => {
-  const result = DiscountSchema.safeParse({ type: "fixed", value: 150 });
-  expect(result.success).toBe(true);
-});
-```
+See [Schema Evolution](./schema-evolution.md) for what to verify: that each migration's intended effect actually holds (a new constraint rejects the rows it should — on both INSERT and UPDATE; a backfill leaves no nulls; a dropped column is gone), proven red-before/green-after; and that a clean replay from an empty schema reproduces the same reference data the app treats as source-of-truth. These run against a real database — see the **Test Database — Use a Real One** setup below.
 
 ### Configuration Tests
 
-See [Configuration](./configuration.md) for the concepts these tests verify.
-
-```typescript
-// Does the app fail fast with clear message when config is missing?
-test('startup fails when DATABASE_URL is missing', () => {
-  const original = process.env.DATABASE_URL;
-  delete process.env.DATABASE_URL;
-  expect(() => envSchema.parse(process.env)).toThrow(/DATABASE_URL/);
-  process.env.DATABASE_URL = original;
-});
-
-// Does type coercion work?
-test('PORT is coerced from string to number', () => {
-  const result = envSchema.parse({ ...validEnv, PORT: '8080' });
-  expect(result.PORT).toBe(8080);
-  expect(typeof result.PORT).toBe('number');
-});
-```
+See [Configuration](./configuration.md) for what to verify: that the config schema fails fast when a required variable is missing — and that the error names the offending variable, so a broken deploy surfaces a clear message at startup rather than a cryptic crash on first use (in serverless, this stands in for the cold-start failure that would otherwise hide deep in a handler); and that the coercion the config relies on is real — a `PORT` string parses to a typed number, and the boolean allowlist doesn't let `"false"`/`"0"` silently flip a flag on. These are small, fast tests against the schema itself — no real database needed, since config validation is pure parsing.
 
 ### Error Handling Tests
 
-See [Error Handling](./error-handling.md) for the concepts these tests verify.
-
-```typescript
-// Does the error hierarchy produce correct HTTP status codes?
-test('NotFoundError returns 404', async () => {
-  const response = await request(app).get('/api/users/nonexistent');
-  expect(response.status).toBe(404);
-  expect(response.body.type).toBe('NotFoundError');
-});
-
-// Does the global handler catch unknown errors safely?
-test('unknown errors return 500 without exposing internals', async () => {
-  vi.spyOn(db, 'findUser').mockRejectedValue(new Error('segfault'));
-
-  const response = await request(app).get('/api/users/123');
-
-  expect(response.status).toBe(500);
-  expect(response.body.type).toBe('InternalError');
-  expect(response.body.title).toBe('Internal server error');
-  // MUST NOT contain stack trace or internal error details
-  expect(response.body).not.toHaveProperty('stack');
-  expect(response.body.title).not.toContain('segfault');
-});
-
-// Does the error response match RFC 9457 format?
-test('validation errors include field-level details', async () => {
-  const response = await request(app)
-    .post('/api/users')
-    .send({ name: '', email: 'not-an-email' });
-
-  expect(response.status).toBe(400);
-  expect(response.body).toMatchObject({
-    type: 'ValidationError',
-    status: 400,
-    errors: expect.arrayContaining([
-      expect.objectContaining({ field: 'name' }),
-      expect.objectContaining({ field: 'email' }),
-    ]),
-  });
-});
-```
-
-```python
-async def test_not_found_returns_404(client):
-    response = await client.get("/api/users/nonexistent")
-    assert response.status_code == 404
-    assert response.json()["type"] == "NotFoundError"
-
-async def test_unknown_error_returns_safe_500(client, monkeypatch):
-    async def broken_query(*args):
-        raise RuntimeError("segfault")
-    monkeypatch.setattr(db, "find_user", broken_query)
-
-    response = await client.get("/api/users/123")
-    assert response.status_code == 500
-    assert "segfault" not in response.json()["title"]
-```
+See [Error Handling](./error-handling.md) for what to verify: that the error hierarchy maps to the right response (a thrown `NotFoundError` returns 404 with code `NOT_FOUND`, a validation failure returns 400 with code `VALIDATION_ERROR` and a field-level `errors` array), proving the RFC 9457 shape is populated; and — the check that matters most — that an unexpected (non-`AppError`) failure deep in a dependency returns a generic 500 with code `INTERNAL_ERROR` whose body leaks nothing: no stack trace, and none of the underlying error message. Assert that negative explicitly. These drive a request through the whole middleware chain against a real backend — see the **Test Database — Use a Real One** setup below.
 
 ### Resilience Tests
 
-See [Resilience](./resilience.md) for the concepts these tests verify.
-
-```typescript
-// Health check returns 503 when database is down
-test('readiness returns 503 when DB is down', async () => {
-  await db.disconnect();
-  const response = await request(app).get('/health/ready');
-  expect(response.status).toBe(503);
-  expect(response.body.status).toBe('not ready');
-  await db.connect();
-});
-
-// Liveness always returns 200 regardless of dependencies
-test('liveness returns 200 even when DB is down', async () => {
-  await db.disconnect();
-  const response = await request(app).get('/health/live');
-  expect(response.status).toBe(200);
-  await db.connect();
-});
-
-// Idempotency — same key returns same result
-test('duplicate idempotency key returns original result', async () => {
-  const key = 'order-123-payment';
-  const first = await request(app)
-    .post('/api/payments')
-    .set('Idempotency-Key', key)
-    .send({ amount: 1000 });
-  const second = await request(app)
-    .post('/api/payments')
-    .set('Idempotency-Key', key)
-    .send({ amount: 1000 });
-
-  expect(first.status).toBe(201);
-  expect(second.status).toBe(200);  // or 201 — but same result
-  expect(second.body.id).toBe(first.body.id);  // same payment, not a duplicate
-});
-```
+See [Resilience](./resilience.md) for what to verify: the liveness/readiness split holds against a dependency you can actually stop (readiness returns 503 with a not-ready body when the database is down; liveness still returns 200, so traffic routes away instead of triggering a restart loop), and idempotency de-duplicates (two requests with the same idempotency key produce one effect, the second returning the stored result, not a duplicate). The idempotency test must drive the two requests *concurrently* to reproduce the check-then-act race — a sequential version false-greens against the broken implementation. These need a real database engine to exercise the readiness probe and enforce the storage-layer uniqueness guard, so use the **Test Database — Use a Real One** setup below.
 
 ### Security Tests
 
-See [Security](./security.md) for the concepts these tests verify.
+See [Security](./security.md) for what to verify: that an unauthenticated request to a protected route is rejected (401) and that an authenticated caller cannot reach a resource they don't own (403) — the authentication gate and the resource-ownership check are distinct failures and need separate assertions; that an injection payload driven through a real endpoint is handled safely *and* the target table still exists afterward, proving parameterized queries held; and that an error response leaks no source-file paths or internal implementation detail to a probing attacker (the generic no-stack-trace-in-500 guarantee is Error Handling's). Because these prove negatives against a live request path — and the injection check only means something against a real database engine, not a mock — run them with the **Test Database — Use a Real One** setup below.
 
-```typescript
-// Authorization — user cannot access another user's data
-test('user cannot access another user\'s data', async () => {
-  const response = await request(app)
-    .get('/api/users/456')
-    .set('Authorization', `Bearer ${userAToken}`);
-  expect(response.status).toBe(403);
-});
+### Multi-Tenant Isolation Tests
 
-// Authentication — protected routes reject unauthenticated requests
-test('protected route rejects missing auth', async () => {
-  const response = await request(app).get('/api/users/123');
-  expect(response.status).toBe(401);
-});
-
-// SQL injection — malicious input doesn't break the system
-test('SQL injection attempt is handled safely', async () => {
-  const response = await request(app)
-    .get('/api/users')
-    .query({ search: "'; DROP TABLE users; --" });
-
-  // Should either reject (400) or return empty results safely
-  expect([200, 400]).toContain(response.status);
-  // Table must still exist
-  const count = await db.query('SELECT COUNT(*) as c FROM users');
-  expect(count[0].c).toBeGreaterThan(0);
-});
-
-// Sensitive data not leaked in errors
-test('error responses do not contain stack traces', async () => {
-  const response = await request(app).get('/api/force-error');
-  expect(response.body).not.toHaveProperty('stack');
-  expect(JSON.stringify(response.body)).not.toContain('.ts:');
-  expect(JSON.stringify(response.body)).not.toContain('.py:');
-});
-```
+See [Multi-Tenant Isolation](./multi-tenant-isolation.md) for what to verify: prove the negative (a query with no tenant filter returns only the caller's rows), cover the fail-safe paths (missing or empty tenant context returns zero rows), test the write side (a row stamped for another tenant is rejected), and reproduce the production privilege drop so the test can't false-green. These can only be proven against a real database engine — mocks can't enforce isolation — so use the **Test Database — Use a Real One** setup below.
 
 ### API Contract Tests
 
-See [API Design](./api-design.md) for the concepts these tests verify.
-
-```typescript
-// Response shape consistency
-test('GET /api/users returns paginated response', async () => {
-  const response = await request(app).get('/api/users?limit=10');
-  expect(response.body).toHaveProperty('data');
-  expect(response.body).toHaveProperty('pagination');
-  expect(Array.isArray(response.body.data)).toBe(true);
-  expect(response.body.pagination).toHaveProperty('hasMore');
-});
-
-// Status codes are consistent
-test('creating returns 201, not 200', async () => {
-  const response = await request(app)
-    .post('/api/users')
-    .send(validUser);
-  expect(response.status).toBe(201);
-});
-
-// Pagination edge cases
-test('empty results return empty data array, not 404', async () => {
-  const response = await request(app).get('/api/users?status=nonexistent');
-  expect(response.status).toBe(200);
-  expect(response.body.data).toEqual([]);
-});
-```
+See [API Design](./api-design.md) for what to verify: that every collection endpoint returns the project's chosen response shape consistently (a bare array, or the `{ data, pagination }` envelope with `hasMore`) and no endpoint drifts to a third shape; that mutations return the status code their HTTP method promises (a create returns 201, not a generic 200); and that the empty-collection edge case is handled as a contract, not an error (a query matching nothing returns 200 with an empty collection, not a 404). These drive the real endpoints end to end against a real database — see the **Test Database — Use a Real One** setup below.
 
 ### Deployment Smoke Tests
 
-See [Deployment](./deployment.md) for the concepts these tests verify.
-
-```typescript
-// Run after every deploy — verify critical paths work
-test('health check is reachable', async () => {
-  const response = await fetch(`${DEPLOY_URL}/health/ready`);
-  expect(response.status).toBe(200);
-});
-
-test('homepage loads', async () => {
-  const response = await fetch(`${DEPLOY_URL}/`);
-  expect(response.status).toBe(200);
-});
-
-test('API returns data', async () => {
-  const response = await fetch(`${DEPLOY_URL}/api/health`);
-  const body = await response.json();
-  expect(body.status).toBe('ok');
-});
-```
+See [Deployment](./deployment.md) for what to verify and for running these as an automated deploy/promotion gate (its "Smoke-gate each step" bullet) rather than a hand-run suite. A smoke test probes the *live deployed URL* from outside (not an in-process app) right after the deploy: the health/readiness endpoint is reachable, the primary public entry point serves, and a representative API path returns its expected payload — not merely any 2xx, so a process that accepts connections but can't serve real responses still fails the gate. These hit a running deployment over HTTP, so they need no test database.
 
 ---
 
@@ -467,6 +219,10 @@ test('API returns data', async () => {
 | Python | **pytest** | The standard, excellent fixtures, extensible with plugins |
 
 Alternatives: Jest (TypeScript, older, slower than Vitest), unittest (Python, built-in but verbose).
+
+### Test Environment Setup
+
+Two setup concerns bite early. First, **match the environment to the test**: DOM-dependent tests need a browser-like environment (jsdom/happy-dom) while pure logic tests run faster on a plain node environment — most runners let you select per file, so don't pay the DOM cost for logic tests. Second, **modules that read environment variables at import time crash test *collection***, not just execution, on a clean checkout where those vars are unset — the import runs before any test does. Fix it centrally by injecting inert dummy values in the test config rather than scattering env setup across files.
 
 ### Test Database — Use a Real One
 
@@ -505,6 +261,10 @@ async def clean_db(db):
 ```
 
 **Options:** Docker + testcontainers (spins up a real Postgres/MySQL), SQLite in-memory (fast but lacks some features), dedicated test database in your cloud.
+
+**Resetting between tests.** Re-running migrations before every test is correct but slow. The fast path is to truncate instead — `TRUNCATE … RESTART IDENTITY CASCADE` across every table, discovered dynamically from the catalog (so new tables are covered automatically), skipping the migration-ledger table. Re-seed any reference data the app treats as a source of truth from the *same* constant the application uses — otherwise truncation silently wipes seeded rows and tests drift from production. Keep the foreign-key-graph invariants in one reset helper rather than scattering them across tests.
+
+**Sharing one container, safely.** Starting a fresh database container per test file is wasteful; start one in global setup and share it. But a shared database and parallel test files don't mix — concurrent files stomp on each other's truncate/seed. **Isolation strategy and parallelism are coupled:** either truncate-per-test with test files run serially, or give each parallel worker its own database. Allow generous timeouts on first run, since the image cold-pulls once and per-test timeouts don't cover global setup.
 
 ### Mocking External HTTP Services
 
@@ -591,6 +351,8 @@ server.use(http.post('https://api.stripe.com/v1/charges', () => {
 ```
 
 Function-level mocks test your mock. HTTP-level mocks test your code.
+
+**A third option for cloud-service SDKs: a local emulator.** For provider SDKs (AWS, GCP) there's an option beyond mocking the HTTP boundary — run a local emulator of the service (e.g. LocalStack) in a container and point the real SDK client at it. This exercises *more* than an HTTP mock: the client's request signing, serialization, pagination, waiters, and error-shape parsing all run. It's viable precisely because an emulator costs nothing to call (unlike the real Stripe/SendGrid APIs). Use the SDK's built-in waiters rather than `sleep`s for eventually-consistent operations. Keep HTTP-boundary mocking (above) for arbitrary third-party APIs that have no emulator.
 
 ### Test Organization
 
@@ -751,7 +513,7 @@ When reviewing whether your system is adequately tested, walk through each conce
 2. **Test database strategy?** Docker + testcontainers for CI, local database for development.
 3. **What's your minimum testing bar?** At minimum: schema validation wiring, error response format, authentication/authorization, critical API contracts.
 4. **How many E2E tests?** One per critical user journey (signup, core workflow, payment if applicable). Not more than 10-20 for most apps.
-5. **When do tests run?** Unit + integration on every PR. E2E on merge to main. Smoke tests on every deploy.
+5. **When do tests run?** Unit + integration on every PR. E2E on merge to main. Smoke tests on every deploy. The integration tests that need Docker or a real database are exactly the ones most often gated behind a separate opt-in command — make sure CI actually runs them, or your highest-value guards (tenant isolation, migration parity, concurrency) silently rot into checks nobody runs.
 
 ---
 
@@ -760,9 +522,11 @@ When reviewing whether your system is adequately tested, walk through each conce
 This topic connects to every other topic in the skill. Each section above links to the relevant topic for the concepts being tested:
 
 - [Data Integrity](./data-integrity.md) — schemas, validation boundaries, transformation correctness
+- [Schema Evolution](./schema-evolution.md) — migration behaviour and replay-parity tests
 - [Configuration](./configuration.md) — startup validation, type coercion
 - [Error Handling](./error-handling.md) — error hierarchy, response format, information leakage
 - [Resilience](./resilience.md) — health checks, idempotency, timeout handling
 - [Security](./security.md) — authentication, authorization, injection, sensitive data exposure
+- [Multi-Tenant Isolation](./multi-tenant-isolation.md) — tenant scoping, RLS, cross-tenant write protection
 - [API Design](./api-design.md) — response shapes, pagination, status codes
 - [Deployment](./deployment.md) — smoke tests, migration verification

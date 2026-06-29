@@ -182,11 +182,17 @@ Request arrives → Generate ID: req_abc123
 
 Search for `traceId=req_abc123` and you get the complete story.
 
-### Relationship to distributed tracing
+### Correlation ID, span, trace — the vocabulary
 
-Before implementing correlation IDs from scratch, decide whether you're going to adopt OpenTelemetry (see [Monitoring](./monitoring.md)). If you are, **use OTel's trace ID as your log correlation ID** — OTel auto-instrumentation generates a trace ID per request and propagates it across services via the W3C `traceparent` header. Both `pino` and `structlog` can be wired to read the current OTel trace ID and include it in every log entry. That way, clicking a trace in Jaeger / Datadog / Grafana Tempo lands you on the matching logs for free.
+A *correlation ID* (or request ID) is the one identifier tying together everything done for a single request — search it, get the whole story. A *span* is one timed unit of work inside that request ("query the database", "call the payment API"), recording its duration and outcome. A *trace* is the whole tree of spans; every span shares one **trace ID** and records its parent, so the steps assemble into a tree showing where time went.
 
-If you're not using OTel (yet, or at all), run your own correlation ID — generate one per request, propagate it downstream, stamp it on every log line. The pattern below works regardless of which ID you're carrying, and swaps cleanly to OTel's trace ID later.
+In a single service, a correlation ID on every log line is enough. Across services, the trace ID *is* the correlation ID — it rides a standard header (W3C `traceparent`) so the next service keeps the same ID and adds its own spans. [Monitoring](./monitoring.md) covers how to read a trace; here we only care that the ID lands on every log line.
+
+### OpenTelemetry and your logger
+
+Does OpenTelemetry replace `pino` / `structlog`? **No — it sits alongside them.** You keep logging with your existing logger; OTel's job is to *correlate* those logs with traces and give you one pipeline to ship telemetry. The payoff for logging is **trace-log correlation**: OTel exposes the current trace ID and span ID, and you stamp them on every log line, so clicking a slow span in your tracing UI jumps straight to that request's logs. Two ways to wire it: a **log bridge** that intercepts your logger's output and adds the trace context (no call-site changes — the usual choice for an existing app), or emitting through OTel's own logs API (mostly for instrumentation libraries).
+
+**Decide this early.** If you're adopting OTel, use its trace ID as your log correlation ID and let its SDKs own cross-service propagation (the `traceparent` header). If you're not using OTel yet, run your own correlation ID — the propagation pattern below works regardless of which ID you carry, and swaps cleanly to OTel's trace ID later. [Monitoring](./monitoring.md) covers the tracing side: spans, auto-instrumentation, and the collector/exporter pipeline.
 
 ### Automatic Propagation
 
@@ -409,6 +415,18 @@ Backend logging is well-understood: use a structured logger, write JSON, ship to
 4. **Catch blocks should not swallow errors.** The pattern `catch (err) { console.error(err); return []; }` is the most common frontend logging anti-pattern. The error is "logged" to a place nobody sees, the component receives empty data as if nothing went wrong, and the user gets a silent partial failure. Instead, let the error propagate to your data-fetching layer's error state (React Query's `error` property, SWR's error return) so the UI can show an error state and the global error handler can report to Sentry.
 
 **Rule of thumb:** If it helps you debug during development, it's a `console.log` that should be removed before merge. If it reports a failure in production, it should go to Sentry. If it measures user behaviour, it should go to analytics. There is almost no case where `console.log` in committed production code is the right choice.
+
+### What an error-tracking service captures
+
+`console.error` gives you a string in one person's browser. An error-tracking SDK (Sentry is the common default; Datadog RUM is equivalent) captures what you actually need to debug a failure you'll never see live:
+
+- **Unhandled errors and promise rejections**, caught automatically via `window.onerror` / `unhandledrejection` — no per-`catch` wiring.
+- **Source-mapped stack traces.** Production JS is minified, so a raw stack reads `a.b is not a function at main.abc.js:1:4567`. You upload **source maps** at build time and the service un-minifies the trace back to real file, line, and function. Upload them to the service but don't ship them publicly — they expose your source.
+- **Breadcrumbs** — the trail of clicks, navigations, and network calls leading up to the error.
+- **User and release context** — which user (an ID, not raw PII) and which deployed version hit it.
+- **Web Vitals** (LCP / CLS / INP) and optional **session replay** — client-perceived signals backend logs can't see.
+
+**Privacy:** capture of personal data is opt-in — attach a user ID, not email or IP, and use a scrub hook (Sentry's `beforeSend`) to strip tokens or request bodies before the event leaves the browser. The client-side version of the secrets-scrubbing rule above.
 
 ---
 

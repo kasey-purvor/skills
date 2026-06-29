@@ -47,18 +47,38 @@ Ask the user:
 - Should any slices be merged or split further?
 - Are the correct slices marked as HITL and AFK?
 
+For each AFK slice, also confirm you have the inputs needed for the agent-ready body template (Goal, Scope, ACs, Verification — see the `linear` skill). Ask the user for any missing fields before proceeding.
+
 Iterate until the user approves the breakdown.
 
 ### 5. Publish the issues to the issue tracker
 
-For each approved slice, publish a new issue to the issue tracker. Use the issue body template below. These issues are considered ready for AFK agents, so publish them with the correct triage label unless instructed otherwise.
+For each approved slice, publish a new issue. Body shape depends on slice type:
+
+- **AFK slices**: use the **agent-ready body template** defined in the `linear` skill (Goal, Scope, ACs, Verification). Publish in **Backlog state** with the `triage/ready-for-agent` label.
+- **HITL slices**: use the lighter **HITL body** below. Publish in **Backlog state** with the `triage/ready-for-human` label.
+
+`/to-issues` produces high-quality, well-defined tickets but **does not schedule them**. Promotion to **Todo** state (signalling the work is next-up for execution) is a separate manual decision — done in the Linear UI or via `/triage`. See the "Triage role → Linear primitives" table in the `linear` skill for the state-vs-label distinction.
+
+All slices — regardless of type — sit inside the universal `## Parent` / `## Blocked by` frame.
 
 Publish issues in dependency order (blockers first) so you can reference real issue identifiers in the "Blocked by" field.
 
-<issue-template>
+<universal-frame>
 ## Parent
 
 A reference to the parent issue on the issue tracker (if the source was an existing issue, otherwise omit this section).
+
+## <slice body — see below for HITL; see `linear` skill for AFK>
+
+## Blocked by
+
+- A reference to the blocking ticket (if any)
+
+Or "None - can start immediately" if no blockers.
+</universal-frame>
+
+<hitl-body>
 
 ## What to build
 
@@ -72,12 +92,6 @@ Avoid specific file paths or code snippets — they go stale fast. Exception: if
 - [ ] Criterion 2
 - [ ] Criterion 3
 
-## Blocked by
-
-- A reference to the blocking ticket (if any)
-
-Or "None - can start immediately" if no blockers.
-
-</issue-template>
+</hitl-body>
 
 Do NOT close or modify any parent issue.

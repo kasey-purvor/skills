@@ -338,6 +338,17 @@ This is one of the rare cases where type coercion makes more sense than strict v
 
 ---
 
+## Testing Configuration
+
+This topic's whole promise is **fail fast at the boundary**, so the tests prove the boundary actually fails. Two things are worth asserting — neither needs a database, since config validation is pure parsing:
+
+- **Fail-fast on a missing variable.** Parsing the config with a required variable removed must throw, and the error must *name* the variable. A config that imports fine but accepts a missing `DATABASE_URL` has just deferred the crash to the first query three hours later. (In serverless, this stands in for the cold-start failure that would otherwise hide deep in a handler.)
+- **Coercion is real and safe.** Feed `PORT` in as a string and assert you get back a typed number. Booleans get their own case: a naive coercion treats `"false"` and `"0"` as `true`, so assert `booleanFromEnv` rejects or correctly maps them — a flag silently flipping on is the bug this guards against.
+
+See [Testing](./testing.md) for the test-suite setup and where these sit in the pyramid.
+
+---
+
 ## Serverless and Edge Function Configuration
 
 The patterns above assume your application starts once and stays running — a server that boots, validates config, then serves requests indefinitely. In serverless environments (AWS Lambda, Vercel Functions, Deno edge functions), there's no persistent "startup." Each function invocation might be a fresh start, or it might reuse a warm instance from a previous invocation. You don't control which.
@@ -431,3 +442,4 @@ When starting a new project, determine:
 - **When config loading fails** — see [Error Handling](./error-handling.md) for how to structure startup errors
 - **Secrets management** — see [Security](./security.md) for production secret storage and rotation
 - **Config in deployment** — see [Deployment](./deployment.md) for how environment-specific config is managed across environments
+- **Testing configuration** — see [Testing](./testing.md) for the test-suite setup these startup-validation and coercion tests sit in

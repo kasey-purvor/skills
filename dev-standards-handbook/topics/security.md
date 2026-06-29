@@ -41,7 +41,7 @@ cursor.execute("SELECT * FROM users WHERE email = %s", (user_input,))
 const user = await db.query('SELECT * FROM users WHERE email = $1', [userInput]);
 ```
 
-**ORMs (Drizzle, Prisma, SQLAlchemy) use parameterized queries by default.** Drizzle's `` sql`` `` template tag parameterizes every interpolated value; the dangerous escape hatches are the raw ones — `sql.raw()` in Drizzle, `$queryRawUnsafe` in Prisma, or string-concatenated `.execute()`. If you must write raw SQL, always use the parameterized form.
+**ORMs (SQLAlchemy, Prisma, Drizzle) use parameterized queries by default.** But raw query methods (`.execute()`, `$queryRaw`, `Prisma.$queryRawUnsafe`) can still be vulnerable if you concatenate strings. If you must write raw SQL, always use the parameterized form.
 
 ### NoSQL Injection
 
@@ -255,6 +255,8 @@ async def security_headers(request, call_next):
     return response
 ```
 
+The manual `X-XSS-Protection: 0` mirrors what `helmet` sets by default — the header is deliberately *off* because the legacy browser XSS auditor it enabled was itself buggy and has been removed from modern browsers; CSP is the real protection.
+
 ### Key Headers
 
 | Header | What it does | Why it matters |
@@ -366,55 +368,9 @@ Attackers publish packages with names like `lodsah` (misspelling of `lodash`). B
 
 ## Authentication vs Authorization
 
-These sound similar but mean completely different things:
+**Authentication** is "who are you?" (identity); **authorization** is "what are you allowed to do?" (permission). The classic, dangerous mistake is checking the first but not the second — an endpoint that confirms a caller is logged in but never checks they own the resource they're acting on, so any authenticated user can act on anyone's data. The three checks every sensitive endpoint owes (authenticated? authorised for *this resource*? authorised for *this action*?), the authorization models behind them (RBAC, ABAC, ReBAC), enforce-server-side, 401-vs-403, and the implementation mechanics (OIDC flows, JWT verification with JWKS, session strategies) are all covered in depth in [Authentication & Authorization](./authentication-authorization.md) — the canonical reference.
 
-**Authentication (AuthN)** — "Who are you?" Verifying identity. Login, session tokens, JWTs.
-
-**Authorization (AuthZ)** — "What are you allowed to do?" Checking permissions. Can this user access this resource?
-
-A common and dangerous mistake — checking authentication but not authorization:
-
-```typescript
-// BAD: verifies user is logged in, but not that they own this resource
-app.delete('/users/:id', requireAuth, async (req, res) => {
-  await db.deleteUser(req.params.id);  // Any user can delete ANY other user!
-});
-
-// GOOD: checks both authentication AND authorization
-app.delete('/users/:id', requireAuth, async (req, res) => {
-  if (req.user.id !== req.params.id && req.user.role !== 'admin') {
-    throw new AuthorizationError("Can only delete your own account");
-  }
-  await db.deleteUser(req.params.id);
-});
-```
-
-```python
-# BAD
-@app.delete("/users/{user_id}")
-async def delete_user(user_id: str, current_user: User = Depends(get_current_user)):
-    await db.delete_user(user_id)  # Any authenticated user can delete anyone!
-
-# GOOD
-@app.delete("/users/{user_id}")
-async def delete_user(user_id: str, current_user: User = Depends(get_current_user)):
-    if current_user.id != user_id and current_user.role != "admin":
-        raise AuthorizationError("Can only delete your own account")
-    await db.delete_user(user_id)
-```
-
-### The Authorization Checklist
-
-For every endpoint that modifies or returns sensitive data, ask:
-1. Is the user authenticated? (Do they have a valid session/token?)
-2. Are they authorized for this specific resource? (Do they own it? Are they an admin?)
-3. Are they authorized for this action? (Can they read but not write? Can they view but not delete?)
-
-### Authentication Implementation
-
-The AuthN/AuthZ distinction above tells you *what* to check. The *how* — token shapes, OIDC flows, JWT verification with JWKS, session strategies, managed vs self-hosted identity providers — is covered in depth in [Authentication & Authorization](./authentication-authorization.md). That chapter is the canonical reference for the implementation side.
-
-From a security-chapter standpoint, a few JWT-specific concerns are worth calling out here because they're common attack surfaces:
+From a security standpoint, a few JWT-specific concerns are worth double-checking on your verifier because they're common attack surfaces:
 
 - **Pin allowed algorithms explicitly.** `jwt.verify(token, key)` in some libraries historically accepted `alg: "none"` tokens — unsigned tokens that any attacker could forge. Always pass an explicit `algorithms: ["RS256"]` (or whichever you actually use) to the verifier.
 - **Validate `iss` and `aud`.** A token issued for Service A can be replayed against Service B if Service B doesn't check the audience. A token issued by a dev-environment IdP can be replayed against production if the issuer isn't validated.
@@ -508,92 +464,27 @@ Covered in detail in [Configuration](./configuration.md), but the security persp
 
 ## Authorization Models
 
-Authentication answers "who are you?" Authorization answers "what are you allowed to do?" Many applications handle authentication well but then do authorization ad-hoc — scattering `if (user.role === 'admin')` checks through the codebase with no consistent model.
+Once a caller is authenticated, you need a consistent model for what they can do — RBAC, ABAC, ReBAC, and policy engines, the three-check rule, and 401-vs-403 are covered in depth in [Authentication & Authorization](./authentication-authorization.md). Two consequences are worth flagging from a security standpoint:
 
-### RBAC — Role-Based Access Control
-
-Users are assigned roles. Roles have permissions. The application checks permissions, not individual users.
-
-```typescript
-// Define what each role can do — one place, not scattered
-const PERMISSIONS = {
-  admin: ['read', 'write', 'delete', 'manage_users'],
-  editor: ['read', 'write'],
-  viewer: ['read'],
-} as const;
-
-function canPerform(role: string, action: string): boolean {
-  return PERMISSIONS[role]?.includes(action) ?? false;
-}
-```
-
-RBAC is the right starting point for most applications. It breaks down when permissions depend on *which specific resource* is being accessed (e.g., "editors can only edit their own posts"), which is where ABAC comes in.
-
-### ABAC — Attribute-Based Access Control
-
-Permissions are evaluated based on attributes of the user, the resource, and the context. More expressive than RBAC but more complex to implement.
-
-```typescript
-// "Can this user edit this document?"
-// Depends on: user's role, user's team, document's owner, document's status
-function canEditDocument(user: User, document: Document): boolean {
-  if (user.role === 'admin') return true;
-  if (document.ownerId === user.id) return true;
-  if (document.teamId === user.teamId && user.role === 'editor') return true;
-  return false;
-}
-```
-
-Most real-world applications use a hybrid: RBAC for broad access categories, with attribute-based rules for specific resource-level checks.
-
-### Enforce server-side, display client-side
-
-Authorization checks must happen on the server. Client-side checks are for UX only — hiding buttons the user can't use, disabling forms they can't submit. A determined user can bypass any client-side check.
-
-```typescript
-// Client-side: UX convenience — hide the button
-{canManageUsers && <Button>Manage Users</Button>}
-
-// Server-side: actual enforcement — reject the request
-if (!canPerform(user.role, 'manage_users')) {
-  return errorResponse('Forbidden', 403);
-}
-```
-
-If your frontend hides a button but the API endpoint doesn't check permissions, you have no security — just a hidden UI element.
-
-### Privilege escalation through elevated functions
-
-Database stored procedures, serverless functions, and backend API endpoints often run with elevated permissions — an admin database connection, a service account, or a privileged execution context. This is necessary: the function needs to access data that the caller normally can't reach.
-
-The trap: if the function accepts a scope parameter from the caller (like a tenant ID, user ID, or organisation ID), and doesn't independently verify the caller is authorised for that scope, any caller can access any scope by simply changing the parameter.
-
-```python
-# VULNERABLE: function runs with admin privileges, trusts caller-supplied tenant_id
-def get_tenant_data(tenant_id: str, caller_token: str):
-    # Verifies caller is authenticated — yes
-    verify_token(caller_token)
-    # But does NOT verify caller belongs to this tenant
-    return db.query("SELECT * FROM data WHERE tenant_id = %s", tenant_id)
-    # Any authenticated user can read any tenant's data
-```
-
-```python
-# SAFE: function verifies caller's relationship to the requested scope
-def get_tenant_data(tenant_id: str, caller_token: str):
-    caller = verify_token(caller_token)
-    if not caller.has_access_to(tenant_id):
-        raise AuthorizationError("Not authorised for this tenant")
-    return db.query("SELECT * FROM data WHERE tenant_id = %s", tenant_id)
-```
-
-This applies to any function with elevated privileges: database stored procedures that bypass row-level security, API endpoints using a service account, serverless functions with admin credentials. **If the function has more permissions than the caller, it must independently verify the caller's authorisation for the requested scope.**
+- **A hidden button is not a control.** Authorization must be enforced on the server; client-side checks only hide UI. If the UI hides an action but the endpoint doesn't re-check permission, there's no security — just a hidden element.
+- **Elevated functions must verify the caller's scope.** A stored procedure, serverless function, or service-account endpoint that runs with more privilege than its caller must independently authorise the caller for any scope parameter it accepts — otherwise any caller reaches any scope by changing it (the Confused Deputy pattern).
 
 ### Multi-tenant isolation
 
-In multi-tenant systems, the authorization question is not just "can this user do this action?" but "can this user do this action *for this tenant*?" Every data access path — direct queries, stored procedures, API endpoints — must include the tenant boundary. A single missed check means one tenant can see another's data.
+When one instance serves many customer organisations, every authorization decision also has to ask "*for which tenant?*" — and the tenant identity must come from the authenticated session, never the request. The full treatment of isolation strategies, scoped data layers, and the database backstop lives in [Multi-Tenant Isolation](./multi-tenant-isolation.md).
 
-The pattern: every query includes the tenant filter, and the tenant ID comes from the authenticated session (verified server-side), never from the request body or URL.
+---
+
+## Testing Security
+
+Security is the concern where a passing test most easily lies, because the dangerous behaviour is a *missing* check that nothing exercises. The discipline is to prove the negative — assert the attack is refused, against a live request path rather than the function you hope is wired in:
+
+- **Authentication gate.** An unauthenticated request to a protected route must be rejected (401), proving the gate is actually in front of the route.
+- **Authorization (ownership).** An authenticated caller asking for a resource they don't own must be refused (403) — this catches the classic authenticated-but-not-authorized mistake. It must hit the server: a hidden button is not a control, so a test that only checks the UI proves nothing.
+- **Injection held.** Drive a hostile payload (`'; DROP TABLE ...; --`) through the real endpoint and assert two things — it's handled safely (rejected or empty results, never a 500 leaking a database error) *and* the table still exists afterward. The surviving table is the real assertion: it proves parameterized queries held, which a function-level mock can't demonstrate.
+- **No leakage to an attacker.** An error response must not leak source-file paths (`.ts:`/`.py:`) or other implementation detail. (The broader "unknown error becomes a safe 500 with no stack trace" guarantee is [Error Handling](./error-handling.md)'s to verify — reference it rather than re-asserting it here.)
+
+These hit a real request path and a real database engine, not mocks — see [Testing](./testing.md) for the real-database setup and the request/handler harness.
 
 ---
 
@@ -633,3 +524,6 @@ When starting a new project, determine:
 - **Secrets in configuration** — see [Configuration](./configuration.md) for .env management, secret managers, and the fail-fast pattern
 - **Dependency management** — see [Deployment](./deployment.md) for lockfile integrity and supply chain security in CI/CD
 - **Logging and secrets** — see [Logging](./logging.md) for ensuring sensitive data is scrubbed from logs
+- **Multi-tenant isolation** — see [Multi-Tenant Isolation](./multi-tenant-isolation.md) for tenant scoping, the RLS backstop, and cross-tenant access paths
+- **Authorization models, RBAC/ABAC, and enforcement** — see [Authentication & Authorization](./authentication-authorization.md), the canonical reference for the authz model
+- **Testing security** — see [Testing](./testing.md) for the real-database setup the authn/authz, injection, and information-leakage tests need

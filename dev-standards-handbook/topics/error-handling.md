@@ -56,6 +56,10 @@ AppError (base — everything your app throws)
 ```typescript
 // Base error — everything your app throws extends this
 class AppError extends Error {
+  // Stable, machine-readable code clients branch on — declared per subclass,
+  // chosen independently of the class name so a refactor never breaks the contract.
+  readonly code: string = "INTERNAL_ERROR";
+
   constructor(
     message: string,
     public readonly statusCode: number = 500,
@@ -69,36 +73,42 @@ class AppError extends Error {
 
 // Specific error types
 class ValidationError extends AppError {
+  readonly code = "VALIDATION_ERROR";
   constructor(message: string, public readonly fields?: Record<string, string>) {
     super(message, 400);
   }
 }
 
 class NotFoundError extends AppError {
+  readonly code = "NOT_FOUND";
   constructor(resource: string, id: string) {
     super(`${resource} '${id}' not found`, 404);
   }
 }
 
 class ExternalServiceError extends AppError {
+  readonly code = "EXTERNAL_SERVICE_ERROR";
   constructor(service: string, cause?: Error) {
     super(`${service} request failed`, 502, true, { cause });
   }
 }
 
 class AuthenticationError extends AppError {
+  readonly code = "AUTHENTICATION_REQUIRED";
   constructor(message = "Authentication required") {
     super(message, 401);
   }
 }
 
 class AuthorizationError extends AppError {
+  readonly code = "FORBIDDEN";
   constructor(message = "Not authorized") {
     super(message, 403);
   }
 }
 
 class ConflictError extends AppError {
+  readonly code = "CONFLICT";
   constructor(message: string) {
     super(message, 409);
   }
@@ -114,21 +124,28 @@ class ConflictError extends AppError {
 ```python
 class AppError(Exception):
     """Base error for all application errors."""
+    # Stable, machine-readable code clients branch on — set per subclass,
+    # chosen independently of the class name so a refactor never breaks the contract.
+    code: str = "INTERNAL_ERROR"
+
     def __init__(self, message: str, status_code: int = 500, is_operational: bool = True):
         super().__init__(message)
         self.status_code = status_code
         self.is_operational = is_operational
 
 class ValidationError(AppError):
+    code = "VALIDATION_ERROR"
     def __init__(self, message: str, fields: dict[str, str] | None = None):
         super().__init__(message, status_code=400)
         self.fields = fields or {}
 
 class NotFoundError(AppError):
+    code = "NOT_FOUND"
     def __init__(self, resource: str, id: str):
         super().__init__(f"{resource} '{id}' not found", status_code=404)
 
 class ExternalServiceError(AppError):
+    code = "EXTERNAL_SERVICE_ERROR"
     def __init__(self, service: str):
         super().__init__(f"{service} request failed", status_code=502)
     # To preserve the original exception, raise with `from`:
@@ -138,14 +155,17 @@ class ExternalServiceError(AppError):
     # so tracebacks render cleanly.
 
 class AuthenticationError(AppError):
+    code = "AUTHENTICATION_REQUIRED"
     def __init__(self, message: str = "Authentication required"):
         super().__init__(message, status_code=401)
 
 class AuthorizationError(AppError):
+    code = "FORBIDDEN"
     def __init__(self, message: str = "Not authorized"):
         super().__init__(message, status_code=403)
 
 class ConflictError(AppError):
+    code = "CONFLICT"
     def __init__(self, message: str):
         super().__init__(message, status_code=409)
 ```
@@ -259,7 +279,8 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     }
 
     const body: Record<string, unknown> = {
-      type: err.name,
+      type: "about:blank",        // reserved for a docs URI; clients branch on `code`
+      code: err.code,
       title: err.message,
       status: err.statusCode,
     };
@@ -278,7 +299,8 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   // Unknown error — this is a bug, not an expected failure
   logger.error({ err, path: req.path }, "Unhandled error");
   return res.status(500).json({
-    type: "InternalError",
+    type: "about:blank",
+    code: "INTERNAL_ERROR",
     title: "Internal server error",
     status: 500,
     // Don't include the raw error message or stack trace in responses to
@@ -306,7 +328,8 @@ async def app_error_handler(request: Request, exc: AppError):
         logger.error("Non-operational error", path=str(request.url), error=str(exc))
 
     body = {
-        "type": type(exc).__name__,
+        "type": "about:blank",   # reserved for a docs URI; clients branch on `code`
+        "code": exc.code,
         "title": str(exc),
         "status": exc.status_code,
     }
@@ -325,7 +348,8 @@ async def unhandled_error_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
         content={
-            "type": "InternalError",
+            "type": "about:blank",
+            "code": "INTERNAL_ERROR",
             "title": "Internal server error",
             "status": 500,
         },
@@ -459,11 +483,12 @@ sys.excepthook = global_exception_handler
 
 When your API returns an error, the response body should always have the same shape. **RFC 9457 (Problem Details for HTTP APIs)** is the internet standard for this:
 
-**Note:** RFC 9457 specifies that the `type` field should be a URI reference (e.g., `"type": "https://api.example.com/errors/validation"`). Using class names like `"ValidationError"` is a common pragmatic simplification that's easier to work with. Either approach works — be consistent.
+**Branch on a stable `code`, not on `type`.** RFC 9457's `type` is meant to be a documentation URI (defaulting to `"about:blank"`). It's tempting to skip the URIs and put your error *class name* in `type` for clients to switch on — don't. That welds your public contract to internal class names, so renaming a class in a refactor silently breaks every client. Instead expose a dedicated machine-readable `code` (e.g. `"VALIDATION_ERROR"`), chosen independently of class names, for clients to branch on; leave `type` as `"about:blank"` until you actually publish docs URIs to point it at. See `dev-standards-pitfalls` > "The Class-Name Error Contract".
 
 ```json
 {
-  "type": "ValidationError",
+  "type": "about:blank",
+  "code": "VALIDATION_ERROR",
   "title": "Invalid request data",
   "status": 400,
   "detail": "2 validation errors in request body",
@@ -478,7 +503,8 @@ When your API returns an error, the response body should always have the same sh
 
 | Field | Required | Purpose |
 |-------|----------|---------|
-| `type` | Yes | Machine-readable error type (maps to your error hierarchy class name) |
+| `code` | Yes | **Stable, machine-readable error code clients branch on** (e.g. `VALIDATION_ERROR`), chosen independently of class names so refactors never change the wire contract |
+| `type` | Optional | URI identifying the problem type (a docs link). `"about:blank"` until you publish such docs — and **not** what clients branch on |
 | `title` | Yes | Short human-readable summary |
 | `status` | Yes | HTTP status code (repeated in body for convenience — clients don't always have access to the response status) |
 | `detail` | Optional | More specific explanation of what went wrong |
@@ -539,6 +565,17 @@ async def get_user(user_id: str):
 
 ---
 
+## Testing Error Handling
+
+A typed hierarchy and a single global handler only pay off if the handler is actually wired in and fires for every error shape — so these tests live at the wire, driving a request through the whole chain and asserting the response, not unit-testing the error classes in isolation:
+
+- **Hierarchy-to-response mapping.** From "Connecting Error Hierarchy to HTTP Responses": a route that throws `NotFoundError` comes back `404`/`NOT_FOUND`, and a validation failure comes back `400`/`VALIDATION_ERROR` carrying the field-level `errors` array — confirming the RFC 9457 shape (`code`/`title`/`status`/`errors`) is populated, not just declared.
+- **The unknown-error path** — the check that matters most, since it's the one that leaks in production. Force a dependency to throw an unexpected (non-`AppError`) error and assert the response is a generic `500`/`INTERNAL_ERROR` whose body carries no stack trace and none of the underlying message; assert that *negative* explicitly. This is the operational-vs-programming-error split the `isOperational` flag governs. (Leakage overlaps with Security — this version stays on the error-handler path; [Security](./security.md) owns the attacker-facing source-path sweep.)
+
+These exercise the full middleware chain against a real backend, so they belong with the integration tests — see [Testing](./testing.md) for the real-database setup and the request/handler-invocation craft.
+
+---
+
 ## Anti-Patterns
 
 | Don't | Do Instead | Why |
@@ -572,3 +609,4 @@ When starting a new project, determine:
 - **Resilience patterns** — see [Resilience](./resilience.md) for retries, circuit breakers, timeouts, graceful shutdown, and health checks
 - **Structured error logging** — see [Logging](./logging.md) for how to log errors with correlation IDs and structured context
 - **Security and error responses** — see [Security](./security.md) for why you must never expose internal error details to clients
+- **Testing error handling** — see [Testing](./testing.md) for the real-database setup the error-response and unknown-error tests build on

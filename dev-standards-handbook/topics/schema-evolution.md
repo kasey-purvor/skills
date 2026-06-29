@@ -56,7 +56,7 @@ Migrations solve this by making schema changes:
 
 ## Migration Tools
 
-**Default stack: TypeScript + Drizzle, with `drizzle-kit` for migrations.** This is the go-to for new projects in this handbook. Drizzle defines your schema in TypeScript, generates SQL migrations from it, gives you compile-time-typed queries, and — unlike most ORMs — declares Postgres Row-Level Security policies and roles in the *same* schema file (see [Authentication & Authorization](./authentication-authorization.md) → Row-Level Security). Reach for **Alembic** only when you're in a Python/SQLAlchemy codebase. The other tools below are documented for context and for working in existing projects that already use them.
+**Default stack: TypeScript + Drizzle, with `drizzle-kit` for migrations.** This is the go-to for new projects in this handbook. Drizzle defines your schema in TypeScript, generates SQL migrations from it, gives you compile-time-typed queries, and — unlike most ORMs — declares Postgres Row-Level Security policies and roles in the *same* schema file (see [Multi-Tenant Isolation](./multi-tenant-isolation.md) → The Database Backstop). Reach for **Alembic** only when you're in a Python/SQLAlchemy codebase. The other tools below are documented for context and for working in existing projects that already use them.
 
 The concepts (versioned, ordered, tracked, reviewable migrations) are identical across all of them — only the authoring surface differs.
 
@@ -149,7 +149,7 @@ npx drizzle-kit migrate   # applies pending migrations
 
 The key difference from Prisma: your schema IS your TypeScript types. No separate `.prisma` file, no generated client — you import the schema directly.
 
-**Drizzle handles Postgres RLS natively.** Since `drizzle-orm` 0.36 (Oct 2024), you declare policies and roles in the schema next to the table with `pgPolicy` / `pgRole` (and `crudPolicy` from `drizzle-orm/neon`), and `drizzle-kit` emits the `CREATE POLICY` / `ENABLE ROW LEVEL SECURITY` DDL. This works on **any** Postgres — not just Neon/Supabase. See [Authentication & Authorization](./authentication-authorization.md) → Row-Level Security for the pattern.
+**Drizzle handles Postgres RLS natively.** Since `drizzle-orm` 0.36 (Oct 2024), you declare policies and roles in the schema next to the table with `pgPolicy` / `pgRole` (and `crudPolicy` from `drizzle-orm/neon`), and `drizzle-kit` emits the `CREATE POLICY` / `ENABLE ROW LEVEL SECURITY` DDL. This works on **any** Postgres — not just Neon/Supabase. See [Multi-Tenant Isolation](./multi-tenant-isolation.md) → The Database Backstop for how the policy is used.
 
 **What `drizzle-kit` does *not* generate** (keep these as hand-written SQL companion migrations): table-level `GRANT`/`REVOKE`, role attributes (`BYPASSRLS`, `NOLOGIN`, `LOGIN`), `CHECK` constraints, and data backfills. A real RLS setup is therefore a hybrid — policies in the schema, grants/roles/backfills in raw SQL — and that's expected, not a workaround.
 
@@ -247,7 +247,7 @@ ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'member';
 
 New rows get `role = 'member'` automatically. But what about existing rows? Behaviour varies:
 
-- **PostgreSQL (modern):** `DEFAULT` backfills existing rows
+- **PostgreSQL:** a constant `DEFAULT` has always backfilled existing rows — and since PG 11 it does so without rewriting the table
 - **MySQL:** behaviour varies by version
 - **Some ORMs:** set defaults in application code only, not at the database level — existing rows get `NULL`
 
@@ -320,6 +320,17 @@ Keep them in separate migration files. Schema migrations are straightforward to 
 
 ---
 
+## Testing Migrations
+
+Safety rule #2 — *test against production-like data* — is the floor. Two kinds of migration test catch the failures that slip through review:
+
+- **Behavioural tests — does the migration actually do what it claims?** Assert the *effect*, red-before/green-after: a new `CHECK` or `NOT NULL` constraint must reject the rows it's meant to (on both `INSERT` *and* `UPDATE` — it's easy to guard one and forget the other); a backfill must leave no nulls behind; a dropped column must actually be gone. A migration that runs without error isn't the same as one that did the right thing.
+- **Replay-parity tests — does a clean build reproduce production's shape?** Drop the schema and replay every migration from empty, then assert the seeded reference data matches the same source-of-truth constant the application reads. This catches the slow drift where a hand-applied production fix was never captured as a migration, so a fresh environment comes up subtly different.
+
+Both run against a real database engine — see [Testing](./testing.md) for the real-database test setup (containers, truncate-and-reseed, running these in CI).
+
+---
+
 ## Keeping Application Schemas in Sync
 
 When your database schema changes, your application schemas (Zod, Pydantic) need to change too. This is a coordination problem:
@@ -367,3 +378,4 @@ When starting a new project, determine:
 - **When migrations fail** — see [Error Handling](./error-handling.md) for rollback procedures and incident response
 - **Migrations and deployment** — see [Deployment](./deployment.md) for how migration phases fit into deploy pipelines
 - **Database constraints** — see [Data Integrity](./data-integrity.md) for the database-level integrity layer that migrations must maintain
+- **Testing migrations** — see [Testing](./testing.md) for the real-database setup behavioural and replay-parity migration tests need

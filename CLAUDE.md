@@ -33,9 +33,9 @@ These have a 1:1 counterpart at `skills/skills/<category>/<name>/`. When Matt sh
 | `setup-matt-pocock-skills` | `engineering/setup-matt-pocock-skills/` ⚠ local customizations |
 | `setup-pre-commit` | `misc/setup-pre-commit/` |
 | `tdd` | `engineering/tdd/` |
-| `to-issues` | `engineering/to-issues/` |
+| `to-issues` | `engineering/to-issues/` ⚠ local customizations |
 | `to-prd` | `engineering/to-prd/` |
-| `triage` | `engineering/triage/` |
+| `triage` | `engineering/triage/` ⚠ local customizations |
 | `write-a-skill` | `productivity/write-a-skill/` |
 | `zoom-out` | `engineering/zoom-out/` |
 
@@ -68,6 +68,20 @@ These are the only places we've modified Matt-authored content. **Watch for conf
 | `SKILL.md` | EDITED — added Linear as 4th first-class option in Section A, removed Linear from "Other" examples, added `issue-tracker-linear.md` to Section 4 seed templates list, expanded frontmatter description to mention all four trackers |
 
 Linear triage labels live in the **Cloud Assist** team in Linear, under the `triage` label group (`needs-info`, `ready-for-agent`, `ready-for-human`). `needs-triage` and `wontfix` use Linear's native Status (Triage, Canceled) — no labels needed.
+
+### `triage/`
+
+| File | Change |
+|---|---|
+| `SKILL.md` | REPLACED — full rewrite as a Linear-anchored lightweight workflow. Drops the `needs-triage` label, bug/enhancement category roles, AI-generated disclaimer, parallel agent-brief template, and the `.out-of-scope/` knowledge base. Spec edits land in the description (per `linear` Convention #9), not comments. The two `ready-for-*` labels share the same template, differing only by intended executor. |
+| `AGENT-BRIEF.md` | DELETED — divergent template; absorbed by anchoring to the `linear` skill's agent-ready shape. |
+| `OUT-OF-SCOPE.md` | DELETED — feature-rejection knowledge base no longer in use. |
+
+### `to-issues/`
+
+| File | Change |
+|---|---|
+| `SKILL.md` | EDITED — removed `Constraints` from the two parenthetical references to the agent-ready template, matching the slimmed template in the `linear` skill (which no longer has a Constraints section). |
 
 ## Sync workflow — pulling Matt's updates
 
