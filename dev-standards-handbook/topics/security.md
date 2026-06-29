@@ -41,7 +41,7 @@ cursor.execute("SELECT * FROM users WHERE email = %s", (user_input,))
 const user = await db.query('SELECT * FROM users WHERE email = $1', [userInput]);
 ```
 
-**ORMs (SQLAlchemy, Prisma, Drizzle) use parameterized queries by default.** But raw query methods (`.execute()`, `$queryRaw`, `Prisma.$queryRawUnsafe`) can still be vulnerable if you concatenate strings. If you must write raw SQL, always use the parameterized form.
+**ORMs (Drizzle, Prisma, SQLAlchemy) use parameterized queries by default.** Drizzle's `` sql`` `` template tag parameterizes every interpolated value; the dangerous escape hatches are the raw ones — `sql.raw()` in Drizzle, `$queryRawUnsafe` in Prisma, or string-concatenated `.execute()`. If you must write raw SQL, always use the parameterized form.
 
 ### NoSQL Injection
 

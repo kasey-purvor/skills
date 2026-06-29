@@ -238,7 +238,7 @@ No single layer covers all scenarios. The gaps in one are filled by the others.
 
 ### Where ORMs Fit in the Three Layers
 
-When using a relational database with an ORM (Drizzle, SQLAlchemy, Prisma), you end up with **two schema definitions** for the same entity — the ORM schema and the validation schema (Zod/Pydantic). This isn't redundancy. They serve different layers and catch different problems.
+When using a relational database with an ORM (Drizzle, SQLAlchemy, Prisma), you end up with **two schema definitions** for the same entity — the ORM schema and the validation schema (Zod/Pydantic). This isn't redundancy. They serve different layers and catch different problems. On TypeScript, **Drizzle is the go-to ORM** in this handbook — schema-in-TypeScript, compile-time-typed queries, and native in-schema Postgres RLS (see [Schema Evolution](./schema-evolution.md) and [Authentication & Authorization](./authentication-authorization.md)).
 
 **The ORM schema** (e.g., Drizzle's `pgTable`) defines what the database table looks like — columns, types, constraints. It serves two purposes: generating SQL migrations (Layer 3), and making queries type-safe at compile time (Layer 1).
 

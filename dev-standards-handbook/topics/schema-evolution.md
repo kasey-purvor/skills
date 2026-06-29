@@ -56,6 +56,10 @@ Migrations solve this by making schema changes:
 
 ## Migration Tools
 
+**Default stack: TypeScript + Drizzle, with `drizzle-kit` for migrations.** This is the go-to for new projects in this handbook. Drizzle defines your schema in TypeScript, generates SQL migrations from it, gives you compile-time-typed queries, and — unlike most ORMs — declares Postgres Row-Level Security policies and roles in the *same* schema file (see [Authentication & Authorization](./authentication-authorization.md) → Row-Level Security). Reach for **Alembic** only when you're in a Python/SQLAlchemy codebase. The other tools below are documented for context and for working in existing projects that already use them.
+
+The concepts (versioned, ordered, tracked, reviewable migrations) are identical across all of them — only the authoring surface differs.
+
 ### Alembic (Python / SQLAlchemy)
 
 Alembic is the standard migration tool for Python projects using SQLAlchemy. SQLAlchemy is the most popular Python ORM — a library that lets you interact with your database using Python objects instead of raw SQL.
@@ -120,9 +124,11 @@ npx prisma migrate dev --name split-name
 
 Prisma also generates a TypeScript client from the schema, so your application code is always in sync with the database structure.
 
-### Drizzle (TypeScript)
+**No native RLS:** Prisma can't express Postgres Row-Level Security policies in its schema — you bolt RLS on with client extensions or community libraries (`prisma-rls`, Yates). On Postgres multi-tenant systems that want database-enforced isolation, that's a point in Drizzle's favour and the main reason this handbook defaults to Drizzle on TypeScript.
 
-Drizzle is a newer TypeScript ORM that's gaining popularity. You define schemas directly in TypeScript — no separate schema file, no code generation step:
+### Drizzle (TypeScript) — the go-to
+
+Drizzle is the default ORM + migration toolchain for TypeScript projects in this handbook. You define schemas directly in TypeScript — no separate schema file, no code-generation step:
 
 ```typescript
 import { pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
@@ -143,15 +149,19 @@ npx drizzle-kit migrate   # applies pending migrations
 
 The key difference from Prisma: your schema IS your TypeScript types. No separate `.prisma` file, no generated client — you import the schema directly.
 
+**Drizzle handles Postgres RLS natively.** Since `drizzle-orm` 0.36 (Oct 2024), you declare policies and roles in the schema next to the table with `pgPolicy` / `pgRole` (and `crudPolicy` from `drizzle-orm/neon`), and `drizzle-kit` emits the `CREATE POLICY` / `ENABLE ROW LEVEL SECURITY` DDL. This works on **any** Postgres — not just Neon/Supabase. See [Authentication & Authorization](./authentication-authorization.md) → Row-Level Security for the pattern.
+
+**What `drizzle-kit` does *not* generate** (keep these as hand-written SQL companion migrations): table-level `GRANT`/`REVOKE`, role attributes (`BYPASSRLS`, `NOLOGIN`, `LOGIN`), `CHECK` constraints, and data backfills. A real RLS setup is therefore a hybrid — policies in the schema, grants/roles/backfills in raw SQL — and that's expected, not a workaround.
+
 ### Choosing Between Them
 
-| Tool | Language | Approach | Best for |
-|------|----------|----------|----------|
-| **Alembic** | Python | Auto-generate from SQLAlchemy models, manual editing | Most flexible, Python projects, complex migrations |
-| **Prisma Migrate** | TypeScript | Generate from `.prisma` schema file | Great developer experience, opinionated, rapid development |
-| **Drizzle Kit** | TypeScript | Generate from TypeScript schema definitions | Lighter weight, closer to raw SQL, newer projects |
+| Tool | Language | Approach | Notes |
+|------|----------|----------|-------|
+| **Drizzle Kit** | TypeScript | Generate from TypeScript schema definitions | **The default.** Schema *is* your types, close to raw SQL, native in-schema RLS |
+| **Prisma Migrate** | TypeScript | Generate from `.prisma` schema file | Polished DX, but a separate schema language and no native RLS |
+| **Alembic** | Python | Auto-generate from SQLAlchemy models, manual editing | The standard for Python/SQLAlchemy codebases |
 
-**This is a project-specific choice** — it depends on your ORM, your language, and your team's preferences. The concepts (versioned migrations, up/down, tracking) are the same regardless of tool.
+**Default to Drizzle on TypeScript** — it's the go-to stack. Choose Alembic when the codebase is Python/SQLAlchemy. The concepts (versioned migrations, up/down, tracking) are the same regardless of tool; only pick a different toolchain when an existing project or a non-TypeScript language requires it.
 
 ---
 
@@ -321,7 +331,7 @@ Zod schema: still expects { name: string }  ← BUG
 
 **The rule:** Every database migration should have a corresponding application schema update in the same pull request. The reviewer should check both.
 
-With Prisma, this is automatic — `prisma migrate dev` updates the generated client. With Drizzle, your TypeScript schema IS the database schema, so they can't drift. With Alembic + Pydantic, it's manual — you update both the SQLAlchemy model and the Pydantic schema.
+With **Drizzle** (the default), your TypeScript schema IS the database schema, so the DB structure and your types can't drift. With Prisma, `prisma migrate dev` regenerates the client. With Alembic + Pydantic, it's manual — you update both the SQLAlchemy model and the Pydantic schema.
 
 ---
 
@@ -344,7 +354,7 @@ With Prisma, this is automatic — `prisma migrate dev` updates the generated cl
 
 When starting a new project, determine:
 
-1. **Which migration tool?** Depends on your ORM and language (Alembic for SQLAlchemy, Prisma Migrate or Drizzle Kit for TypeScript)
+1. **Which migration tool?** Default to **Drizzle + drizzle-kit** (TypeScript) — the go-to stack. Use Alembic only if the project is Python/SQLAlchemy. Don't introduce a second toolchain into an existing project.
 2. **Do you need zero-downtime migrations?** Depends on your deployment model and user expectations — solo project with brief downtime tolerance? Simple migrations are fine. Production service with SLOs? Use expand-and-contract.
 3. **How will migrations run?** As part of the deployment pipeline (recommended) or manually?
 4. **Do you have existing data?** If productionising a prototype, the first migration might need to match the existing schema exactly, then subsequent migrations evolve it.

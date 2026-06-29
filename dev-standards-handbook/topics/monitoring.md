@@ -447,3 +447,4 @@ For an API service, the main dashboard should show the RED metrics at a glance:
 - **Error classification** — see [Error Handling](./error-handling.md) for operational vs programming error distinction that affects which metrics increment
 - **Timeout and retry metrics** — see [Resilience](./resilience.md) for the patterns that produce the metrics you should track (retry rate, circuit breaker state)
 - **Configuration of backends** — see [Configuration](./configuration.md) for configuring OTel exporter URLs, sampling rates, etc.
+- **Usage vs system health** — see [Product Analytics](./product-analytics.md) for measuring whether users engage with features (analytics asks "is anyone using it?"; monitoring asks "is it up?")

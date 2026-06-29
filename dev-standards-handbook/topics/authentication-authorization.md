@@ -599,6 +599,8 @@ CREATE POLICY tenant_isolation ON courses
   WITH CHECK (company_id = current_setting('app.company_id')::uuid);
 ```
 
+**On the default stack (TypeScript + Drizzle), you don't hand-write this SQL.** You declare the policy in your schema with `pgPolicy` (and roles with `pgRole`), and `drizzle-kit` generates the `CREATE POLICY` / `ENABLE ROW LEVEL SECURITY` shown above — on any Postgres since `drizzle-orm` 0.36, not just Neon/Supabase. Prisma, by contrast, has no native RLS.
+
 Per-request usage:
 
 ```sql
@@ -623,7 +625,7 @@ await db.transaction(async (tx) => {
 });
 ```
 
-**Migration role:** Schema changes and data backfills need to bypass RLS. Standard pattern: migrations run as a role with `BYPASSRLS`; runtime queries run as a role without it. The migration Lambda or job uses the privileged role; request handlers do not.
+**Migration role:** Schema changes and data backfills need to bypass RLS. Standard pattern: migrations run as a role with `BYPASSRLS`; runtime queries run as a role without it. The migration Lambda or job uses the privileged role; request handlers do not. Note that `drizzle-kit` generates the policies and `ENABLE ROW LEVEL SECURITY`, but **not** the roles' `BYPASSRLS`/`NOLOGIN` attributes, the table `GRANT`s, or the backfills — keep those in hand-written companion migrations alongside the schema-declared policies.
 
 **Permissive vs restrictive policies:** Multiple permissive policies on the same table are OR'd together — any match lets the row through. Restrictive policies (Postgres 10+) are AND'd — all must pass. Useful for combining a tenant filter (permissive) with a deactivation check (restrictive):
 
