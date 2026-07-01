@@ -1,97 +1,76 @@
 ---
 name: to-issues
-description: Break a plan, spec, or PRD into independently-grabbable issues on the project issue tracker using tracer-bullet vertical slices. Use when user wants to convert a plan into issues, create implementation tickets, or break down work into issues.
+description: Break a plan, spec, or PRD into independently-grabbable issues on the tracker using tracer-bullet vertical slices. Use when converting a plan into issues, creating implementation tickets, or breaking work down into issues.
 ---
 
 # To Issues
 
 Break a plan into independently-grabbable issues using vertical slices (tracer bullets).
 
-The issue tracker and triage label vocabulary should have been provided to you — run `/setup-matt-pocock-skills` if not.
+The issue tracker and label vocabulary come from the repo overlay (`docs/agents/issue-tracker.md`) and the `linear` skill — run `/setup-matt-pocock-skills` first if the repo isn't configured yet.
 
 ## Process
 
 ### 1. Gather context
 
-Work from whatever is already in the conversation context. If the user passes an issue reference (issue number, URL, or path) as an argument, fetch it from the issue tracker and read its full body and comments.
+Work from whatever is already in the conversation. If the user passes an issue reference (id, URL, or path) as an argument, fetch it and read its full body and comments.
 
 ### 2. Explore the codebase (optional)
 
-If you have not already explored the codebase, do so to understand the current state of the code. Issue titles and descriptions should use the project's domain glossary vocabulary, and respect ADRs in the area you're touching.
+If you have not already explored the codebase, do so to understand the current state. Issue titles and descriptions should use the project's domain-glossary vocabulary and respect ADRs in the area you're touching.
 
 ### 3. Draft vertical slices
 
-Break the plan into **tracer bullet** issues. Each issue is a thin vertical slice that cuts through ALL integration layers end-to-end, NOT a horizontal slice of one layer.
+**CRITICAL** For all work regarding code you must load the /dev-standards-handbook & /dev-standards-pitfalls skills.
 
-Slices may be 'HITL' or 'AFK'. HITL slices require human interaction, such as an architectural decision or a design review. AFK slices can be implemented and merged without human interaction. Prefer AFK over HITL where possible.
+Break the plan into **tracer-bullet** issues. Each issue is a thin vertical slice that cuts through ALL integration layers end-to-end (schema, API, UI, tests), NOT a horizontal slice of one layer.
 
 <vertical-slice-rules>
-- Each slice delivers a narrow but COMPLETE path through every layer (schema, API, UI, tests)
+- Each slice delivers a narrow but COMPLETE path through every layer
 - A completed slice is demoable or verifiable on its own
 - Prefer many thin slices over few thick ones
 </vertical-slice-rules>
 
 ### 4. Quiz the user
 
-Present the proposed breakdown as a numbered list. For each slice, show:
+Present the proposed breakdown as a numbered list. For each slice show:
 
-- **Title**: short descriptive name
-- **Type**: HITL / AFK
-- **Blocked by**: which other slices (if any) must complete first
-- **User stories covered**: which user stories this addresses (if the source material has them)
+- **Title** — short descriptive name
+- **Blocked by** — which other slices (if any) must complete first
+- **User stories covered** — which the slice addresses (if the source material has them)
 
 Ask the user:
 
 - Does the granularity feel right? (too coarse / too fine)
 - Are the dependency relationships correct?
 - Should any slices be merged or split further?
-- Are the correct slices marked as HITL and AFK?
 
-For each AFK slice, also confirm you have the inputs needed for the agent-ready body template (Goal, Scope, ACs, Verification — see the `linear` skill). Ask the user for any missing fields before proceeding.
+Iterate until the user approves. Then confirm you have the inputs for the **Ticket body** template in the `linear` skill (TL;DR / Goal / Scope / AC / Verification) — ask the user for any missing fields before publishing.
 
-Iterate until the user approves the breakdown.
+### 5. Publish the issues
 
-### 5. Publish the issues to the issue tracker
+For each approved slice, publish a Linear issue:
 
-For each approved slice, publish a new issue. Body shape depends on slice type:
+- **Body:** the **Ticket body** template from the `linear` skill (TL;DR / Goal / Scope / Acceptance criteria / Verification). Don't redefine it here.
+- **Labels:** `type/*`, `quality/scoped`, and `ai-added` (these tickets are agent-created).
+- **Project:** assign one — never leave a ticket projectless (`linear` Convention #9). Ask which project if it isn't obvious.
+- **State: Backlog** — well-defined but not yet scheduled. Promotion to Todo (scheduling) and `quality/audited` (the pre-work re-audit) are separate, later steps — `/to-issues` does not do them.
 
-- **AFK slices**: use the **agent-ready body template** defined in the `linear` skill (Goal, Scope, ACs, Verification). Publish in **Backlog state** with the `triage/ready-for-agent` label.
-- **HITL slices**: use the lighter **HITL body** below. Publish in **Backlog state** with the `triage/ready-for-human` label.
+Publish in dependency order (blockers first) so you can reference real issue ids in the "Blocked by" field.
 
-`/to-issues` produces high-quality, well-defined tickets but **does not schedule them**. Promotion to **Todo** state (signalling the work is next-up for execution) is a separate manual decision — done in the Linear UI or via `/triage`. See the "Triage role → Linear primitives" table in the `linear` skill for the state-vs-label distinction.
-
-All slices — regardless of type — sit inside the universal `## Parent` / `## Blocked by` frame.
-
-Publish issues in dependency order (blockers first) so you can reference real issue identifiers in the "Blocked by" field.
+All slices sit inside the universal frame:
 
 <universal-frame>
 ## Parent
 
-A reference to the parent issue on the issue tracker (if the source was an existing issue, otherwise omit this section).
+A reference to the parent issue (if the source was an existing issue; otherwise omit this section).
 
-## <slice body — see below for HITL; see `linear` skill for AFK>
+## <ticket body — see the `linear` skill>
 
 ## Blocked by
 
-- A reference to the blocking ticket (if any)
+- A reference to the blocking ticket(s), or "None — can start immediately".
 
-Or "None - can start immediately" if no blockers.
 </universal-frame>
-
-<hitl-body>
-
-## What to build
-
-A concise description of this vertical slice. Describe the end-to-end behavior, not layer-by-layer implementation.
-
-Avoid specific file paths or code snippets — they go stale fast. Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it here and note briefly that it came from a prototype. Trim to the decision-rich parts — not a working demo, just the important bits.
-
-## Acceptance criteria
-
-- [ ] Criterion 1
-- [ ] Criterion 2
-- [ ] Criterion 3
-
-</hitl-body>
 
 Do NOT close or modify any parent issue.

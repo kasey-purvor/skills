@@ -9,15 +9,20 @@ This skill takes the current conversation context and codebase understanding and
 
 1. Explore the repo to understand the current state of the codebase, if you haven't already. Use the project's domain glossary vocabulary throughout the PRD, and respect any ADRs in the area you're touching.
 
-2. Sketch out the major modules you will need to build or modify to complete the implementation. Actively look for opportunities to extract deep modules that can be tested in isolation.
+2. Sketch out the major modules you will need to build or modify. Actively look for opportunities to extract **deep modules** that can be tested in isolation.
 
-A deep module (as opposed to a shallow module) is one which encapsulates a lot of functionality in a simple, testable interface which rarely changes.
+   **Deep vs shallow modules** — from John Ousterhout's *A Philosophy of Software Design*. Think of a module's worth as the ratio of the functionality it provides to the complexity of its interface. That ratio is its **depth**.
 
-Check with the user that these modules match their expectations. Check with the user which modules they want tests written for.
+   - A **deep module** hides a lot of implementation behind a small, simple interface — powerful functionality, minimal surface area. The classic example is Unix file I/O: `open` / `read` / `write` / `close` is a tiny interface over enormous hidden complexity (disk layout, buffering, scheduling, permissions). The interface is far simpler than the implementation, so callers get leverage without paying for the complexity.
+   - A **shallow module** has an interface nearly as complex as its implementation — it hides little. Symptoms: rows of thin pass-through methods, or a class whose signature already tells you everything it does. Each shallow module still charges an interface cost (one more thing to learn and wire up) while buying almost no abstraction; enough of them and the interfaces cost more than they save.
+   - Design for interfaces **much simpler than** their implementations. That gap is also what makes a module testable in isolation — the interface becomes a genuine seam.
+   - **Deletion test:** imagine deleting the module. If the complexity simply vanishes, it was a pass-through and shouldn't exist. If the same complexity reappears, duplicated across its callers, the module was earning its keep.
 
-3. Write the PRD using the template below, then save it as `docs/PRD/YYYY-MM-DD-<feature-slug>.md` in the repo. Use today's date (YYYY-MM-DD format) and a kebab-case feature slug. Example: `docs/PRD/2026-05-27-tenant-invite-quota.md`.
+   Check with the user that these modules match their expectations. Check with the user which modules they want tests written for.
 
-The PRD is a planning artifact, not an implementable issue — do not create a Linear issue for it. The follow-up `/to-issues` skill breaks the PRD into implementable Linear issues that reference back to this file.
+3. Write the PRD using the template below, then save it as `docs/PRD/YYYY-MM-DD-<feature-slug>.md` in the repo. Use today's date (YYYY-MM-DD) and a kebab-case feature slug. Example: `docs/PRD/2026-05-27-tenant-invite-quota.md`.
+
+The PRD is a planning artifact, not an implementable issue — do not create a Linear issue for it. The follow-up `/to-issues` skill breaks the PRD into implementable issues that reference back to this file.
 
 <prd-template>
 
@@ -45,7 +50,7 @@ This list of user stories should be extremely extensive and cover all aspects of
 
 A list of implementation decisions that were made. This can include:
 
-- The modules that will be built/modified
+- The modules that will be built/modified (and why each is a deep module — see above)
 - The interfaces of those modules that will be modified
 - Technical clarifications from the developer
 - Architectural decisions
