@@ -18,6 +18,37 @@ This file is a **router** — it narrows 14 chapters down to the few your task m
 likely needs. It's a starting point for your judgment, not a checklist to obey, and
 not a substitute for thinking.
 
+## First: calibrate rigor to the context
+
+The chapters describe the **thorough** version of each concern — the shape a pattern
+takes on a public, high-traffic, multi-client, long-lived system. **Most work is not
+that.** Before applying any chapter, name what you're actually building, because that
+sets how much of the chapter applies:
+
+- **Who calls it?** A public API with third-party clients you don't control earns
+  strict versioning, response-shape discipline, and rate limiting. An internal tool
+  with a handful of known callers usually does not — you can change the contract by
+  editing both sides in one commit.
+- **What's the blast radius if it's wrong?** A payment path or a system-of-record
+  justifies belt-and-braces. A dashboard, a batch job, an internal admin screen, or a
+  prototype usually justifies the simplest thing that works.
+- **What scale?** Pagination, percentiles, circuit breakers, and expand-and-contract
+  migrations earn their keep at scale. Small scale, they're often premature.
+- **How long does it live?** A throwaway or a greenfield app still finding its shape
+  tolerates shortcuts a decade-old system-of-record does not.
+
+Match the rigor to the answers. Applying public-API discipline to an internal CRUD
+tool isn't "being thorough" — it's cost with no return, and it's the most common way
+this handbook gets misread. When a chapter states something as an absolute ("always",
+"every", "never"), read it as *the default for the demanding case* and ask whether
+your case is that case.
+
+**The exception — security, auth, and tenant isolation.** For those three, the *core*
+protections hold even for a small internal tool: a real vulnerability, an unverified
+permission, or a cross-tenant leak doesn't care how few users you have. Calibrate how
+much you *invest* there (how many roles, how much defence-in-depth), but don't calibrate
+the core rules away.
+
 ## Show your reasoning — don't run on confidence
 
 Before you start reading, **tell the user your plan in plain language and check it

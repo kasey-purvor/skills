@@ -1,8 +1,15 @@
 # API Design & Contracts
 
+> **Calibrate to your context.** How much of this applies depends on who consumes the
+> API. A public or multi-client API you don't control earns strict response-shape
+> consistency, versioning, and pagination discipline. An internal API whose only
+> callers are known — and changeable in the same commit — needs far less; adopt the
+> conventions that save you pain and skip the ceremony that doesn't. Reference
+> material, not a checklist.
+
 ## The Problem
 
-An API (the HTTP endpoints your backend exposes) is a **contract**. Once you ship an endpoint that returns `{ "user": { "name": "Kasey" } }`, every client that calls it depends on that exact shape — your frontend, mobile apps, third-party integrations. Changing it breaks them.
+An API (the HTTP endpoints your backend exposes) is a **contract**. Once you ship an endpoint that returns `{ "user": { "name": "Kasey" } }`, every client that calls it depends on that exact shape. How much a change hurts depends on how many clients there are and whether you control them: a public API with third-party consumers is unforgiving, whereas an internal endpoint whose only caller is your own frontend can change shape freely — as long as you update both sides together.
 
 Without design standards, every endpoint is different:
 
