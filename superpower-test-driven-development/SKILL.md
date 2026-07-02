@@ -44,6 +44,15 @@ Write code before the test? Delete it. Start over.
 
 Implement fresh from tests. Period.
 
+## Before the First Test — Agree the Plan
+
+TDD tells you *how* to build, not *what* matters. Before the first RED, settle that with your human partner:
+
+- What should the public interface look like?
+- Which behaviours matter most? **You can't test everything** — target critical paths and complex logic, not every conceivable edge case.
+
+List the behaviours (not implementation steps), get agreement, then start the cycle. One agreed behaviour becomes one RED→GREEN loop.
+
 ## Red-Green-Refactor
 
 ```dot
@@ -66,6 +75,17 @@ digraph tdd_cycle {
     verify_green -> next;
     next -> red;
 }
+```
+
+### One Test at a Time — Never Batch
+
+Write ONE failing test, make it pass, then write the next. **Do not write all the tests up front and then all the code.**
+
+Batching tests ahead of code tests *imagined* behaviour: you commit to the shape of things before you understand the implementation, and end up with tests that pass when behaviour breaks and break when it doesn't. Each test should respond to what the previous cycle taught you.
+
+```
+WRONG:  test1, test2, test3   then   impl1, impl2, impl3
+RIGHT:  test1 → impl1  →  test2 → impl2  →  test3 → impl3
 ```
 
 ### RED - Write Failing Test
@@ -195,6 +215,33 @@ Keep tests green. Don't add behavior.
 
 Next failing test for next feature.
 
+## The Green Bar Is Sacred — Never Fake It
+
+When a test is RED and you can't quickly get it green, there is exactly one honest move: **make the production code satisfy the test as written.** A red bar means the code is wrong — not that the test is inconvenient.
+
+**Forbidden — every one of these is lying about whether the code works:**
+
+- **Weakening the assertion** — `toBe(80)` → `toBeDefined()`/`toBeTruthy()`, loosening an exact check to a partial one, or dropping a field you can't satisfy.
+- **Dodging the test** — `.skip`, `xit`, an early `return`, commenting it out, or `it.only` to sideline the tests that would fail.
+- **Swallowing failure** — wrapping the assertion in `try/catch`, an empty catch, or softening a `.rejects` so nothing can fail.
+- **Tautological asserts** — computing the expected value with the same code you're testing, or asserting a value equals itself. Expected values are hand-derived literals, worked out independently of the implementation.
+- **Blind snapshot updates** — running `-u`/`--updateSnapshot` to bless whatever came out, without reading the diff.
+- **Forcing the compiler green** — `any`, `as`, or `@ts-expect-error` in the test just to make it build.
+- **Mocking the thing under test** so it hands back the expected answer.
+
+**Changing the *test* is allowed only when the *specification* changed — and that is your human partner's call, said out loud, not a silent edit.** If you're stuck, say so and ask. Reporting "I made it pass" while any of the above is true is a false report.
+
+### Gate
+
+```
+Test is RED and you're about to edit the TEST (not the code):
+  STOP.
+  Did the required behaviour actually change?
+    NO  → the code is wrong. Fix the code.
+    YES → get your human partner's explicit agreement first, THEN change the test.
+  Never weaken, skip, or swallow to reach green.
+```
+
 ## Good Tests
 
 | Quality | Good | Bad |
@@ -268,6 +315,8 @@ Tests-first force edge case discovery before implementing. Tests-after verify yo
 | "TDD will slow me down" | TDD faster than debugging. Pragmatic = test-first. |
 | "Manual test faster" | Manual doesn't prove edge cases. You'll re-test every change. |
 | "Existing code has no tests" | You're improving it. Add tests for existing code. |
+| "Just loosen the assertion to get green" | Weakening a test to pass is faking the result. Fix the code. |
+| "I'll `.skip` it and come back" | A skipped test is a lie of omission. Make it pass or ask for help. |
 
 ## Red Flags - STOP and Start Over
 
@@ -284,6 +333,11 @@ Tests-first force edge case discovery before implementing. Tests-after verify yo
 - "Already spent X hours, deleting is wasteful"
 - "TDD is dogmatic, I'm being pragmatic"
 - "This is different because..."
+- Weakening, deleting, or `.skip`-ing a test to make it pass
+- Wrapping an assertion in try/catch or otherwise swallowing a failure
+- Asserting a value against the code's own output (tautology)
+- Running `--updateSnapshot` without reading the diff
+- Saying "I made it pass" after softening the test
 
 **All of these mean: Delete code. Start over with TDD.**
 
@@ -336,6 +390,8 @@ Before marking work complete:
 - [ ] Output pristine (no errors, warnings)
 - [ ] Tests use real code (mocks only if unavoidable)
 - [ ] Edge cases and errors covered
+- [ ] No assertion was weakened, skipped, or swallowed to reach green
+- [ ] Expected values are hand-derived, not recomputed by the code under test
 
 Can't check all boxes? You skipped TDD. Start over.
 
