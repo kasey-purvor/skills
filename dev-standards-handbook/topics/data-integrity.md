@@ -1,5 +1,10 @@
 # Data Integrity
 
+> **Calibrate to your context.** Validating data where it crosses a trust boundary is
+> worth it almost anywhere data arrives from outside. The depth scales with how much
+> you'd regret bad data: a system-of-record earns all three layers plus DB constraints
+> and contract tests; a scratch tool earns a boundary parse and little else.
+
 ## The Problem
 
 Every application has boundaries — places where data enters your system from somewhere you don't control. A user submits a form. Another service calls your API. You read a row from a database. You load an environment variable.
@@ -138,7 +143,7 @@ Use `.safeParse()` at API boundaries where invalid data is expected (user input)
 - **ArkType** — newer, claims better performance
 - **Valibot** — smaller bundle size, similar API
 
-Zod won the ecosystem because it solved the type inference problem cleanly. Most new TypeScript projects use it. **Our default choice is Zod** — only deviate if there's a specific reason (e.g., joining a project that already uses Joi).
+Zod won the ecosystem because it solved the type inference problem cleanly. Most new TypeScript projects use it. **Zod is our default** — it's what we reach for on new TypeScript projects. The alternatives above are fine when a project already uses one.
 
 ---
 
@@ -193,13 +198,13 @@ class CoercingUser(BaseModel):
 - **Strict:** API boundaries where you control the client (your own frontend). The client should send correct types.
 - **Coercing:** Environment variables (always strings), form data (always strings), third-party APIs with inconsistent types.
 
-**Our default: Pydantic** for all Python schema validation. Only deviate if there's a specific reason.
+**Pydantic is our default** for Python schema validation.
 
 ---
 
 ## The Three-Layer Model
 
-Data correctness is enforced by three layers, each catching failures the others miss. All three are needed in production systems.
+Data correctness is enforced by three layers, each catching failures the others miss. In production systems you'll usually want all three; smaller or lower-stakes code often leans on Layers 1–2 and skips the database constraints.
 
 ### Layer 1: Type System (compile-time)
 
