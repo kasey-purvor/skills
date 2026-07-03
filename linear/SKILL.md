@@ -50,6 +50,7 @@ Priority is the **native Linear Priority field**, set by humans only. It is deli
 7. **`kickback/*` is human-only.** Agents never set or remove it — but must preserve it when updating other labels (replace-only API, see recipes).
 8. **Agents label their own tickets `ai-added`.** Any ticket an agent creates gets the free-floating `ai-added` label.
 9. **Every ticket belongs to a Project.** Never leave a ticket projectless — if the target project isn't obvious, ask which one before creating.
+10. **Agent-created tickets are assigned to the operating human.** Pass `assignee: "me"` on creation — the MCP session is signed in as its human, so `"me"` resolves to Kasey on Kasey's machines and Ben on Ben's, with nothing hardcoded. Override only when explicitly told the ticket is for the other person (email works: `ben.ward@` / `kasey.purvor@thecloudassist.com`). Assignment is ownership, not attention — `kickback/*` (human-only) remains the attention hand-off.
 
 ## Reading a ticket for action
 
@@ -119,7 +120,7 @@ save_issue({ id: "CLO-123", labels: [...issue.labels.map(l => l.name), "needs-de
 
 ### Create
 ```
-save_issue({ team: "<team>", title, description, project: "<project>", labels: ["feature", "drive-by"] })
+save_issue({ team: "<team>", title, description, project: "<project>", labels: ["feature", "drive-by"], assignee: "me" })
 ```
 **Labels are sent as bare names** (`feature`, `drive-by`) — the group is determined by each label's own `parent` field in Linear, not by passing a compound string like `"type/feature"`.
 
