@@ -1,5 +1,14 @@
 # Authentication & Authorization
 
+> **Calibrate the investment, not the core rules.** How *much* auth machinery you build
+> scales with the app: how many roles, how much defence-in-depth, whether you reach for
+> full OIDC and an identity provider or a single known login is enough. What does *not*
+> scale down is the handful of core rules — take identity from the verified session not
+> the request, authorize the *specific* resource and action, never trust a client-supplied
+> user or tenant id. A real auth hole doesn't care that you have three users. Treat this
+> chapter as a reference to apply with judgment; on the core rules, judgment means sizing
+> the investment, not skipping the check.
+
 ## The Problem
 
 Every multi-user system answers two questions on every request: **who is this caller, and what are they allowed to do?** Authentication (AuthN) answers the first; authorization (AuthZ) answers the second. They sound alike, but different subsystems own each, and conflating them produces whole categories of vulnerability.
