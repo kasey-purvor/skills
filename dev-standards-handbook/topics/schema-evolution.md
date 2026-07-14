@@ -1,5 +1,13 @@
 # Schema Evolution and Migrations
 
+> **Calibrate to the context.** Versioned migrations are cheap and worth adopting for
+> nearly any database that outlives a prototype — they're just change-scripts in git.
+> What scales with the stakes is the heavier choreography: expand-and-contract and
+> batched backfills earn their keep when users would notice downtime or tables are
+> big; a small app that can tolerate 30 seconds of downtime on deploy can run simple
+> migrations and skip the dance. The safety rules below stay firm at any size — they
+> prevent data loss and cost nothing. Reference material, not a checklist.
+
 ## The Problem Nobody Thinks About on Day One
 
 You design your database schema. Users have a `name` and `email`. You build the app, deploy it, real users sign up. Life is good.

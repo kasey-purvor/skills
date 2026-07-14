@@ -1,5 +1,13 @@
 # Error Handling
 
+> **Calibrate to the context — but note most of this chapter is cheap.** Typed error
+> classes, one global handler, never swallowing errors, never leaking internals — these
+> cost less than the sloppy alternative at any app size, so they're worth doing almost
+> everywhere. What *does* scale with the audience is the formality around it: a strict
+> response-body standard (RFC 9457) and a paid error-tracking service earn their keep
+> when outside clients and real production users are involved; an internal tool can get
+> by with a simpler consistent shape and its logs. Reference material, not a checklist.
+
 ## The Problem
 
 When something goes wrong in your code, you throw an error. In most beginner code:
@@ -201,7 +209,7 @@ This is a crucial distinction on the base `AppError`:
 - **Operational errors** are expected failures — user sent bad data, resource not found, external service timed out. Your app knows how to handle these. They're part of normal operation.
 - **Programming errors** are bugs — null reference, wrong type, undefined variable. Your app does NOT know how to handle these. They mean something is wrong with the code itself.
 
-Why this matters: operational errors get a clean response to the user. Programming errors get logged, reported to your error tracking service (Sentry, Datadog, etc.), and might trigger an alert. The `isOperational` flag lets your global error handler decide which treatment to apply.
+Why this matters: operational errors get a clean response to the user. Programming errors get logged at ERROR — and, if the app has real production users, reported to an error tracking service (Sentry, Datadog, etc.) and possibly alerted on. The `isOperational` flag lets your global error handler decide which treatment to apply.
 
 ---
 
@@ -481,7 +489,7 @@ sys.excepthook = global_exception_handler
 
 ## HTTP Error Response Schema
 
-When your API returns an error, the response body should always have the same shape. **RFC 9457 (Problem Details for HTTP APIs)** is the internet standard for this:
+When your API returns an error, the response body should have the same shape on every endpoint — consistency is the rule; one error-handling function on the client, not per-endpoint parsing. **RFC 9457 (Problem Details for HTTP APIs)** is the internet standard shape, and the natural pick when external clients consume your API; an internal API can use a simpler shape, as long as it's one shape:
 
 **Branch on a stable `code`, not on `type`.** RFC 9457's `type` is meant to be a documentation URI (defaulting to `"about:blank"`). It's tempting to skip the URIs and put your error *class name* in `type` for clients to switch on — don't. That welds your public contract to internal class names, so renaming a class in a refactor silently breaks every client. Instead expose a dedicated machine-readable `code` (e.g. `"VALIDATION_ERROR"`), chosen independently of class names, for clients to branch on; leave `type` as `"about:blank"` until you actually publish docs URIs to point it at. See `dev-standards-pitfalls` > "The Class-Name Error Contract".
 
@@ -587,7 +595,7 @@ These exercise the full middleware chain against a real backend, so they belong 
 | Handle errors in every route handler individually | Use a global error handler | DRY — one place to maintain error→response mapping |
 | Use HTTP status codes inconsistently (404 sometimes, 400 other times for same thing) | Define the mapping once in the error hierarchy | Inconsistent codes confuse frontend developers and monitoring |
 | Log operational errors at ERROR level | Log operational errors at WARN, programming errors at ERROR | Otherwise your error alerts fire for expected situations (user typos, etc.) |
-| Return different error response shapes per endpoint | Use RFC 9457 Problem Details everywhere | Frontend needs one error-handling function, not per-endpoint parsing |
+| Return different error response shapes per endpoint | Pick one shape and use it everywhere (RFC 9457 for public APIs) | Frontend needs one error-handling function, not per-endpoint parsing |
 
 ---
 
@@ -598,7 +606,7 @@ When starting a new project, determine:
 1. **What error types will your app encounter?** Map your domain to the hierarchy — most apps need at least: Validation, NotFound, Authorization, ExternalService.
 2. **What framework are you using?** This determines how the global error handler is registered (Express middleware, FastAPI exception handler, Next.js error.tsx).
 3. **Do you need field-level validation errors?** If your API accepts complex forms, yes — include an `errors` array in validation responses.
-4. **What error tracking service?** Sentry, Datadog, Bugsnag — programming errors (non-operational) should be reported to one of these.
+4. **What error tracking service, if any?** For apps with real production users, programming errors (non-operational) should be reported to one (Sentry, Datadog, Bugsnag). For a small internal tool, logs alone are usually enough.
 5. **400 or 422 for validation?** Pick one, document it, use it everywhere.
 
 ---

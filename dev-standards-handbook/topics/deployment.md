@@ -1,5 +1,12 @@
 # Deployment & Operations
 
+> **Calibrate to the context.** Release machinery scales with whether users would
+> notice a bad deploy: blue-green and canary earn their keep on high-traffic systems;
+> for most projects starting out, simple deploy + feature flags gets 80% of the benefit
+> with minimal infrastructure. The hygiene rules — commit the lockfile, frozen installs
+> in CI, never drop a column in the same deploy as the code that reads it — are cheap
+> insurance and hold at any size. Reference material, not a checklist.
+
 ## The Problem
 
 Getting code from "it works on my machine" to "it's running in production serving real users" is where most outages happen. The deploy itself is the most dangerous moment — you're changing a running system. Deployment and operations patterns exist to make this safe and recoverable.

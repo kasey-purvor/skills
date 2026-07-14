@@ -1,5 +1,13 @@
 # Security
 
+> **Calibrate the investment, not the core rules.** The core defences — parameterized
+> queries, escaping user content, real password hashing, secrets out of git — hold at
+> any app size: an attack doesn't care how few users you have, and the safe way is
+> usually the same amount of code as the vulnerable way. What scales with exposure is
+> the machinery *around* them: how elaborate your CSP gets, formal rotation schedules,
+> rate limiting. Judgment here means sizing that investment — never skipping a core
+> defence because the app is small.
+
 ## The Problem
 
 Security isn't a feature you add — it's a property your system either has or doesn't. Most security vulnerabilities aren't sophisticated hacking. They're ordinary mistakes: a developer concatenates user input into a SQL query, forgets to escape HTML output, or commits an API key to git.
@@ -381,9 +389,9 @@ From a security standpoint, a few JWT-specific concerns are worth double-checkin
 
 ## Rate Limiting
 
-Rate limiting restricts how many requests a client can make in a time window. Without it, a single client (or bot, or attacker) can overwhelm your API.
+Rate limiting restricts how many requests a client can make in a time window. It's the one defence in this chapter that genuinely scales with exposure: an internal tool on a private network with a handful of known users has nobody to rate-limit. It earns its keep when your API is publicly reachable, has unauthenticated endpoints (login and signup get brute-forced), or calls paid services downstream.
 
-### Why You Need It
+### When You Need It
 
 - **Abuse prevention** — stops bots from brute-forcing login, scraping data, or flooding your API
 - **Fair usage** — prevents one heavy user from degrading the service for everyone else

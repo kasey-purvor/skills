@@ -1,5 +1,13 @@
 # Testing
 
+> **Calibrate to the context.** The concern-by-concern battery below is a menu, not a
+> mandate: each category applies only if your app actually has that concern (no tenants,
+> no tenant-isolation tests; no auth, no auth tests). How deep you go scales with stakes
+> and lifespan — a long-lived service earns the full treatment; a small internal tool is
+> often well-served by a handful of integration tests over its core paths. The test
+> *craft* (real database, factories, HTTP-level mocking) is worth doing right at any
+> size once you write the test at all. Reference material, not a checklist.
+
 ## The Systems View of Testing
 
 Most developers think of testing as "write a function, write a test for that function." That's the micro view. The systems view asks a completely different question: **how do you prove your entire system works correctly?**
@@ -161,7 +169,7 @@ The guarded implementation makes the barrier unsatisfiable for more than one cal
     /______________________\
 ```
 
-Most tests should be **unit tests** (fast, cheap, reliable). Some should be **integration tests** (verify components work together). Few should be **E2E tests** (verify critical user journeys).
+The classic default: most tests are **unit tests** (fast, cheap, reliable), some are **integration tests** (verify components work together), few are **E2E tests** (verify critical user journeys). The ratio legitimately shifts with where your risk lives — a database-heavy CRUD app often gets more value weighting integration tests over units, because its bugs are in queries and wiring, not pure logic.
 
 The pyramid doesn't mean E2E tests are less important — it means they're more expensive per test, so you target them at flows that matter most (signup, checkout, core workflows).
 
@@ -226,7 +234,7 @@ Two setup concerns bite early. First, **match the environment to the test**: DOM
 
 ### Test Database — Use a Real One
 
-**Don't mock the database.** Mocking means you're testing your mocks, not your queries. A query that passes against a mock might fail against a real database (wrong JOIN, missing index, constraint violation).
+**In tests that exercise queries, don't mock the database.** Mocking means you're testing your mocks, not your queries. A query that passes against a mock might fail against a real database (wrong JOIN, missing index, constraint violation). (Pure-logic unit tests don't touch the database at all — this rule is about the tests that do.)
 
 Spin up a real test database:
 
@@ -491,7 +499,7 @@ const testUser = UserSchema.parse({
 
 ## The Testing Checklist
 
-When reviewing whether your system is adequately tested, walk through each concern:
+When reviewing whether your system is adequately tested, walk through each concern **your app actually has** (skip the rows that don't apply — no pagination, no pagination tests):
 
 - [ ] **Data validation** — Do API endpoints reject invalid input? Do schemas match real data?
 - [ ] **Data transformations** — Is each stage of the data pipeline tested?
@@ -511,7 +519,7 @@ When reviewing whether your system is adequately tested, walk through each conce
 
 1. **Test framework?** Vitest for TypeScript, pytest for Python — recommended defaults.
 2. **Test database strategy?** Docker + testcontainers for CI, local database for development.
-3. **What's your minimum testing bar?** At minimum: schema validation wiring, error response format, authentication/authorization, critical API contracts.
+3. **What's your minimum testing bar?** For a production service: schema validation wiring, error response format, authentication/authorization, critical API contracts — trimmed to the concerns the app actually has, and scaled down further for prototypes.
 4. **How many E2E tests?** One per critical user journey (signup, core workflow, payment if applicable). Not more than 10-20 for most apps.
 5. **When do tests run?** Unit + integration on every PR. E2E on merge to main. Smoke tests on every deploy. The integration tests that need Docker or a real database are exactly the ones most often gated behind a separate opt-in command — make sure CI actually runs them, or your highest-value guards (tenant isolation, migration parity, concurrency) silently rot into checks nobody runs.
 

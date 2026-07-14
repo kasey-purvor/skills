@@ -1,5 +1,13 @@
 # Resilience
 
+> **Calibrate to the context.** These patterns form a ladder, and where you stop
+> depends on what your app calls and what's at stake: timeouts are near-free and
+> belong on every external call; retries with backoff follow close behind; idempotency
+> matters as soon as a retried operation could duplicate a side effect (payments,
+> emails, orders); circuit breakers earn their keep with many dependencies or high
+> traffic — usually not for a simple app calling one or two services. Reference
+> material, not a checklist.
+
 ## The Problem
 
 Your app doesn't exist in isolation. It depends on external services — databases, payment APIs, email providers, cache servers, third-party APIs. Any of these can fail at any time: network blip, service overloaded, deployment in progress, DNS hiccup.

@@ -4,9 +4,9 @@ description: >-
   Use when planning or making any non-trivial change to a codebase — a new project,
   feature, fix, refactor, live change, integration, or pre-launch hardening — to
   route you to the right chapters of a production-engineering handbook (API design,
-  auth, data integrity, error handling, resilience, security, testing, deployment,
-  monitoring, logging, configuration, schema evolution, product analytics). Not for
-  pure research, Q&A, or one-line edits.
+  auth, multi-tenant isolation, data integrity, error handling, resilience, security,
+  testing, deployment, monitoring, logging, configuration, schema evolution, product
+  analytics, module design). Not for pure research, Q&A, or one-line edits.
 ---
 
 # Production Engineering Handbook
@@ -14,7 +14,7 @@ description: >-
 Reference material for production engineering. Each chapter lives in `topics/` —
 one project-independent markdown per concern (patterns, tradeoffs, common mistakes).
 
-This file is a **router** — it narrows 14 chapters down to the few your task most
+This file is a **router** — it narrows 15 chapters down to the few your task most
 likely needs. It's a starting point for your judgment, not a checklist to obey, and
 not a substitute for thinking.
 
@@ -89,8 +89,8 @@ Pick the **one** row closest to what you're fundamentally doing, then add any
 
 | What you're doing | Core chapters (start here, then adjust) |
 |---|---|
-| **Start a new project** (greenfield) | configuration · data-integrity · api-design · error-handling · testing · deployment |
-| **Build a feature** in an existing app | api-design · data-integrity · error-handling · testing |
+| **Start a new project** (greenfield) | module-design · configuration · data-integrity · api-design · error-handling · testing · deployment |
+| **Build a feature** in an existing app | module-design · api-design · data-integrity · error-handling · testing |
 | **Change how a live system behaves** | deployment · resilience · monitoring · testing |
 
 **Starting a new project? First name what *kind* it is** — the greenfield list leans
@@ -119,6 +119,7 @@ Don't inherit the list on autopilot.
 | …handles identity or sensitive data (auth, payments, PII, admin actions) | authentication-authorization · security |
 | …serves multiple customer orgs from one system (multi-tenant SaaS) | multi-tenant-isolation · authentication-authorization · security |
 | …changes a public API contract | api-design |
+| …creates a new module, or reshapes how code is split into modules (new service/package/layer, extracting or merging modules) | module-design |
 | …is being deployed / going live | deployment · monitoring · resilience · logging · security |
 
 If your task matches no row, pick chapters by keyword from the **Topic index** below
@@ -135,6 +136,7 @@ If your task matches no row, pick chapters by keyword from the **Topic index** b
 | `topics/deployment.md` | Release patterns, lockfiles, concurrency, CI/CD |
 | `topics/error-handling.md` | Error hierarchies, global handlers, RFC 9457, error chaining |
 | `topics/logging.md` | Structured logging, correlation IDs, frontend logging |
+| `topics/module-design.md` | Deep vs shallow modules, interfaces, seams, adapters, design-it-twice, dependency categories |
 | `topics/monitoring.md` | Metric types, RED/USE, SLOs, distributed tracing, OTel |
 | `topics/multi-tenant-isolation.md` | Isolation strategies, scoped data layers, the RLS database backstop, elevated cross-tenant access |
 | `topics/product-analytics.md` | Event tracking, identity, groups, privacy |
@@ -163,7 +165,7 @@ If your task matches no row, pick chapters by keyword from the **Topic index** b
 - **Observability** — `logging` · `monitoring` · `product-analytics` (one request · whole system · are users using it)
 - **Identity & Protection** — `authentication-authorization` · `security` · `multi-tenant-isolation` (overlapping; auth is the deep implementation reference, multi-tenant-isolation the tenant-boundary treatment)
 - **Foundation** — `configuration` · `deployment`
-- **`testing`** cross-cuts all of the above.
+- **`testing`** and **`module-design`** cross-cut all of the above (every module has an interface, and the interface is the test surface).
 
 Each chapter ends with a **Related Topics** list — follow those when a concern pulls in a neighbour.
 

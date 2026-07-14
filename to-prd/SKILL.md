@@ -9,18 +9,13 @@ This skill takes the current conversation context and codebase understanding and
 
 1. Explore the repo to understand the current state of the codebase, if you haven't already. Use the project's domain glossary vocabulary throughout the PRD, and respect any ADRs in the area you're touching.
 
-2. Sketch out the major modules you will need to build or modify. Actively look for opportunities to extract **deep modules** that can be tested in isolation.
+2. Invoke the `dev-standards-handbook` skill and use its router to decide which chapters apply to this feature. These get recorded in the PRD's **Applicable Standards** section so `/to-issues` can carry them onto each issue and implementing agents can reload them. This comes before the module sketch because a flagged chapter can change which modules you propose (e.g. multi-tenant-isolation puts tenant filtering in a scoped data layer; schema-evolution may make a migration its own piece of work).
 
-   **Deep vs shallow modules** — from John Ousterhout's *A Philosophy of Software Design*. Think of a module's worth as the ratio of the functionality it provides to the complexity of its interface. That ratio is its **depth**.
-
-   - A **deep module** hides a lot of implementation behind a small, simple interface — powerful functionality, minimal surface area. The classic example is Unix file I/O: `open` / `read` / `write` / `close` is a tiny interface over enormous hidden complexity (disk layout, buffering, scheduling, permissions). The interface is far simpler than the implementation, so callers get leverage without paying for the complexity.
-   - A **shallow module** has an interface nearly as complex as its implementation — it hides little. Symptoms: rows of thin pass-through methods, or a class whose signature already tells you everything it does. Each shallow module still charges an interface cost (one more thing to learn and wire up) while buying almost no abstraction; enough of them and the interfaces cost more than they save.
-   - Design for interfaces **much simpler than** their implementations. That gap is also what makes a module testable in isolation — the interface becomes a genuine seam.
-   - **Deletion test:** imagine deleting the module. If the complexity simply vanishes, it was a pass-through and shouldn't exist. If the same complexity reappears, duplicated across its callers, the module was earning its keep.
+3. Sketch out the major modules you will need to build or modify. Actively look for opportunities to extract **deep modules** that can be tested in isolation — a lot of behaviour hidden behind a small interface. Before proposing any module, read `topics/module-design.md` in the `dev-standards-handbook` skill and design to it: answer its "Before Proposing a Module" questions, apply the deletion test to every proposed module, and sketch the interface twice before committing.
 
    Check with the user that these modules match their expectations. Check with the user which modules they want tests written for.
 
-3. Write the PRD using the template below, then save it as `docs/PRD/YYYY-MM-DD-<feature-slug>.md` in the repo. Use today's date (YYYY-MM-DD) and a kebab-case feature slug. Example: `docs/PRD/2026-05-27-tenant-invite-quota.md`.
+4. Write the PRD using the template below, then save it as `docs/PRD/YYYY-MM-DD-<feature-slug>.md` in the repo. Use today's date (YYYY-MM-DD) and a kebab-case feature slug. Example: `docs/PRD/2026-05-27-tenant-invite-quota.md`.
 
 The PRD is a planning artifact, not an implementable issue — do not create a Linear issue for it. The follow-up `/to-issues` skill breaks the PRD into implementable issues that reference back to this file.
 
@@ -61,6 +56,16 @@ A list of implementation decisions that were made. This can include:
 Do NOT include specific file paths or code snippets. They may end up being outdated very quickly.
 
 Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it within the relevant decision and note briefly that it came from a prototype. Trim to the decision-rich parts — not a working demo, just the important bits.
+
+## Applicable Standards
+
+The `dev-standards-handbook` chapters that apply to this feature (from step 2), one line each on what it governs here. Example:
+
+- `module-design` — the two new modules proposed under Implementation Decisions
+- `api-design` — the new endpoints' response shapes
+- `schema-evolution` — the migration adding the invite-quota column
+
+`/to-issues` carries these onto each issue; implementing agents reload the named chapters rather than working from the PRD alone.
 
 ## Testing Decisions
 

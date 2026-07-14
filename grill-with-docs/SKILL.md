@@ -53,6 +53,10 @@ Create files lazily — only when you have something to write. If no `CONTEXT.md
 
 ## During the session
 
+### Challenge against the standards
+
+One lens among the practices here — the grilling stays a broad design conversation, not a handbook compliance check. Early in the session, invoke the `dev-standards-handbook` skill and note which chapters the plan touches; when a decision lands in a chapter's territory, bring what it says into the discussion at a rigor matching the app's actual context. When the plan proposes a new module or reshapes how code is split, `topics/module-design.md` is worth its own challenge — apply the deletion test to each proposed module and ask what its interface hides. Raise gaps as questions, not verdicts, and keep grilling everything the handbook has nothing to say about.
+
 ### Challenge against the glossary
 
 When the user uses a term that conflicts with the existing language in `CONTEXT.md`, call it out immediately. "Your glossary defines 'cancellation' as X, but you seem to mean Y — which is it?"

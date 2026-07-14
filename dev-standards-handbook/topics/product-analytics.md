@@ -1,5 +1,12 @@
 # Product Analytics
 
+> **First, does this apply at all?** Product analytics is opt-in: it earns its keep
+> when you have paying customers or stakeholders asking "is anyone using X?". If
+> neither exists — an internal tool whose handful of users you can just ask — skip
+> this chapter. When you do adopt it, start small (5-10 intentional events); the
+> privacy rules (no PII in event properties, data residency) are firm whatever the
+> scale.
+
 ## The Problem
 
 Observability (logging, metrics, traces) tells you whether the system is healthy. Product analytics tells you whether anyone is *using* it.

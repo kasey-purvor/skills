@@ -1,5 +1,13 @@
 # Logging
 
+> **Calibrate to the context — but note the core habit is nearly free.** Structured
+> logging with a proper logger is a one-line setup and pays for itself on anything
+> deployed, so it's worth doing almost everywhere. What scales with the app is the
+> machinery around it: error-tracking services, cross-service correlation, and OTel
+> integration earn their keep with real users and multiple services. The don't-log
+> rules (secrets, PII) are security rules and hold at any size. Reference material,
+> not a checklist.
+
 ## The Problem
 
 ```typescript
@@ -414,7 +422,7 @@ Backend logging is well-understood: use a structured logger, write JSON, ship to
 
 4. **Catch blocks should not swallow errors.** The pattern `catch (err) { console.error(err); return []; }` is the most common frontend logging anti-pattern. The error is "logged" to a place nobody sees, the component receives empty data as if nothing went wrong, and the user gets a silent partial failure. Instead, let the error propagate to your data-fetching layer's error state (React Query's `error` property, SWR's error return) so the UI can show an error state and the global error handler can report to Sentry.
 
-**Rule of thumb:** If it helps you debug during development, it's a `console.log` that should be removed before merge. If it reports a failure in production, it should go to Sentry. If it measures user behaviour, it should go to analytics. There is almost no case where `console.log` in committed production code is the right choice.
+**Rule of thumb:** If it helps you debug during development, it's a `console.log` that should be removed before merge. If it reports a failure in production, it should go to an error-tracking service — the recommendation for any app with real users. If it measures user behaviour, it should go to analytics. For a small internal tool without error tracking, the minimum bar still holds: don't swallow errors — surface them in the UI's error state, where both the user and you can see them. What never works is `console.log` as the *reporting* mechanism, because the user's browser console is invisible to you.
 
 ### What an error-tracking service captures
 
@@ -434,7 +442,7 @@ Backend logging is well-understood: use a structured logger, write JSON, ship to
 
 | Don't | Do Instead | Why |
 |-------|-----------|-----|
-| `console.log()` / `print()` in production code | Use a structured logger (pino, structlog) | Unstructured text can't be searched, filtered, or aggregated |
+| `console.log()` / `print()` in a deployed app | Use a structured logger (pino, structlog) | Unstructured text can't be searched, filtered, or aggregated (a CLI's `print` output is its interface — different thing) |
 | Log strings: `logger.info("User " + userId + " signed up")` | Log structured: `logger.info({userId}, "User signed up")` | String concatenation loses structure — can't filter by userId |
 | Log everything at ERROR level | Use warn for operational errors, error for bugs | Alert fatigue — team ignores alerts, misses real incidents |
 | Log secrets, passwords, tokens | Scrub sensitive fields before logging | Logs are stored, forwarded, and often accessible to many people |

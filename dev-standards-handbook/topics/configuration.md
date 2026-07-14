@@ -1,5 +1,12 @@
 # Configuration
 
+> **Calibrate to the context.** How much config machinery an app needs scales with how
+> it's deployed and how long it lives: a local script or small internal tool needs little
+> more than a few env vars checked at startup; secret managers, multi-layer config, and
+> per-environment plumbing earn their keep on deployed, longer-lived systems. The one
+> cheap habit that pays at any size is failing fast on missing critical values. Reference
+> material, not a checklist.
+
 ## The Problem
 
 Your app's configuration — database URLs, API keys, feature flags, port numbers — is data entering your system from an external source (environment variables, config files, secret managers). It deserves the same validation discipline as any other external data.
@@ -21,7 +28,7 @@ Three problems:
 
 3. **No single source of truth.** Different files read different env vars. Nobody knows the complete list of what the app needs to run. A new developer clones the repo and gets a cryptic crash because they're missing an env var nobody documented.
 
-**The solution: validate all config at startup, fail fast.**
+**The fix that addresses all three: validate config at startup and fail fast.** It's cheap — a small schema and one import — so it's worth doing even on small apps; how much *more* machinery you add beyond it is where scale comes in.
 
 ---
 

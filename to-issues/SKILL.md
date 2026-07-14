@@ -52,6 +52,7 @@ Iterate until the user approves. Then confirm you have the inputs for the **Tick
 For each approved slice, publish a Linear issue:
 
 - **Body:** the **Ticket body** template from the `linear` skill (TL;DR / Goal / Scope / Acceptance criteria / Verification). Don't redefine it here.
+- **Standards line:** directly after the ticket body (where the universal frame below places it), add `Standards: <chapters>` naming the `dev-standards-handbook` chapters relevant to *this slice* — taken from the PRD's **Applicable Standards** section if the source is a PRD, otherwise chosen via the handbook's router. Only the chapters this slice actually touches, not the whole feature's list. Implementing agents reload the named chapters before starting.
 - **Labels:** `type/*`, `quality/scoped`, and `ai-added` (these tickets are agent-created).
 - **Project:** assign one — never leave a ticket projectless (`linear` Convention #9). Ask which project if it isn't obvious.
 - **State: Backlog** — well-defined but not yet scheduled. Promotion to Todo (scheduling) and `quality/audited` (the pre-work re-audit) are separate, later steps — `/to-issues` does not do them.
@@ -66,6 +67,8 @@ All slices sit inside the universal frame:
 A reference to the parent issue (if the source was an existing issue; otherwise omit this section).
 
 ## <ticket body — see the `linear` skill>
+
+Standards: <the dev-standards-handbook chapters this slice touches>
 
 ## Blocked by
 

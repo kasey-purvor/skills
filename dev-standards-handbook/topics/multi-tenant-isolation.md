@@ -1,5 +1,11 @@
 # Multi-Tenant Isolation
 
+> **First, does this apply at all?** If your system serves a single tenant — one
+> customer, or internal users only — skip this chapter entirely; don't build tenant
+> machinery for tenants that don't exist. If it serves multiple customer orgs on shared
+> infrastructure, everything below applies, and the core rules don't scale down with
+> app size: a cross-tenant leak is a breach at three users just as at three thousand.
+
 ## The Problem
 
 A multi-tenant system runs one instance — one codebase, often one database — serving many customer organisations (tenants). That changes the authorization question. It is no longer just "may this user do X?" but "may this user do X *for this tenant*?"

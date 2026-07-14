@@ -1,5 +1,13 @@
 # Monitoring
 
+> **Calibrate to the context.** This chapter describes the full observability stack —
+> the shape it takes for a team operating a service that real users depend on. Most
+> apps need a slice of it, not all of it: a small internal tool is often fine with
+> structured logs and nothing else; metrics earn their keep when traffic grows beyond
+> what you can eyeball; tracing, SLOs, and alerting with on-call earn theirs when
+> multiple services and real users are involved. Scale the machinery to the blast
+> radius of an outage. Reference material, not a checklist.
+
 ## The Observability Pipeline
 
 Observability has three pillars. [Logging](./logging.md) covers the first. This topic covers the other two (metrics and traces) plus the systems that tie everything together.
@@ -24,7 +32,7 @@ Traces           ───────►  Trace backend   ───────
 **Metrics** tell you *how the system is performing* as a whole.
 **Traces** tell you *what path a request took* and where time was spent.
 
-You need all three. Logs without metrics means you can't see trends. Metrics without logs means you see something is wrong but can't investigate why. Traces connect the other two across service boundaries.
+A system serving real traffic benefits from all three: logs without metrics means you can't see trends; metrics without logs means you see something is wrong but can't investigate why; traces connect the other two across service boundaries. Smaller apps usually start with just logs and add the others as scale demands.
 
 ---
 
@@ -148,13 +156,13 @@ Averages lie. If 99 requests take 10ms and 1 request takes 10 seconds, the avera
 
 If your p50 is 50ms but your p99 is 5 seconds, you have a **tail latency problem** — most users are fine, but 1 in 100 has a terrible experience. The average (maybe 100ms) hides this completely.
 
-**Always monitor p95 and p99, not just averages.** Your SLOs (see below) should be defined in percentiles.
+**When you track latency at all, prefer percentiles (p95/p99) over averages** — the average hides exactly the requests you care about. If you define SLOs (see below), define them in percentiles for the same reason.
 
 ---
 
 ## SLIs, SLOs, and Error Budgets
 
-These form the foundation of how production teams think about reliability:
+This is how teams operating a service that users depend on think about reliability — it earns its keep once there's real traffic and someone on the hook for uptime. A small internal tool can skip the formality; the concepts are still worth knowing:
 
 ### SLI (Service Level Indicator)
 

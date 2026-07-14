@@ -21,6 +21,13 @@ Where this repo's specifics live, so this block never has to name them:
 - **Linear conventions** (labels, states, ticket body, recipes) — the `linear` skill, auto-loaded on any Linear MCP call.
 - **Session hand-off** — the `handoff` skill (manual, invoked at session boundaries).
 
+## Engineering standards
+
+The `dev-standards-handbook` skill is the house production-engineering reference (chapters on API design, auth, testing, module design, and more). Two rules make it land:
+
+- **Implementing a ticket?** If its body carries a `Standards:` line, read those handbook chapters *before starting work* — the ticket can't capture every standard, the chapters can. If a non-trivial ticket names none, invoke `dev-standards-handbook` and route yourself via its SKILL.md.
+- **Proposing a new module, or reshaping how code is split?** Read the handbook's `topics/module-design.md` first and design to it (deletion test, deep-over-shallow, design it twice). This applies to plans and PRDs, not just code.
+
 ## Work lifecycle — tickets, branches & PRs
 
 **Read this before starting any piece of work.** It defines the unit of work, *when* to cut a branch, and *when* to record state to Linear. It does not restate what's owned elsewhere (ticket shape → `linear` skill; worktree mechanics → next section). It only sequences them.
