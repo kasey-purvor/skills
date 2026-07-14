@@ -24,7 +24,7 @@ Day-to-day operational skill for the team's Linear workspace. Loaded on any Line
 | Canceled | canceled | Won't do |
 | Duplicate | duplicate | Auto-applied when `duplicateOf` is set |
 
-### Labels (4 mutex groups + 2 free-floating)
+### Labels (4 mutex groups + 3 free-floating)
 
 | Group | Values |
 |---|---|
@@ -34,6 +34,7 @@ Day-to-day operational skill for the team's Linear workspace. Loaded on any Line
 | `kickback/*` | `for-ben`, `for-kasey` — **human-only; agents never set these** (attention hand-off between colleagues) |
 | `security` | free-floating; security-sensitive code or behaviour |
 | `ai-added` | free-floating; ticket was created by an AI agent |
+| `nit` | free-floating; small batchable hardening/cleanup deliberately deferred at discovery (see *Review-finding disposition*) |
 
 Mutex = mutually exclusive within a group; picking a second value drops the first. All labels live at **workspace level** — never pass `teamId`.
 
@@ -42,7 +43,7 @@ Priority is the **native Linear Priority field**, set by humans only. It is deli
 ## Conventions
 
 1. **One label per group max** — mutex is enforced.
-2. **Free-floating labels (`security`, `ai-added`) apply alongside group labels** — they don't belong to any mutex group.
+2. **Free-floating labels (`security`, `ai-added`, `nit`) apply alongside group labels** — they don't belong to any mutex group.
 3. **Comment before state change** — when moving to Done/Canceled, post a `save_comment` rationale *first*, then the `save_issue` state change.
 4. **Set `duplicateOf` — don't also set state.** Linear auto-transitions to Duplicate.
 5. **Spec changes edit the description, not comments.** Mid-flight enrichment, scope changes, AC amendments, and deviations all amend the description in place; a one-line breadcrumb comment can point at the change. The description is what every downstream reader sees — spec content kept only in comments is invisible to them. For what comments *are* for, see *Reading a ticket for action* below.
@@ -51,6 +52,24 @@ Priority is the **native Linear Priority field**, set by humans only. It is deli
 8. **Agents label their own tickets `ai-added`.** Any ticket an agent creates gets the free-floating `ai-added` label.
 9. **Every ticket belongs to a Project.** Never leave a ticket projectless — if the target project isn't obvious, ask which one before creating.
 10. **Agent-created tickets are assigned to the operating human.** Pass `assignee: "me"` on creation — the MCP session is signed in as its human, so `"me"` resolves to Kasey on Kasey's machines and Ben on Ben's, with nothing hardcoded. Override only when explicitly told the ticket is for the other person (email works: `ben.ward@` / `kasey.purvor@thecloudassist.com`). Assignment is ownership, not attention — `kickback/*` (human-only) remains the attention hand-off.
+
+## Review-finding disposition
+
+When a review (agent, handbook, or human) produces findings, each one takes exactly one of three paths — decided at review time, recorded on the driving ticket:
+
+1. **Fix in the PR** — defects in code the PR introduces (correctness, security, data-loss), or anything cheap that touches files already in the diff. New code merges clean; deferring defects on brand-new code is how quality erodes.
+2. **Becomes a ticket** — real work beyond the PR's scope: needs its own decision (`blocked/needs-decision`), touches code outside the diff, or would meaningfully delay an otherwise-sound merge. Small deferred hardening gets the `nit` label, **batched to one-coherent-small-PR size** (one "hardening pass over X" ticket, never one ticket per one-liner), homed in the epic project whose area it touches — there is deliberately NO junk-drawer project; the cross-project `nit` filter view IS the debt register.
+3. **Recorded-and-skipped** — a considered rejection: comment on the driving ticket ("considered, declined because X"), no ticket. The YAGNI valve.
+
+**Security-relevant findings never take path 3** — they ride the PR or get a ticket carrying `security`.
+
+**Nits are PR riders:** an agent working a ticket is expected to check open `nit` tickets in the same area and fold adjacent ones into the PR (`Closes CON-x`). A nit view grown past ~6–8 open tickets signals a deliberate hardening PR.
+
+## Projects
+
+- **A project = a delivery epic** — a coherent outcome with an end (a phase/journey slice), not a category. Project statuses get marked Completed when the epic ships.
+- **Only humans create projects.** Agents may *propose* one at a planning boundary; never invent one mid-session.
+- **Every ticket homes in the epic whose area it touches** — including nits, review findings, and post-completion bugs (a finished epic still homes its trailing work). No epic fits → ask (Convention #9), never create a holding project.
 
 ## Reading a ticket for action
 
