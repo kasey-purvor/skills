@@ -76,6 +76,7 @@ Work several branches at once with worktrees rather than one clone you keep swit
 - **Worktrees live in `.claude/worktrees/`**, named for the **ticket id(s) only** (`.claude/worktrees/clo-342`, multi-ticket `…/clo-342-clo-343`) — a tmux `ticket` panel reads the id from the directory name, so never use generic `wt1`/`wt2` names. This is also where the Claude Code harness creates them, so manual and harness slots agree.
 - **Create off `origin/main`:** `git worktree add .claude/worktrees/<id> -b <user>/<id>-<slug> origin/main`. `main` can't be checked out twice, so always branch from the remote ref.
 - **Never *develop* in the main clone** — keep it on `main` as the fresh base you branch from. Reading/orienting there is fine; edits and commits belong in a worktree.
+- **A worktree you *discover* rather than start in probably belongs to another live session — default to leaving it alone.** Sessions run in parallel, so a slot under `.claude/worktrees/` that shows up in `git worktree list` but isn't the one you were launched into is most likely a concurrent session's. As a rule: orientation may note it exists and stop there — don't `cd` into, read, `cat`, grep, or modify it — and new work normally cuts a fresh worktree/branch off `origin/main` rather than reusing someone else's slot. The legitimate exception is a worktree you're **already operating inside** when the session begins: you were handed off into it to continue the previous agent's PR, so carry on there (see the preflight below). Treat this as a strong default, not an iron rule — when your workflow genuinely calls for something else, use judgment.
 
 **Worktree preflight — run before editing a worktree you didn't just create** (a PR often spans sessions; resume the *same* worktree, don't cut a second):
 
@@ -89,7 +90,7 @@ Work several branches at once with worktrees rather than one clone you keep swit
 
 ## Checks, PRs & CI — the discipline
 
-- `main` is **protected**: every change lands via a PR, the required status check must pass, and the branch must be up to date with `main` before merge.
+- `main` is **protected**: every change lands via a PR with CI green and the branch up to date with `main` before merge. Where the repo's plan supports branch protection/rulesets, that's enforced mechanically; where it doesn't (e.g. free-plan private repos), the rule binds by discipline anyway — the repo-specific half says which applies.
 - **Always run the repo's full check before pushing** (command in the repo-specific section) — it should mirror CI exactly.
 - PRs touching only non-product files (docs, agent config) may skip the heavy CI jobs (repo-configured).
 
