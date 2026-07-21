@@ -166,3 +166,51 @@ The integration tests that need Docker or a real database get put behind a separ
 ### The Test Pool That Hid the Deadlock
 Running tests with a connection-pool shape unlike production's — a roomy test pool (`max: 10`) when production runs lean (`max: 1` per instance). Self-deadlocks and pool-saturation bugs that only bite at the production shape never surface, because the test pool always has a spare connection to hand out. Green in CI, hung in prod.
 **Instead:** when testing concurrency, deadlock, or connection-exhaustion behaviour, size the test harness's pool the way production is sized. See `dev-standards` > testing.md.
+
+### The Announcer That Broke the Locator
+An end-to-end assertion on visible text (`getByText('All done!')`) intermittently fails with a strict-mode violation: the framework's accessibility live region (e.g. Next.js's route announcer, which re-reads the page's `h1` to screen readers after client-side navigation) duplicates the same text in a second element. The collision is timing-dependent — the announcer only carries the text after a client navigation — so the test flakes rather than fails.
+**Instead:** scope text assertions to a role or landmark (`getByRole('heading', { name: … })`) instead of bare page-wide text matches, and treat framework live regions as legitimate duplicators of any visible text. See `dev-standards` > testing.md.
+
+### The Teardown That Failed the Green Run
+A throwaway database container (Testcontainers) is stopped while the app's connection pool still holds open connections. The server terminates them (`FATAL 57P01 admin_shutdown`), the driver surfaces it as an unhandled error *after* every test has already passed, and the runner marks a fully-green suite red. Looks like a mystery database failure; is actually teardown ordering.
+**Instead:** order the teardown — close pools/clients before stopping the container — and treat connection-termination errors arriving during shutdown as expected, not fatal. See `dev-standards` > testing.md.
+
+### The Tamper Test That Flipped a Dead Bit
+An AEAD tamper test mutates the LAST character of a base64url ciphertext and asserts decryption fails — but the final character of a base64 string can carry padding bits the decoder discards, so some mutations decode to the *identical* bytes and the "tampered" input decrypts fine. The test flakes with the randomness of the ciphertext (fired in two separate modules before the pattern was named).
+**Instead:** mutate a position that provably changes the decoded bytes — the FIRST character is always significant — and treat "encodings have dead bits" as a class: never assume a textual mutation changes the underlying bytes. Run new crypto/probability-adjacent tests several times in a row before trusting them. See `dev-standards` > testing.md.
+
+### The Env File the Test Runner Also Read
+An operator applies a runbook's environment (e.g. `AUTH_MODE=cognito` in `.env.local`, pointing the app at a real identity pool) and later runs the e2e suite — whose harness spawns its own app server, which auto-loads the same env file. The suite's app silently boots in the wrong mode (every page gated to a login screen) and the tests time out with no visible connection to the env change made an hour earlier.
+**Instead:** treat mode-selecting env files as mutually exclusive with the test loop: park or remove them before running the suite, and document the exclusivity in the runbook that applies them — the failure is invisible from the test output alone. See `dev-standards` > configuration.md.
+
+---
+
+## When Merging a Pull Request
+
+### The Check Nobody Required
+The team treats "CI green" as the merge gate, but the check is not enforced by branch protection (or the plan doesn't offer it) — so a merge on a red check succeeds silently, by a hurried human or an automation that never re-read the final status. Green-as-convention is not green-as-enforcement; the gap is invisible until the day it isn't.
+**Instead:** mark load-bearing checks as required in branch protection where the platform allows it; where it doesn't, make "read the final checks status immediately before merging" an explicit step of the merge procedure, not an assumption. See `dev-standards` > deployment.md.
+
+### The Watch That Reported the Wrong Run
+A checks watcher (`gh pr checks --watch` or similar) started before a late push binds to the SUPERSEDED workflow run and happily reports green — for a commit that is no longer the branch head. The merge then rides a verdict that belongs to different code. It has happened in practice; the watcher gives no hint it is stale.
+**Instead:** after ANY post-review push, resolve the workflow run by the exact head SHA (`gh run list --json headSha`, match it yourself) and gate the merge on that run — never on a watcher started earlier. See `dev-standards` > deployment.md.
+
+---
+
+## When Building a Deployable Image
+
+### The Mode Frozen Into the Bundle
+A bundling framework (Next.js edge middleware is the canonical case) inlines `process.env.X` reads at BUILD time. If the variable is present in the build environment, its value is baked into the artifact — and the runtime task definition's value is silently ignored. A mode switch (`AUTH_MODE`) frozen this way means the deployed artifact can never change posture, no matter what the deploy config says.
+**Instead:** keep behavior-selecting variables OUT of the image build entirely (no ARG/ENV, clean build stage — one promotable image), and prove it: boot the built image with a different runtime value and observe the runtime value win. See `dev-standards` > configuration.md.
+
+### The Two Builds of One Library
+A package ships parallel CJS and ESM builds (`main` → `lib/`, `module` → `es/`) with no `exports` map. The package-root import resolves to a DIFFERENT build under a bundler than under node — while a deep import (`pkg/lib/Thing`) always pins one build. Two copies of the same class now coexist in the bundled artifact, `instanceof` fails across them ("Not a BigInteger"), and the breakage exists ONLY in the bundled runtime: every test runner (vitest, tsx) resolves both imports to the same build and stays green. This shipped a login page that could not log anyone in.
+**Instead:** import every helper of such a package from the SAME explicit build path, and exercise the code inside the actual bundled artifact (a booted image, `next dev`/`next start`) at least once — a green unit suite proves nothing about the bundler's module graph. See `dev-standards` > testing.md.
+
+---
+
+## When Writing Infrastructure as Code
+
+### The Description That Deadlocked
+A security group's `description` is create-only in EC2 — editing it forces a REPLACEMENT. With a static `name`, the replacement deadlocks three ways at once: the new SG can't be created while the old one holds the name, the old one can't be deleted while other SGs' rules reference it, and those rules only re-point after the new SG exists. The provider retries the delete until the operation times out; if other groups' rules were already updated by the same apply, the interrupted run leaves manual cleanup.
+**Instead:** give security groups `name_prefix` + `lifecycle { create_before_destroy = true }` from day one (the provider-documented pattern), and until that lands, treat every create-only attribute (description included) as immutable. Killing a stuck apply also strands the state lock — resolve the run by checking `Lock Info` before force-unlocking anything. See `dev-standards` > deployment.md.

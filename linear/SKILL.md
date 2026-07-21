@@ -7,7 +7,7 @@ description: Operational conventions for the Linear workspace — label scheme, 
 
 Day-to-day operational skill for the team's Linear workspace. Loaded on any Linear MCP operation.
 
-**Team name and issue prefix are per-repo** — read them from the repo overlay (`docs/agents/issue-tracker.md`). Examples below use `CLO-123` illustratively.
+**The workspace is organized `team = product`, `project = epic`.** Each repo maps to exactly one product **team** (`repo = team` — a fixed, one-time binding); a **project** is a delivery epic within that team. Team name + issue prefix are per-repo — read them from `AGENTS.md` (`## Agent skills` → `### Issue tracker`). Examples below use `CLO-123` illustratively.
 
 ## Cheat sheet
 
@@ -15,9 +15,9 @@ Day-to-day operational skill for the team's Linear workspace. Loaded on any Line
 
 | Status | Category | When |
 |---|---|---|
-| Triage | triage | New issues land here (native default) |
-| Backlog | backlog | Acknowledged, not scheduled |
-| Todo | unstarted | Scheduled for current/next cycle |
+| Triage | triage | Native landing for externally-filed issues; agents create into Backlog |
+| Backlog | backlog | Where agent-created tickets land (scoped or not); awaits your go |
+| Todo | unstarted | Greenlit to start — momentary; agent sets it at pickup, then starts |
 | In Progress | started | Active work; PR branch cut |
 | In Review | started | PR open, awaiting review or CI |
 | Done | completed | Shipped — PR merged |
@@ -34,7 +34,7 @@ Day-to-day operational skill for the team's Linear workspace. Loaded on any Line
 | `kickback/*` | `for-ben`, `for-kasey` — **human-only; agents never set these** (attention hand-off between colleagues) |
 | `security` | free-floating; security-sensitive code or behaviour |
 | `ai-added` | free-floating; ticket was created by an AI agent |
-| `nit` | free-floating; small batchable hardening/cleanup deliberately deferred at discovery (see *Review-finding disposition*) |
+| `nit` | free-floating; small hardening/cleanup deliberately deferred at discovery (see *Review-finding disposition*) |
 
 Mutex = mutually exclusive within a group; picking a second value drops the first. All labels live at **workspace level** — never pass `teamId`.
 
@@ -47,29 +47,55 @@ Priority is the **native Linear Priority field**, set by humans only. It is deli
 3. **Comment before state change** — when moving to Done/Canceled, post a `save_comment` rationale *first*, then the `save_issue` state change.
 4. **Set `duplicateOf` — don't also set state.** Linear auto-transitions to Duplicate.
 5. **Spec changes edit the description, not comments.** Mid-flight enrichment, scope changes, AC amendments, and deviations all amend the description in place; a one-line breadcrumb comment can point at the change. The description is what every downstream reader sees — spec content kept only in comments is invisible to them. For what comments *are* for, see *Reading a ticket for action* below.
-6. **`quality/*` signals spec maturity, not schedule.** `drive-by` = an unscoped dump; `scoped` = has a real spec (see *Ticket body*); `audited` = re-audited and ready to pick up. `[PARKED: how quality/* maps onto Backlog/Todo promotion — pending your Quality × native-Triage-state decision.]`
+6. **`quality/*` signals spec maturity, not schedule.** `drive-by` = an unscoped dump; `scoped` = has a real spec (see *Ticket body*); `audited` = re-audited and ready to pick up. It does **not** gate status — every ticket lands in Backlog regardless of `quality/*`, and scheduling (Backlog → Todo) is your call (see *Status lifecycle*).
 7. **`kickback/*` is human-only.** Agents never set or remove it — but must preserve it when updating other labels (replace-only API, see recipes).
 8. **Agents label their own tickets `ai-added`.** Any ticket an agent creates gets the free-floating `ai-added` label.
-9. **Every ticket belongs to a Project.** Never leave a ticket projectless — if the target project isn't obvious, ask which one before creating.
+9. **Every ticket homes in its team; homing in an epic (project) is the strong default.** The team is mandatory — it's simply where the ticket lives. Beyond that, **strongly prefer** the epic whose area the ticket touches — the cross-epic view is how work is navigated, and there is deliberately no junk-drawer project. **Exceptions, by judgment (not a hard gate):** a `quality/drive-by` ticket (too raw to know its epic) and a `nit` not clearly tied to any epic may sit projectless — home them once scoped / once the owning epic is clear. Nits usually *do* spring from an epic; place them there when they do. A *scoped* ticket with no obvious epic → ask, don't invent a holding project.
 10. **Agent-created tickets are assigned to the operating human.** Pass `assignee: "me"` on creation — the MCP session is signed in as its human, so `"me"` resolves to Kasey on Kasey's machines and Ben on Ben's, with nothing hardcoded. Override only when explicitly told the ticket is for the other person (email works: `ben.ward@` / `kasey.purvor@thecloudassist.com`). Assignment is ownership, not attention — `kickback/*` (human-only) remains the attention hand-off.
+
+## Status lifecycle
+
+Agents drive the **forward flow** of statuses; the **human decisions** are scheduling (Backlog → Todo) and cancellation (→ Canceled) — every move between them is agent bookkeeping. In order:
+
+| From → To | Trigger | Who |
+|---|---|---|
+| *(create)* → **Backlog** | any agent-created ticket, `scoped` or `drive-by` | agent — bookkeeping |
+| **Backlog → Todo** | you decide to do it (epic or standalone) | agent, **on your go** — never self-scheduled |
+| **Todo → In Progress** | work starts / branch cut | agent — bookkeeping |
+| **In Progress → In Review** | PR opened / review underway | agent — bookkeeping |
+| **In Review → Done** | PR merged | `Closes` auto-transitions *if it fires*; else the agent sets Done (Conv #3) |
+
+- **Two moves are your call: scheduling (Backlog → Todo) and cancellation (→ Canceled).** Every forward move between them follows mechanically from work already in motion — the agent keeps the tracker honest, it does not decide.
+- **Todo is a momentary green-light, not a staging queue** — set at pickup, the instant before starting; never ahead-of-time grooming.
+- **`quality/*` does not gate status** — everything lands in Backlog regardless of spec maturity; your go is what promotes it (Convention #6).
+- **Agents set `state: Backlog` explicitly on create** — a projectless ticket (e.g. a `drive-by`) would otherwise default to Triage natively (gotcha #13).
+- **`Canceled` (won't-do) is a human decision**, same gate as scheduling — comment first (Convention #3).
+- The **In Review** step may be handled by you *or* an agent (Playwright or otherwise); the review + evidence process lives in the `AGENTS.md` work lifecycle.
 
 ## Review-finding disposition
 
-When a review (agent, handbook, or human) produces findings, each one takes exactly one of three paths — decided at review time, recorded on the driving ticket:
+When a review (agent, handbook, or human) produces findings, **every finding is surfaced and recorded — the agent never silently drops one.** The agent proposes a disposition for each; **the human is notified and has the last word on how it's recorded.** Three dispositions:
 
 1. **Fix in the PR** — defects in code the PR introduces (correctness, security, data-loss), or anything cheap that touches files already in the diff. New code merges clean; deferring defects on brand-new code is how quality erodes.
-2. **Becomes a ticket** — real work beyond the PR's scope: needs its own decision (`blocked/needs-decision`), touches code outside the diff, or would meaningfully delay an otherwise-sound merge. Small deferred hardening gets the `nit` label, **batched to one-coherent-small-PR size** (one "hardening pass over X" ticket, never one ticket per one-liner), homed in the epic project whose area it touches — there is deliberately NO junk-drawer project; the cross-project `nit` filter view IS the debt register.
-3. **Recorded-and-skipped** — a considered rejection: comment on the driving ticket ("considered, declined because X"), no ticket. The YAGNI valve.
+2. **Becomes a ticket** — work beyond the PR's scope: needs its own decision (`blocked/needs-decision`), touches code outside the diff, or the human decides it shouldn't hold up the merge. Small deferred hardening gets the `nit` label, sized to one coherent ticket (one "hardening pass over X", not one ticket per one-liner). Home it in the epic whose area it touches when it clearly belongs to one (nits usually do); a nit spanning no single epic may sit projectless — Convention #9. There is deliberately NO junk-drawer project; the cross-epic `nit` **label** view — not project membership — IS the debt register.
+3. **Declined** — a considered rejection the **human signs off on**: comment on the driving ticket ("considered, declined because X"), no ticket. The agent may *recommend* declining but records the finding for your decision — it is never an agent assumption.
 
-**Security-relevant findings never take path 3** — they ride the PR or get a ticket carrying `security`.
+**Security-relevant findings are never declined** — they ride the PR or get a ticket carrying `security`.
 
-**Nits are PR riders:** an agent working a ticket is expected to check open `nit` tickets in the same area and fold adjacent ones into the PR (`Closes CON-x`). A nit view grown past ~6–8 open tickets signals a deliberate hardening PR.
+**PR timing is the human's call, never a ticket count.** The agent surfaces findings and may advise that a hardening pass is warranted; it does not trigger or batch a PR based on how many `nit`s are open. An agent already opening a PR in an area may fold in adjacent open `nit` tickets (`Closes CLO-x`) as a convenience — that rides an existing PR, it doesn't decide when one happens.
 
 ## Projects
 
-- **A project = a delivery epic** — a coherent outcome with an end (a phase/journey slice), not a category. Project statuses get marked Completed when the epic ships.
-- **Only humans create projects.** Agents may *propose* one at a planning boundary; never invent one mid-session.
-- **Every ticket homes in the epic whose area it touches** — including nits, review findings, and post-completion bugs (a finished epic still homes its trailing work). No epic fits → ask (Convention #9), never create a holding project.
+- **A project = a delivery epic** — a coherent outcome with an end (a phase/journey slice), not a category.
+- **Agents may create (open) and close projects.** Creating one is a planning-boundary act — do it deliberately for a real epic, not a catch-all and not reflexively mid-session. Closing = marking the epic Completed (or Canceled) when its work is done. This is a *permission*, not a chore: no completion-hygiene obligation, and the human can create/close projects too. (Ticket-status authority lives in *Status lifecycle* above.)
+- **Home every ticket in the epic whose area it touches** — review findings and post-completion bugs included (a finished epic still homes its trailing work). Strong default, not an absolute — see Convention #9 for the `drive-by` / loosely-related-`nit` exceptions. No obvious epic for a scoped ticket → ask (Convention #9); never create a holding project.
+
+## Sub-issues (parent/child)
+
+A **project (epic)** groups many *independent* tickets toward one outcome. A **parent/sub-issue** link is different: it's for *one* body of work big enough to coordinate as children — a tracking issue whose sub-issues are its slices, or a ticket that splits mid-flight. Reach for sub-issues only on genuinely complex, multi-slice work; most tickets need just team + project + labels, not a hierarchy.
+
+- Set on create/update via `save_issue({ parentId: "CLO-100" })` (`null` removes it); read children with `list_issues({ parentId })`. Both verified 2026-07-20.
+- A sub-issue keeps its own team, project, labels, and state; a parent and its children normally share the same project.
 
 ## Reading a ticket for action
 
@@ -139,9 +165,9 @@ save_issue({ id: "CLO-123", labels: [...issue.labels.map(l => l.name), "needs-de
 
 ### Create
 ```
-save_issue({ team: "<team>", title, description, project: "<project>", labels: ["feature", "drive-by"], assignee: "me" })
+save_issue({ team: "<team>", title, description, project: "<project>", labels: ["feature", "scoped", "ai-added"], assignee: "me", state: "Backlog" })
 ```
-**Labels are sent as bare names** (`feature`, `drive-by`) — the group is determined by each label's own `parent` field in Linear, not by passing a compound string like `"type/feature"`.
+**Labels are sent as bare names** (`feature`, `scoped`) — the group is determined by each label's own `parent` field in Linear, not by passing a compound string like `"type/feature"`.
 
 ### Update labels (replace-only — fetch first!)
 The MCP **overwrites** the label array. To add one without losing others:
@@ -210,13 +236,15 @@ Replies inherit the root's entity automatically. `list_comments` returns the thr
 
 ## MCP capabilities (verified)
 
-Verified end-to-end against a live workspace on **2026-05-27**. This table is canonical — defer to it before falling back to "the schema looks like…". When in doubt, the underlying tool exists for every ✅; for ❌ the tool genuinely isn't there.
+Verified end-to-end against a live workspace on **2026-05-27**. This table is canonical for the tools it lists — defer to it before falling back to "the schema looks like…". When in doubt, the underlying tool exists for every ✅; a ❌ means it didn't exist as of the verification date — the staleness note below applies to ❌ cells too.
+
+**Staleness note (2026-07-21):** the live server has since grown beyond this verified set (~47 tools live vs the 35 below — releases, status updates, agent skills are unlisted). Absence from this table means **unverified, not nonexistent** — re-verify before relying on an unlisted tool. Full matrix re-verification is parked as its own task.
 
 ### Resource × operation matrix
 
 | Resource              | List | Get | Create | Update | Delete | Notes |
 |-----------------------|:----:|:---:|:------:|:------:|:------:|---|
-| Issues                | ✅   | ✅  | ✅     | ✅     | ❌     | `save_issue` does both (id present = update). No MCP delete. |
+| Issues                | ✅   | ✅  | ✅     | ✅     | ❌     | `save_issue` does both (id present = update). No MCP delete. Sub-issues via `parentId`. |
 | Issue statuses        | ✅   | ✅  | ❌     | ❌     | ❌     | UI only — workflow config |
 | Issue labels          | ✅   | —   | ✅     | ❌     | ❌     | UI only for rename/delete |
 | Comments              | ✅   | —   | ✅     | ✅     | ✅     | `save_comment` overloaded. Threaded via `parentId`. |
@@ -233,7 +261,7 @@ Verified end-to-end against a live workspace on **2026-05-27**. This table is ca
 
 ✅ supported · ❌ not supported · — n/a (no such operation in Linear)
 
-### Tool inventory (35 tools)
+### Tool inventory (35 verified tools — live server exposes more; see staleness note)
 
 | Group | Tools |
 |---|---|
@@ -271,7 +299,7 @@ Verified end-to-end against a live workspace on **2026-05-27**. This table is ca
 12. **`save_milestone` create returns a stripped shape** (`{id, name, progress, sortOrder}`); update returns the full object. Targetdate/description are absent when unset, not null.
 
 ### Behavior surprises
-13. **`save_issue` with `project` + `assignee` on creation lands in `Backlog`, not `Triage`.** The "default Triage" behaviour is for genuinely unscoped new issues. Set `state` explicitly if you need Triage.
+13. **Creation state depends on what you pass: `project` + `assignee` lands in `Backlog`; a projectless ticket natively defaults to `Triage`.** Don't rely on either — agents always pass `state: "Backlog"` explicitly on create (see *Status lifecycle*).
 14. **`duplicateOf` auto-transitions state AND sets `canceledAt`** — don't set state separately (Convention #4).
 15. **`save_issue.links` auto-populates `subtitle` from the URL's page metadata** — Linear fetches the page and extracts the meta description. Not documented anywhere.
 16. **`save_document.content` is rewritten on save** — bare issue refs (`CLO-130`) become `<issue id="…">CLO-130</issue>` markup; `@displayName` mentions get linkified.
@@ -288,5 +316,5 @@ Verified end-to-end against a live workspace on **2026-05-27**. This table is ca
 
 ## Pointers
 
-- **Per-repo overlay:** `docs/agents/issue-tracker.md` (team name, issue prefix, any repo-specific overrides)
+- **Per-repo binding:** `AGENTS.md` → `## Agent skills` → `### Issue tracker` (team name + issue prefix; `repo = team`, so this is fixed)
 - **Work lifecycle (ticket → branch → PR):** `AGENTS.md`

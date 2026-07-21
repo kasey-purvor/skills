@@ -12,7 +12,7 @@ Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
 
 Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings.
 
-The issue tracker should have been provided to you — run `/setup-matt-pocock-skills` if `docs/agents/issue-tracker.md` is missing.
+The repo's issue-tracker binding (Linear team + issue prefix) lives in `AGENTS.md` (`## Agent skills` → `### Issue tracker`) — run `/setup-matt-pocock-skills` if that block is missing.
 
 ## Process
 
@@ -26,7 +26,7 @@ Capture the diff command once: `git diff <fixed-point>...HEAD` (three-dot, so th
 
 Look for the originating spec, in this order:
 
-1. Issue references in the commit messages (`#123`, `Closes #45`, GitLab `!67`, etc.) — fetch via the workflow in `docs/agents/issue-tracker.md`.
+1. Issue references in the commit messages (`CLO-123`, `Closes CLO-45`, etc.) — fetch via the `linear` skill: `get_issue` **and** `list_comments` (a ticket is two calls — description plus discussion).
 2. A path the user passed as an argument.
 3. A PRD/spec file under `docs/`, `specs/`, or `.scratch/` matching the branch name or feature.
 4. If nothing is found, ask the user where the spec is. If they say there isn't one, the **Spec** sub-agent will skip and report "no spec available".
@@ -35,7 +35,7 @@ Look for the originating spec, in this order:
 
 Anything in the repo that documents how code should be written. Common locations:
 
-- `CLAUDE.md`, `AGENTS.md`
+- `AGENTS.md`
 - `CONTRIBUTING.md`
 - `CONTEXT.md`, `CONTEXT-MAP.md`, per-context `CONTEXT.md` files
 - `docs/adr/` (architectural decisions are standards)
