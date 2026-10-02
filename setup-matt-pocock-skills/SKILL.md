@@ -1,6 +1,6 @@
 ---
 name: setup-matt-pocock-skills
-description: Scaffold a repo's `## Agent skills` block and `docs/agents/` so the engineering skills know this repo's Linear tracker and domain-doc layout. Run once per repo before first use of `to-issues`, or any skill that needs the issue tracker or domain docs.
+description: Scaffold a repo's `## Agent skills` block and `docs/agents/` so the engineering skills know this repo's Linear tracker, team document and domain-doc layout. Run once per repo before first use of `to-issues`, `stream`, or any skill that needs the issue tracker, the team document or domain docs.
 disable-model-invocation: true
 ---
 
@@ -9,6 +9,7 @@ disable-model-invocation: true
 Scaffold the per-repo configuration the engineering skills assume:
 
 - **Issue tracker** — this repo's Linear team + issue prefix, recorded in the `## Agent skills` block (`repo = team`).
+- **Team document** — the team's one Linear document for app-wide notes, named in the `## Agent skills` block so the `stream` skill can find it.
 - **Domain docs** — where `CONTEXT.md` and ADRs live, and the consumer rules for reading them.
 
 Prompt-driven, not a script. Explore, present what you found, confirm with the user, then write.
@@ -27,13 +28,17 @@ Read whatever exists; don't assume:
 
 ### 2. Present findings and ask
 
-Summarise what's present and what's missing, then walk the user through the two decisions **one at a time**.
+Summarise what's present and what's missing, then walk the user through the three decisions **one at a time**.
 
 **A — Linear tracker.**
 
 > Which Linear team owns this repo's issues, and what's its issue prefix? Because **`repo = team`** (one product per repo), this is a fixed, one-time binding — recorded in `AGENTS.md`'s `## Agent skills` block, not a separate file. Workspace-wide Linear conventions (labels, states, recipes) live in the `linear` skill — this only records the per-repo **team name** and **prefix**. Discover teams with `list_teams` if unsure.
 
-**B — Domain docs.**
+**B — Team document.**
+
+> Each team has one Linear document for app-wide notes: general notes, blockers, open decisions and a tally of recurring review findings. Its rules are in the `stream` skill (`team-document.md`). Look for an existing one with `list_documents({ teamId })`. If one exists, confirm its title. If none exists, ask whether to create it now, titled `<Team> team notes`, with the four sections from that file each reading "Nothing." Create it only on the user's yes (`save_document` with the `team` parent).
+
+**C — Domain docs.**
 
 > Some skills read `CONTEXT.md` for the project's domain language and `docs/adr/` for past decisions. Confirm the layout:
 >
@@ -62,6 +67,10 @@ The block:
 
 Linear team **<Team>**, issue prefix **<PREFIX>** (`repo = team`). Workspace conventions: the `linear` skill.
 
+### Team document
+
+**<Team> team notes**, a Linear document on the team. Rules: the `stream` skill.
+
 ### Domain docs
 
 [one-line: single- or multi-context]. See `docs/agents/domain.md`.
@@ -71,7 +80,9 @@ Then write `docs/agents/domain.md` using the seed in this skill folder:
 
 - [domain.md](./domain.md) — domain-doc consumer rules + layout
 
-There is **no separate issue-tracker doc** — the team + prefix live in the `## Agent skills` block above (single source; `repo = team`), and all workspace-wide Linear conventions live in the `linear` skill (auto-loads on any Linear MCP call).
+There is **no separate issue-tracker doc** — the team + prefix and the team document's name live in the `## Agent skills` block above (single source; `repo = team`), all workspace-wide Linear conventions live in the `linear` skill (auto-loads on any Linear MCP call), and the stream rules live in the `stream` skill.
+
+**Stream trigger lines.** The portable block carries a `stream` bullet under *Per-repo agent config* and a "Load the `stream` skill…" paragraph under *Work lifecycle*. An `AGENTS.md` seeded before those existed lacks them: offer to add both, copied verbatim from the template.
 
 **Portable AGENTS.md block.** If the repo has no `AGENTS.md` yet (or you're standardising one), seed it from [AGENTS-portable-template.md](./AGENTS-portable-template.md): copy the portable workflow block (everything above the `═══ REPO-SPECIFIC ═══` divider) verbatim, then write the repo's own sections below the divider. If an `AGENTS.md` already exists, don't re-seed the portable block over it — step 4's `## Agent skills` update is still the edit to make; touch the rest only if the user asks.
 

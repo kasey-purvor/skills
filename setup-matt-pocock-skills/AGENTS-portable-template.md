@@ -7,9 +7,9 @@ AGENTS.md verbatim; write that repo's own sections below the divider
 
 # Agent instructions
 
-<!-- setup-matt-pocock-skills REPLACES this comment with this repo's `## Agent skills` block (team + prefix) — the one per-repo section above the divider. -->
+<!-- setup-matt-pocock-skills REPLACES this comment with this repo's `## Agent skills` block (team + prefix, team document) — the one per-repo section above the divider. -->
 
-> **Two parts.** Everything above the `═══ REPO-SPECIFIC ═══` divider is the **portable workflow** — generic, copied into every repo's `AGENTS.md` unchanged, **except the `## Agent skills` block at the top, which setup fills with this repo's team + prefix**. Everything below the divider is specific to *this* repo and rewritten per project.
+> **Two parts.** Everything above the `═══ REPO-SPECIFIC ═══` divider is the **portable workflow** — generic, copied into every repo's `AGENTS.md` unchanged, **except the `## Agent skills` block at the top, which setup fills with this repo's team + prefix and team document**. Everything below the divider is specific to *this* repo and rewritten per project.
 
 ## CRITICAL
 
@@ -21,6 +21,7 @@ Where this repo's specifics live, so this block never has to name them:
 
 - **Issue tracker binding** — this repo's Linear **team + issue prefix** live in the `## Agent skills` → `### Issue tracker` block near the top of this file (`repo = team`, fixed). **Domain vocab** — `docs/agents/domain.md` (scaffolded by `setup-matt-pocock-skills`).
 - **Linear conventions** (labels, states, ticket body, recipes) — the `linear` skill, auto-loaded on any Linear MCP call.
+- **Streams, review findings and the team document** — the `stream` skill. This repo's team document is named in the `## Agent skills` → `### Team document` block near the top of this file.
 - **Session hand-off** — the `handoff` skill (manual, invoked at session boundaries).
 
 ## Engineering standards
@@ -33,6 +34,8 @@ The `dev-standards-handbook` skill is the house production-engineering reference
 ## Work lifecycle — tickets, branches & PRs
 
 **Read this before starting any piece of work.** It defines the unit of work, *when* to cut a branch, and *when* to record state to Linear. It does not restate what's owned elsewhere (ticket shape → `linear` skill; worktree mechanics → next section). It only sequences them.
+
+**Load the `stream` skill before starting any ticket, when planning, starting, resuming or closing a stream, and when a code review produces findings.** It owns the clash check with other running sessions, what happens to review findings, the stream ticket and the team document. A stream is a set of tickets handed to one orchestrator session; a lone ticket runs without one, but the clash check and the review-findings rules still apply to it. A builder or reviewer subagent follows only the skill's "Who does what in a lane" section.
 
 ### When this applies — product work vs. plumbing
 

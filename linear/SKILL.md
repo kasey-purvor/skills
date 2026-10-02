@@ -24,7 +24,7 @@ Day-to-day operational skill for the team's Linear workspace. Loaded on any Line
 | Canceled | canceled | Won't do |
 | Duplicate | duplicate | Auto-applied when `duplicateOf` is set |
 
-### Labels (4 mutex groups + 3 free-floating)
+### Labels (4 mutex groups + 4 free-floating)
 
 | Group | Values |
 |---|---|
@@ -34,23 +34,26 @@ Day-to-day operational skill for the team's Linear workspace. Loaded on any Line
 | `kickback/*` | `for-ben`, `for-kasey` — **human-only; agents never set these** (attention hand-off between colleagues) |
 | `security` | free-floating; security-sensitive code or behaviour |
 | `ai-added` | free-floating; ticket was created by an AI agent |
-| `nit` | free-floating; small hardening/cleanup deliberately deferred at discovery (see *Review-finding disposition*) |
+| `review` | free-floating; the ticket came from a code review, whatever its size (see the `stream` skill) |
+| `stream` | free-floating; marks a stream ticket, the parent ticket that records a stream (see the `stream` skill) |
 
 Mutex = mutually exclusive within a group; picking a second value drops the first. All labels live at **workspace level** — never pass `teamId`.
+
+**`review` and `stream` are not in every workspace yet.** `review` is the old `nit` label renamed; the personal workspace has both labels. In a workspace where `list_issue_labels` shows `nit` and no `review`, apply `nit` in its place, and do not rename or create labels there: tell the human instead.
 
 Priority is the **native Linear Priority field**, set by humans only. It is deliberately absent from this skill; agents never set or reason about it.
 
 ## Conventions
 
 1. **One label per group max** — mutex is enforced.
-2. **Free-floating labels (`security`, `ai-added`, `nit`) apply alongside group labels** — they don't belong to any mutex group.
+2. **Free-floating labels (`security`, `ai-added`, `review`, `stream`) apply alongside group labels** — they don't belong to any mutex group.
 3. **Comment before state change** — when moving to Done/Canceled, post a `save_comment` rationale *first*, then the `save_issue` state change.
 4. **Set `duplicateOf` — don't also set state.** Linear auto-transitions to Duplicate.
 5. **Spec changes edit the description, not comments.** Mid-flight enrichment, scope changes, AC amendments, and deviations all amend the description in place; a one-line breadcrumb comment can point at the change. The description is what every downstream reader sees — spec content kept only in comments is invisible to them. For what comments *are* for, see *Reading a ticket for action* below.
 6. **`quality/*` signals spec maturity, not schedule.** `drive-by` = an unscoped dump; `scoped` = has a real spec (see *Ticket body*); `audited` = re-audited and ready to pick up. It does **not** gate status — every ticket lands in Backlog regardless of `quality/*`, and scheduling (Backlog → Todo) is your call (see *Status lifecycle*).
 7. **`kickback/*` is human-only.** Agents never set or remove it — but must preserve it when updating other labels (replace-only API, see recipes).
 8. **Agents label their own tickets `ai-added`.** Any ticket an agent creates gets the free-floating `ai-added` label.
-9. **Every ticket homes in its team; homing in an epic (project) is the strong default.** The team is mandatory — it's simply where the ticket lives. Beyond that, **strongly prefer** the epic whose area the ticket touches — the cross-epic view is how work is navigated, and there is deliberately no junk-drawer project. **Exceptions, by judgment (not a hard gate):** a `quality/drive-by` ticket (too raw to know its epic) and a `nit` not clearly tied to any epic may sit projectless — home them once scoped / once the owning epic is clear. Nits usually *do* spring from an epic; place them there when they do. A *scoped* ticket with no obvious epic → ask, don't invent a holding project.
+9. **Every ticket homes in its team; homing in an epic (project) is the strong default.** The team is mandatory — it's simply where the ticket lives. Beyond that, **strongly prefer** the epic whose area the ticket touches — the cross-epic view is how work is navigated, and there is deliberately no junk-drawer project. **Exceptions, by judgment (not a hard gate):** a `quality/drive-by` ticket (too raw to know its epic) and a `review` ticket not clearly tied to any epic may sit projectless — home them once scoped / once the owning epic is clear. Review tickets usually *do* spring from an epic; place them there when they do. A **stream ticket** (label `stream`) is always projectless, because a stream may cross epics. A *scoped* ticket with no obvious epic → ask, don't invent a holding project.
 10. **Agent-created tickets are assigned to the operating human.** Pass `assignee: "me"` on creation — the MCP session is signed in as its human, so `"me"` resolves to Kasey on Kasey's machines and Ben on Ben's, with nothing hardcoded. Override only when explicitly told the ticket is for the other person (email works: `ben.ward@` / `kasey.purvor@thecloudassist.com`). Assignment is ownership, not attention — `kickback/*` (human-only) remains the attention hand-off.
 
 ## Status lifecycle
@@ -72,23 +75,15 @@ Agents drive the **forward flow** of statuses; the **human decisions** are sched
 - **`Canceled` (won't-do) is a human decision**, same gate as scheduling — comment first (Convention #3).
 - The **In Review** step may be handled by you *or* an agent (Playwright or otherwise); the review + evidence process lives in the `AGENTS.md` work lifecycle.
 
-## Review-finding disposition
+## Review findings
 
-When a review (agent, handbook, or human) produces findings, **every finding is surfaced and recorded — the agent never silently drops one.** The agent proposes a disposition for each; **the human is notified and has the last word on how it's recorded.** Three dispositions:
-
-1. **Fix in the PR** — defects in code the PR introduces (correctness, security, data-loss), or anything cheap that touches files already in the diff. New code merges clean; deferring defects on brand-new code is how quality erodes.
-2. **Becomes a ticket** — work beyond the PR's scope: needs its own decision (`blocked/needs-decision`), touches code outside the diff, or the human decides it shouldn't hold up the merge. Small deferred hardening gets the `nit` label, sized to one coherent ticket (one "hardening pass over X", not one ticket per one-liner). Home it in the epic whose area it touches when it clearly belongs to one (nits usually do); a nit spanning no single epic may sit projectless — Convention #9. There is deliberately NO junk-drawer project; the cross-epic `nit` **label** view — not project membership — IS the debt register.
-3. **Declined** — a considered rejection the **human signs off on**: comment on the driving ticket ("considered, declined because X"), no ticket. The agent may *recommend* declining but records the finding for your decision — it is never an agent assumption.
-
-**Security-relevant findings are never declined** — they ride the PR or get a ticket carrying `security`.
-
-**PR timing is the human's call, never a ticket count.** The agent surfaces findings and may advise that a hardening pass is warranted; it does not trigger or batch a PR based on how many `nit`s are open. An agent already opening a PR in an area may fold in adjacent open `nit` tickets (`Closes CLO-x`) as a convenience — that rides an existing PR, it doesn't decide when one happens.
+What happens to a code-review finding (fix it, drop it, or suggest a ticket or a tally line) is behaviour, and it lives in the **`stream` skill** (`review-findings.md`). Load that skill when a review produces findings. The only Linear mechanics are: a ticket that came from a review carries the `review` label, and a security finding's ticket carries `security`.
 
 ## Projects
 
 - **A project = a delivery epic** — a coherent outcome with an end (a phase/journey slice), not a category.
 - **Agents may create (open) and close projects.** Creating one is a planning-boundary act — do it deliberately for a real epic, not a catch-all and not reflexively mid-session. Closing = marking the epic Completed (or Canceled) when its work is done. This is a *permission*, not a chore: no completion-hygiene obligation, and the human can create/close projects too. (Ticket-status authority lives in *Status lifecycle* above.)
-- **Home every ticket in the epic whose area it touches** — review findings and post-completion bugs included (a finished epic still homes its trailing work). Strong default, not an absolute — see Convention #9 for the `drive-by` / loosely-related-`nit` exceptions. No obvious epic for a scoped ticket → ask (Convention #9); never create a holding project.
+- **Home every ticket in the epic whose area it touches** — review findings and post-completion bugs included (a finished epic still homes its trailing work). Strong default, not an absolute — see Convention #9 for the `drive-by`, loosely-related-`review` and stream-ticket exceptions. No obvious epic for a scoped ticket → ask (Convention #9); never create a holding project.
 
 ## Sub-issues (parent/child)
 
@@ -96,6 +91,7 @@ A **project (epic)** groups many *independent* tickets toward one outcome. A **p
 
 - Set on create/update via `save_issue({ parentId: "CLO-100" })` (`null` removes it); read children with `list_issues({ parentId })`. Both verified 2026-07-20.
 - A sub-issue keeps its own team, project, labels, and state; a parent and its children normally share the same project.
+- The exception is a **stream ticket** (label `stream`, see the `stream` skill): it has no project, and its sub-issues may sit in several different projects.
 
 ## Reading a ticket for action
 
@@ -194,13 +190,22 @@ save_issue({ id: "CLO-123", milestone: "M1" })   // accepts name OR id
 ```
 On create, `save_milestone` returns a stripped object (no `targetDate`/`description` when unset); on update it returns the full object. The issue response field is **`projectMilestone`** (not `milestone`).
 
-### Create a document (4 possible parents)
+### Create a document (5 possible parents)
 ```
 save_document({ title: "Spec", project: "Project Name", content: "# Spec\n..." })
 save_document({ title: "Notes", issue: "CLO-123", content: "..." })
-save_document({ id: docId, content: "Updated..." })   // update
+save_document({ title: "Team notes", team: "Team Name", content: "..." })
+save_document({ id: docId, content: "Updated..." })   // update: replaces the whole page
+save_document({ id: docId, patch: [{ op: "append", text: "\n- new line" }] })   // update: partial edit
 ```
-Exactly one parent: `project`, `issue`, `initiative`, or `cycle`. `content` is rewritten on save — bare issue refs (`CLO-123`) become issue-mention markup.
+Exactly one parent: `project`, `issue`, `initiative`, `cycle`, or `team`. `content` is rewritten on save — bare issue refs (`CLO-123`) become issue-mention markup. Prefer `patch` (`replace`, `insert_before`, `insert_after`, `prepend`, `append`, `replace_range`) on a page other agents also write, such as a team document. Find a team's documents with `list_documents({ teamId })`. Whether to create a document at all is the `stream` skill's rule, not this one's.
+
+### Project status updates
+```
+get_status_updates({ type: "project", project: "Project Name", limit: 3, orderBy: "createdAt" })   // newest first
+save_status_update({ type: "project", project: "Project Name", body: "..." })
+```
+`health` (`onTrack` | `atRisk` | `offTrack`) is optional on save; leave it out to say nothing about health. Pass `id` to edit an existing update. Parameters checked against the live schema 2026-10-02; no update has been posted through it yet. When to post one is the `stream` skill's rule.
 
 ### Upload a file attachment (2-phase, preferred)
 ```
@@ -246,12 +251,12 @@ Verified end-to-end against a live workspace on **2026-05-27**. This table is ca
 |-----------------------|:----:|:---:|:------:|:------:|:------:|---|
 | Issues                | ✅   | ✅  | ✅     | ✅     | ❌     | `save_issue` does both (id present = update). No MCP delete. Sub-issues via `parentId`. |
 | Issue statuses        | ✅   | ✅  | ❌     | ❌     | ❌     | UI only — workflow config |
-| Issue labels          | ✅   | —   | ✅     | ❌     | ❌     | UI only for rename/delete |
+| Issue labels          | ✅   | —   | ✅     | ✅     | ❌     | `save_issue_label` creates, and renames when given `id` (rename verified 2026-10-02); `retire_issue_label` stops new use; no delete |
 | Comments              | ✅   | —   | ✅     | ✅     | ✅     | `save_comment` overloaded. Threaded via `parentId`. |
 | Projects              | ✅   | ✅  | ✅     | ✅     | ❌     | "Cancel" via `state: "canceled"`; no MCP delete |
 | Project labels        | ✅   | —   | ❌     | ❌     | ❌     | Read-only via MCP |
 | Project milestones    | ✅   | ✅  | ✅     | ✅     | ❌     | Scoped per project; no MCP delete |
-| Documents             | ✅   | ✅  | ✅     | ✅     | ❌     | 4 parent types (project/issue/initiative/cycle); no MCP delete |
+| Documents             | ✅   | ✅  | ✅     | ✅     | ❌     | 5 parent types (project/issue/initiative/cycle/team); no MCP delete |
 | Cycles                | ✅   | —   | ❌     | ❌     | ❌     | UI only — team workflow |
 | Teams                 | ✅   | ✅  | ❌     | ❌     | ❌     | Workspace-admin operations only |
 | Users                 | ✅   | ✅  | ❌     | ❌     | ❌     | Workspace-admin operations only |
