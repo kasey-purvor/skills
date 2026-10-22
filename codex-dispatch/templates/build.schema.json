@@ -1,0 +1,40 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["status", "summary", "tickets", "commits", "checks", "unverified", "deviations", "findings", "blocked_reason"],
+  "properties": {
+    "status": { "type": "string", "enum": ["done", "partial", "blocked"] },
+    "summary": { "type": "string", "description": "Two or three sentences on what shipped." },
+    "tickets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "notes"],
+        "properties": {
+          "id": { "type": "string" },
+          "status": { "type": "string", "enum": ["done", "partial", "not_started"] },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "commits": { "type": "array", "items": { "type": "string" }, "description": "Short sha and subject per commit." },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["command", "result", "log"],
+        "properties": {
+          "command": { "type": "string" },
+          "result": { "type": "string", "enum": ["pass", "fail", "not_run"] },
+          "log": { "type": "string", "description": "Path to the log, or empty." }
+        }
+      }
+    },
+    "unverified": { "type": "array", "items": { "type": "string" } },
+    "deviations": { "type": "array", "items": { "type": "string" }, "description": "Where the work differs from the brief, and why." },
+    "findings": { "type": "array", "items": { "type": "string" }, "description": "Problems noticed but not fixed." },
+    "blocked_reason": { "type": "string", "description": "Empty unless status is blocked." }
+  }
+}

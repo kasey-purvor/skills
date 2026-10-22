@@ -1,0 +1,25 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["verdict", "summary", "findings"],
+  "properties": {
+    "verdict": { "type": "string", "enum": ["approve", "changes_needed"] },
+    "summary": { "type": "string" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["severity", "file", "line", "summary", "failure_scenario", "suggested_fix"],
+        "properties": {
+          "severity": { "type": "string", "enum": ["blocking", "should_fix", "nit"] },
+          "file": { "type": "string" },
+          "line": { "type": "integer" },
+          "summary": { "type": "string" },
+          "failure_scenario": { "type": "string", "description": "Concrete input or state that produces the wrong result." },
+          "suggested_fix": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["summary", "approach", "tickets", "risks", "open_questions"],
+  "properties": {
+    "summary": { "type": "string" },
+    "approach": { "type": "string", "description": "The design, and the main alternative rejected, with why." },
+    "tickets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "title", "goal", "acceptance_criteria", "files", "depends_on"],
+        "properties": {
+          "key": { "type": "string", "description": "Local key such as T1, used by depends_on." },
+          "title": { "type": "string" },
+          "goal": { "type": "string" },
+          "acceptance_criteria": { "type": "array", "items": { "type": "string" } },
+          "files": { "type": "array", "items": { "type": "string" }, "description": "Files or globs this ticket is expected to touch." },
+          "depends_on": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "open_questions": { "type": "array", "items": { "type": "string" }, "description": "Decisions a human must make before building." }
+  }
+}
