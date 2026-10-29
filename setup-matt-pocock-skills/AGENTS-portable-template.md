@@ -19,7 +19,8 @@ This codebase will outlive you. Every shortcut becomes someone else's burden; ev
 
 Where this repo's specifics live, so this block never has to name them:
 
-- **Issue tracker binding** — this repo's Linear **team + issue prefix** live in the `## Agent skills` → `### Issue tracker` block near the top of this file (`repo = team`, fixed). **Domain vocab** — `docs/agents/domain.md` (scaffolded by `setup-matt-pocock-skills`).
+- **Issue tracker binding** — this repo's Linear **team + issue prefix** live in the `## Agent skills` → `### Issue tracker` block near the top of this file (`repo = team`, fixed). **Domain vocab** — `docs/agents/domain.md`, or the path the `### Domain docs` block names (scaffolded by `setup-matt-pocock-skills`).
+- **Decisions and pitfalls** — `docs/decisions.md` (settled decisions that didn't earn an ADR) and `docs/pitfalls.md` (traps that have cost agents time here), unless `## Agent skills` names another place. Read both before the first command of a piece of work; write them only as `docs/agents/domain.md` says.
 - **Linear conventions** (labels, states, ticket body, recipes) — the `linear` skill, auto-loaded on any Linear MCP call.
 - **Streams, review findings and the team document** — the `stream` skill. This repo's team document is named in the `## Agent skills` → `### Team document` block near the top of this file.
 - **Session hand-off** — the `handoff` skill (manual, invoked at session boundaries).
@@ -50,6 +51,8 @@ This lifecycle governs **product work**: changes to the shipped product or its i
 | **Handoff doc** | Ephemeral — one session → next | *Where we are now*: done / in-flight / next / gotchas, **linking** tickets + PR | Spec content — that's the ticket's job |
 
 Spec content always lives in the **ticket**, never a handoff. Thin ticket → enrich the *ticket description* (step 1), not a handoff.
+
+A settled decision that outlives its ticket is also proposed for `docs/decisions.md` (see `docs/agents/domain.md`); the ticket keeps the history.
 
 ### The unit of work
 
@@ -104,13 +107,13 @@ Work several branches at once with worktrees rather than one clone you keep swit
 ## Checks, PRs & CI — the discipline
 
 - `main` is **protected**: every change lands via a PR with CI green and the branch up to date with `main` before merge. Where the repo's plan supports branch protection/rulesets, that's enforced mechanically; where it doesn't (e.g. free-plan private repos), the rule binds by discipline anyway — the repo-specific half says which applies.
-- **Always run the repo's full check before pushing** (command in the repo-specific section) — it should mirror CI exactly.
+- **Local gate: the existing commit hook runs formatting, lint and affected typechecks. No local test run is required before pushing.** Run tests locally during development or diagnosis when useful. **CI runs the full test suite and must pass before merge.**
 - PRs touching only non-product files (docs, agent config) may skip the heavy CI jobs (repo-configured).
 
 ## Hard constraints
 
 - **Never use `--no-verify`** to skip the pre-commit hook. Fix the failing check instead.
-- **Each commit must pass the repo's full check** before push.
+- **Each commit must pass the existing commit hook; the PR must pass the full CI suite before merge. No additional local test run is a pre-push requirement.**
 - **Never include `Co-Authored-By` or any AI-attribution lines** in commits (global rule).
 - **Never commit, push, or merge to `main` directly.** All work lands via a branch and a PR.
 - **Never `git push` unless explicitly asked, and never push `main`.**

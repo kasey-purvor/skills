@@ -1,6 +1,6 @@
 ---
 name: grill-with-docs
-description: Grilling session that challenges your plan against the existing domain model, sharpens terminology, and updates documentation (CONTEXT.md, ADRs) inline as decisions crystallise. Use when user wants to stress-test a plan against their project's language and documented decisions.
+description: Grilling session that challenges your plan against the existing domain model, sharpens terminology, and updates documentation (CONTEXT.md, ADRs, docs/decisions.md) as decisions crystallise. Use when user wants to stress-test a plan against their project's language and documented decisions.
 ---
 
 <what-to-do>
@@ -27,9 +27,10 @@ Most repos have a single context:
 /
 ├── CONTEXT.md
 ├── docs/
-│   └── adr/
-│       ├── 0001-event-sourced-orders.md
-│       └── 0002-postgres-for-write-model.md
+│   ├── adr/
+│   │   ├── 0001-event-sourced-orders.md
+│   │   └── 0002-postgres-for-write-model.md
+│   └── decisions.md
 └── src/
 ```
 
@@ -39,7 +40,8 @@ If a `CONTEXT-MAP.md` exists at the root, the repo has multiple contexts. The ma
 /
 ├── CONTEXT-MAP.md
 ├── docs/
-│   └── adr/                          ← system-wide decisions
+│   ├── adr/                          ← system-wide decisions
+│   └── decisions.md                  ← one at the repo root, never per context
 ├── src/
 │   ├── ordering/
 │   │   ├── CONTEXT.md
@@ -60,6 +62,8 @@ One lens among the practices here — the grilling stays a broad design conversa
 ### Challenge against the glossary
 
 When the user uses a term that conflicts with the existing language in `CONTEXT.md`, call it out immediately. "Your glossary defines 'cancellation' as X, but you seem to mean Y — which is it?"
+
+When the plan goes against a line in `docs/decisions.md`, name it and ask whether it is being reversed.
 
 ### Sharpen fuzzy language
 
@@ -88,5 +92,9 @@ Only offer to create an ADR when all three are true:
 3. **The result of a real trade-off** — there were genuine alternatives and you picked one for specific reasons
 
 If any of the three is missing, skip the ADR. Use the format in [ADR-FORMAT.md](./ADR-FORMAT.md).
+
+### Record the settled decisions that don't earn an ADR
+
+A decision the user made that fails the ADR test is still a decision: the ticket comment keeps the history, and `docs/decisions.md` is where the next agent looks for the standing rule. At the end of the session, not inline, list them in one short message: one proposed line each for `docs/decisions.md`, in the shape the repo's `docs/agents/domain.md` gives. Write the ones the user says yes to. A decision that reverses an earlier line gets `superseded by:` filled in on the old line. Create the file on its first line if it doesn't exist. In a repo whose `AGENTS.md` names another place for these files in its `## Agent skills` block, write them where that block says.
 
 </supporting-info>

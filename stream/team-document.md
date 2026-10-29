@@ -17,7 +17,7 @@ Review findings that were not fixed, counted by theme, with the tickets where th
 - Test fixtures copied between files: 2 (VAN-160, VAN-171)
 ```
 
-Work in flight is not listed here: In Progress tickets already show it. Standing rules live in `AGENTS.md` and skills, a stream's plan and log on its stream ticket, and an epic's history in its project status updates.
+Work in flight is not listed here: In Progress tickets already show it. Standing rules live in `AGENTS.md` and skills, settled product decisions in `docs/decisions.md`, repo traps in `docs/pitfalls.md`, a stream's plan and log on its stream ticket, and an epic's history in its project status updates.
 
 - **Read it** when a stream is planned or started, and before starting a ticket.
 - **Update it** when a stream closes.
