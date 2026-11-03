@@ -42,8 +42,7 @@ Every log entry is a JSON object with consistent fields:
   "message": "User signed up",
   "service": "api",
   "userId": "user_123",
-  "email": "kasey@example.com",
-  "traceId": "abc-456-def"
+  "request_id": "abc-456-def"
 }
 ```
 
@@ -51,16 +50,16 @@ Every log entry is a JSON object with consistent fields:
 {
   "timestamp": "2026-04-01T10:23:45.456Z",
   "level": "error",
-  "message": "Payment failed",
+  "message": "Payment failed after retries exhausted",
   "service": "api",
   "userId": "user_123",
   "orderId": "order_789",
-  "traceId": "abc-456-def",
+  "request_id": "abc-456-def",
   "error": "connection refused to stripe.com:443"
 }
 ```
 
-Now you can: search for `userId=user_123`, filter by `level=error`, correlate the signup and payment failure by `traceId`, build dashboards of error rates over time.
+Now you can: search for `userId=user_123`, filter by `level=error`, correlate the signup and payment failure by `request_id`, build dashboards of error rates over time.
 
 ### TypeScript Logger Options
 
@@ -68,11 +67,10 @@ Now you can: search for `userId=user_123`, filter by `level=error`, correlate th
 |--|------|---------|
 | **Design** | JSON-first, minimal API | Flexible, multi-transport |
 | **Performance** | Fastest Node.js logger (5-10x faster than Winston) | Acceptable, but slower — matters in Lambda where you pay per ms |
-| **Structured output** | JSON by default, no configuration needed | Needs format configuration to produce JSON |
-| **Child loggers** | Built-in — `logger.child({ handler: "name" })` adds fields to all entries | Possible but requires more setup |
-| **Transports** (plugins for sending logs to different destinations) | Fewer — stdout is the expected output, your platform (CloudWatch, Datadog) collects from there | Many — file, database, cloud services, HTTP. Useful when you need to send logs to multiple places simultaneously |
+| **Structured output** | JSON by default, no configuration needed | JSON by default, but timestamps need `format.timestamp()` combined with `format.json()` |
+| **Child loggers** | Built-in — `logger.child({ handler: "name" })` adds fields to all entries | Built-in too — the same `logger.child()` call (since v3.2.0) |
+| **Transports** (plugins for sending logs to different destinations) | Fewer, run in a worker thread since v7 (`pino.transport()`) so shipping stays off the main thread. Stdout, collected by your platform (CloudWatch, Datadog), is still the usual output | Many — file, database, cloud services, HTTP. Useful when you need to send logs to multiple places simultaneously |
 | **Dev readability** | Needs `pino-pretty` companion package for human-readable local output | Configurable format per environment |
-| **Dependency size** | ~150KB | ~1MB+ |
 | **Best for** | APIs and serverless functions sending structured JSON to CloudWatch, Datadog, etc. | Complex applications that route logs to multiple destinations, or teams already using Winston |
 
 **Recommended default: pino.** It does one thing well (structured JSON logging), it's fast, and the child logger API solves the "add context to every log call" problem cleanly. Winston is a reasonable choice if your team already uses it or you need its transport ecosystem.
@@ -80,6 +78,7 @@ Now you can: search for `userId=user_123`, filter by `level=error`, correlate th
 ### TypeScript — pino
 
 ```typescript
+// pino 9
 import pino from 'pino';
 
 const logger = pino({
@@ -87,40 +86,16 @@ const logger = pino({
 });
 
 // Structured: pass context as an object, message as second argument
-logger.info({ userId: user.id, email: user.email }, 'User signed up');
-logger.error({ userId: user.id, orderId, err }, 'Payment failed');
+logger.info({ userId: user.id }, 'User signed up');  // the id, never the email
+logger.error({ userId: user.id, orderId, err }, 'Payment failed after retries exhausted');
 
 // Child loggers — bind context that applies to all subsequent calls
-const requestLogger = logger.child({ traceId, path: req.path });
-requestLogger.info('Request received');  // traceId and path are included automatically
-requestLogger.info({ userId }, 'Authenticated');  // traceId, path, AND userId
+const requestLogger = logger.child({ request_id: requestId, path: req.path });
+requestLogger.info('Request received');  // request_id and path are included automatically
+requestLogger.info({ userId }, 'Authenticated');  // request_id, path, AND userId
 ```
 
-### TypeScript — Winston
-
-```typescript
-import winston from 'winston';
-
-const logger = winston.createLogger({
-  level: env.LOG_LEVEL,
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json()   // must opt in to JSON — plain text is the default
-  ),
-  transports: [new winston.transports.Console()],
-});
-
-// Structured: pass context in a metadata object
-logger.info('User signed up', { userId: user.id, email: user.email });
-logger.error('Payment failed', { userId: user.id, orderId, error: err.message });
-
-// Child loggers — Winston calls these "child" loggers too (added in v3.11)
-const requestLogger = logger.child({ traceId, path: req.path });
-requestLogger.info('Request received');
-requestLogger.info('Authenticated', { userId });
-```
-
-Note the difference: pino outputs JSON with zero configuration. Winston requires `format.json()` — without it, you get plain text. Winston also has more setup (transports array, format pipeline) but that same flexibility lets you add file logging, HTTP transports, or custom formats later without changing call sites.
+Winston 3 takes the message first and the context second (`logger.info('User signed up', { userId })`), has the same `logger.child()`, and stamps a time only once you list `format.timestamp()` with `format.json()` inside `format.combine()`.
 
 ### Python Logger Options
 
@@ -137,43 +112,23 @@ Note the difference: pino outputs JSON with zero configuration. Winston requires
 ### Python — structlog
 
 ```python
+# structlog 25
 import structlog
 
 logger = structlog.get_logger()
 
 # Structured: pass context as keyword arguments
-logger.info("User signed up", user_id=user.id, email=user.email)
-logger.error("Payment failed", user_id=user.id, order_id=order_id, error=str(e))
+logger.info("User signed up", user_id=user.id)  # the id, never the email
+# Inside an except block: .exception() keeps the traceback, which str(e) would drop
+logger.exception("Payment failed after retries exhausted", user_id=user.id, order_id=order_id)
 
 # Bound loggers — like pino child loggers
-request_logger = logger.bind(trace_id=trace_id, path=request.url.path)
+request_logger = logger.bind(request_id=request_id, path=request.url.path)
 request_logger.info("Request received")
 request_logger.info("Authenticated", user_id=user.id)
 ```
 
-### Python — python-json-logger
-
-```python
-import logging
-from pythonjsonlogger import jsonlogger
-
-# Configure the standard logger to output JSON
-handler = logging.StreamHandler()
-handler.setFormatter(jsonlogger.JsonFormatter(
-    "%(asctime)s %(levelname)s %(message)s"
-))
-logger = logging.getLogger(__name__)
-logger.addHandler(handler)
-logger.setLevel(logging.INFO)
-
-# Structured: pass context via the `extra` dict
-logger.info("User signed up", extra={"user_id": user.id, "email": user.email})
-logger.error("Payment failed", extra={"user_id": user.id, "order_id": order_id})
-
-# No built-in context binding — you'd use logging.LoggerAdapter or pass fields manually
-```
-
-Note the difference: structlog's `.bind()` returns a new logger that carries context forward automatically. With python-json-logger, you pass `extra={}` on every call or set up a `LoggerAdapter` to hold context — more manual work for the same result.
+python-json-logger swaps a `JsonFormatter` onto a standard `logging` handler and takes context through `extra={...}` on every call; it has no binding, so request context means a `LoggerAdapter` or passing fields by hand.
 
 ---
 
@@ -183,12 +138,12 @@ When a request flows through your system, you need to connect all log entries fo
 
 ```
 Request arrives → Generate ID: req_abc123
-→ {"traceId": "req_abc123", "message": "Request received"}
-→ {"traceId": "req_abc123", "message": "Fetching user from DB"}
-→ {"traceId": "req_abc123", "message": "Payment failed"}
+→ {"request_id": "req_abc123", "message": "Request received"}
+→ {"request_id": "req_abc123", "message": "Fetching user from DB"}
+→ {"request_id": "req_abc123", "message": "Payment failed"}
 ```
 
-Search for `traceId=req_abc123` and you get the complete story.
+Search for `request_id=req_abc123` and you get the complete story. Use the same field name, `request_id`, in every language, so one search covers every service (the rule is about the correlation field; other fields can follow each language's casing). An ID you mint yourself is not a W3C trace ID, so don't call it `trace_id`: switch to OTel's `trace_id` / `span_id` fields only once OTel generates them.
 
 ### Correlation ID, span, trace — the vocabulary
 
@@ -198,7 +153,7 @@ In a single service, a correlation ID on every log line is enough. Across servic
 
 ### OpenTelemetry and your logger
 
-Does OpenTelemetry replace `pino` / `structlog`? **No — it sits alongside them.** You keep logging with your existing logger; OTel's job is to *correlate* those logs with traces and give you one pipeline to ship telemetry. The payoff for logging is **trace-log correlation**: OTel exposes the current trace ID and span ID, and you stamp them on every log line, so clicking a slow span in your tracing UI jumps straight to that request's logs. Two ways to wire it: a **log bridge** that intercepts your logger's output and adds the trace context (no call-site changes — the usual choice for an existing app), or emitting through OTel's own logs API (mostly for instrumentation libraries).
+Does OpenTelemetry replace `pino` / `structlog`? **No — it sits alongside them.** You keep logging with your existing logger; OTel's job is to *correlate* those logs with traces and give you one pipeline to ship telemetry. The payoff for logging is **trace-log correlation**: OTel exposes the current trace ID and span ID, and you stamp them on every log line, so clicking a slow span in your tracing UI jumps straight to that request's logs. Keep two mechanisms apart. **Correlation**, stamping `trace_id` and `span_id` on the lines your logger already writes, is the part you want, and it rests on the stable trace API: `@opentelemetry/instrumentation-pino` does it automatically under Node auto-instrumentation, and in Python `LoggingInstrumentor` does it for standard `logging`, or a few-line structlog processor reads `trace.get_current_span().get_span_context()`. A **log bridge** goes further and forwards the log records themselves into OTel's logs SDK. In Node it is on by default once the SDK starts: `instrumentation-pino` sends every record to the logs SDK, and `NodeSDK` exports them over OTLP unless `OTEL_LOGS_EXPORTER=none`. If stdout is your log path, set that (or the instrumentation's `disableLogSending: true`), or you pay for, and must govern, a second log store. The JS Logs API and SDK went stable in October 2026 (`@opentelemetry/api` 1.10, SDK 3.0); Python's Logs signal is still at *Development*, and there the bridge is opt-in. The default stays JSON to stdout, collected by your platform.
 
 **Decide this early.** If you're adopting OTel, use its trace ID as your log correlation ID and let its SDKs own cross-service propagation (the `traceparent` header). If you're not using OTel yet, run your own correlation ID — the propagation pattern below works regardless of which ID you carry, and swaps cleanly to OTel's trace ID later. [Monitoring](./monitoring.md) covers the tracing side: spans, auto-instrumentation, and the collector/exporter pipeline.
 
@@ -209,31 +164,36 @@ You don't want to pass the correlation ID to every function manually. Use langua
 **TypeScript — AsyncLocalStorage:**
 
 ```typescript
+// Node 20+, Express, pino 9
 import { AsyncLocalStorage } from 'async_hooks';
 
-// Create a context store. The key name (traceId) is arbitrary —
+// Create a context store. The store key is arbitrary —
 // the point is that it travels with the request automatically.
-const requestContext = new AsyncLocalStorage<{ traceId: string }>();
+const requestContext = new AsyncLocalStorage<{ requestId: string }>();
 
 // Middleware: pick up an incoming ID or generate one, then store in context.
 // Choose the incoming header based on your stack: OTel uses `traceparent`;
 // a custom setup might use `x-request-id` or `x-correlation-id`. Pick one
 // and be consistent across your services.
+// The incoming value is client input that lands in every log line: accept it only
+// if well-formed (or only from your own edge proxy), otherwise mint a fresh one.
+const REQUEST_ID = /^[A-Za-z0-9._-]{1,64}$/;
 app.use((req, res, next) => {
   const incoming = req.headers['x-request-id'] as string | undefined;
-  const traceId = incoming ?? crypto.randomUUID();
-  requestContext.run({ traceId }, () => next());
+  const requestId = incoming && REQUEST_ID.test(incoming) ? incoming : crypto.randomUUID();
+  res.setHeader('x-request-id', requestId);  // before next(), so 404s and error responses carry it too
+  requestContext.run({ requestId }, () => next());
 });
 
-// Anywhere in your code — no need to pass traceId through every function
-export function getTraceId(): string {
-  return requestContext.getStore()?.traceId ?? 'no-trace';
+// Anywhere in your code — no need to pass the ID through every function
+export function getRequestId(): string {
+  return requestContext.getStore()?.requestId ?? 'no-request';
 }
 
 // Your logger can use it automatically
 const logger = pino({
   mixin() {
-    return { traceId: getTraceId() };
+    return { request_id: getRequestId() };
   },
 });
 ```
@@ -243,47 +203,50 @@ const logger = pino({
 **Python — contextvars:**
 
 ```python
-import contextvars
+# structlog 25, FastAPI
+import re
 import uuid
+import structlog
 
-# Create a context variable
-trace_id_var: contextvars.ContextVar[str] = contextvars.ContextVar('trace_id', default='no-trace')
-
-# Middleware: pick up an incoming header or generate one.
+# Middleware: pick up a well-formed incoming header or generate one.
 # As above, the header name is a project decision — align it with whatever
 # your other services send, or adopt OTel and let it own propagation.
+REQUEST_ID = re.compile(r"[A-Za-z0-9._-]{1,64}")
+
 @app.middleware("http")
-async def trace_middleware(request: Request, call_next):
-    trace_id = request.headers.get("x-request-id", str(uuid.uuid4()))
-    token = trace_id_var.set(trace_id)
+async def request_id_middleware(request: Request, call_next):
+    incoming = request.headers.get("x-request-id", "")
+    request_id = incoming if REQUEST_ID.fullmatch(incoming) else str(uuid.uuid4())
+    structlog.contextvars.clear_contextvars()
+    structlog.contextvars.bind_contextvars(request_id=request_id)
     response = await call_next(request)
-    trace_id_var.reset(token)
+    response.headers["x-request-id"] = request_id
     return response
 
 # Anywhere — access without passing through function arguments
-def get_trace_id() -> str:
-    return trace_id_var.get()
-
-# Custom processor that adds trace_id to every log entry
-def add_trace_id(logger, method_name, event_dict):
-    event_dict["trace_id"] = trace_id_var.get()
-    return event_dict
+def get_request_id() -> str:
+    return structlog.contextvars.get_contextvars().get("request_id", "no-request")
 
 # Configure structlog to include it automatically
 structlog.configure(
     processors=[
+        structlog.contextvars.merge_contextvars,  # first: adds request_id to every entry
         structlog.stdlib.add_log_level,
-        add_trace_id,
-        structlog.dev.ConsoleRenderer(),  # use JSONRenderer in production
-    ]
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.dict_tracebacks,     # logger.exception() tracebacks as JSON
+        structlog.processors.JSONRenderer(),      # local dev: swap the last two for structlog.dev.ConsoleRenderer()
+    ],
+    wrapper_class=structlog.make_filtering_bound_logger(settings.log_level),  # "info" in production; the default emits debug too
 )
 ```
 
-`contextvars` is Python's built-in equivalent of AsyncLocalStorage — context that follows async operations.
+`structlog.contextvars` is built on `contextvars`, Python's built-in equivalent of AsyncLocalStorage — context that follows async operations.
+
+**Hand the ID back.** Both middlewares echo the ID as a response header, so a user's bug report or a frontend error event can carry the value you will search for. In FastAPI an unhandled exception skips the line after `call_next`, because Starlette renders that 500 outside your middleware, so a 500 carries no `x-request-id` header. The error body carries the ID instead: [Error Handling](./error-handling.md) puts it in the problem-details body, read through this same accessor and never minted again. For a frontend on another origin, also send `Access-Control-Expose-Headers: x-request-id` (the `cors` package's `exposedHeaders`, Starlette's `expose_headers`), because browsers hide non-safelisted response headers from cross-origin scripts.
 
 ### Cross-Service Propagation
 
-When Service A calls Service B, include the correlation ID in a request header and have Service B's middleware pick it up. The specific header name is a project choice — use the same one consistently across services. If you go OTel, its SDKs inject and extract `traceparent` automatically; you don't write the propagation code yourself.
+When Service A calls Service B, include the correlation ID in a request header and have Service B's middleware pick it up. The specific header name is a project choice — use the same one consistently across services. If you go OTel, its SDKs inject and extract `traceparent` automatically; you don't write the propagation code yourself. HTTP is not the only hop: when work goes onto a queue or into a background job, carry the ID in the message headers or job metadata and bind it again in the consumer, or the trail stops at the enqueue.
 
 ---
 
@@ -294,7 +257,7 @@ When Service A calls Service B, include the correlation ID in a request header a
 | **debug** | Detailed info for development, too noisy for production | "Parsed request body: {fields}", "Cache miss for key X" |
 | **info** | Normal operations worth recording | "User signed up", "Order created", "Deploy started" |
 | **warn** | Something unexpected but handled — operational errors | "Rate limit hit for user", "Retry attempt 2/3", "Deprecated API called" |
-| **error** | Something failed that shouldn't have — programming errors | "Unhandled exception", "Database schema mismatch" |
+| **error** | Something failed that shouldn't have — programming errors | "Unhandled exception", "Database schema mismatch", "Payment failed after retries exhausted" |
 | **fatal** | System is going down | "Cannot connect to database, shutting down" |
 
 ### The Operational vs Programming Error Distinction
@@ -303,6 +266,8 @@ This connects directly to [Error Handling](./error-handling.md):
 
 - **Operational errors** (expected failures) → log at **warn**. A user sending invalid data is normal. A rate limit being hit is normal. These aren't bugs.
 - **Programming errors** (bugs) → log at **error**. An unhandled exception is a bug. A null reference is a bug. These need attention.
+
+The split is a default, and the test behind it is whether this one occurrence needs a human to act. An operational failure that does, such as a payment that still failed after its retries ran out, goes at **error**; a single retry that then succeeded stays at warn.
 
 If you log everything at ERROR, your error alerts fire for expected situations (user typos, rate limits) and you get **alert fatigue** — the team learns to ignore alerts, and then ignores real incidents too.
 
@@ -323,7 +288,7 @@ const logger = pino({ level: env.LOG_LEVEL });
 ### Do Log
 
 - **Request start and end** — method, path, status code, duration
-- **Business events** — user signed up, order placed, payment processed
+- **Business events** — user signed up, order placed, payment processed. Audit events (who changed a role, who exported what) are a separate stream with its own retention: see [Authentication & Authorization](./authentication-authorization.md#audit-logging).
 - **Errors with context** — the error, plus what the system was trying to do, for whom, with what data
 - **State transitions** — circuit breaker opened, feature flag changed, config reloaded
 - **Retry attempts** — which attempt, what failed, how long until next retry
@@ -331,9 +296,12 @@ const logger = pino({ level: env.LOG_LEVEL });
 ### Don't Log
 
 - **Secrets** — API keys, passwords, tokens. Scrub these from log output. A common mistake: logging an entire config object that contains secrets.
-- **Personal data carelessly** — Depending on jurisdiction (GDPR, CCPA), logging full email addresses or IP addresses may have legal implications. Log user IDs instead.
+- **Personal data** — Log the user ID, not the email, name or IP address, unless a decided purpose needs it. Under GDPR or CCPA, a log line holding personal data is personal data like any other. The rule covers every telemetry store, not just log lines: span attributes ([Monitoring](./monitoring.md)), error-tracker events (below) and analytics properties ([Product Analytics](./product-analytics.md)).
+- **URLs with query strings** — Reset tokens, invite codes and email addresses ride in query strings. Log the path or route pattern, never `req.url` or `req.originalUrl`.
 - **Request/response bodies at INFO level** — Full bodies create massive log volume. Use DEBUG level, and never in production unless actively investigating.
 - **Health check requests** — Your load balancer hits `/health` every 5 seconds. That's noise, not signal. Filter these out.
+
+**Retention.** Give every log store a retention period rather than keeping logs forever. Cost grows with it, and personal data may be kept only as long as its purpose needs (GDPR's storage-limitation principle). Thirty to ninety days is a common range for operational logs; audit logs follow their own, longer rule. Restrict who can read a log store as you would the database.
 
 ### Scrubbing Sensitive Data
 
@@ -350,12 +318,32 @@ logger.info({
 ```
 
 ```python
+# structlog 25
 # BAD: logs request body which might contain passwords
 logger.info("Login attempt", body=request.body)
 
 # GOOD: log only what you need
-logger.info("Login attempt", email=body.email)  # no password
+logger.info("Login attempt", user_id=user.id)  # no password, no email
 ```
+
+**Back the call sites with redaction in the logger,** which catches the field somebody forgot:
+
+```typescript
+// pino 9+
+const logger = pino({
+  redact: {
+    paths: ['req.headers.authorization', 'req.headers.cookie', 'password', '*.password', '*.token'],
+    censor: '[Redacted]',
+  },
+  serializers: { err: safeErrorSerializer },  // see "Error text is data" below
+});
+```
+
+Paths name keys, and `*` matches exactly one level (`*.password` catches `user.password`, not `a.b.password`), so list each place a secret can appear. structlog has no built-in equivalent: add a processor before the renderer, a function of `(logger, method_name, event_dict)` that overwrites known keys and returns the dict.
+
+**Error text is data.** Redaction sees keys, never the text inside a string, and a database error's text carries user data. Drizzle's `DrizzleQueryError` message reads `Failed query: <sql> params: <values>`, and pino's default `err` serializer copies the message and every enumerable property, `params` included. A Postgres unique violation's `detail` names the duplicate value. So log a safe serialisation of errors, never the raw object. Keep the class, the database error code and constraint name, and messages you wrote yourself; drop a driver's message, parameters and detail, and the stack's leading lines, which repeat the message. In pino, override the `err` serializer once, as above, so every `{ err }` goes through it. In SQLAlchemy, `create_engine(..., hide_parameters=True)` keeps bound values out of its error text, but the database's own detail still needs the same care.
+
+**Pin it with a canary test.** Send a request that carries a known canary value in a password field, a token and a query string, capture the logger's output, and assert the canary appears nowhere. It catches what review misses: a new field, a changed serializer, an error that echoes its input.
 
 ---
 
@@ -366,14 +354,15 @@ A common pattern — log every request automatically:
 ### TypeScript (Express + pino)
 
 ```typescript
+// Express, pino 9. Register after the propagation middleware above.
 app.use((req, res, next) => {
   const start = Date.now();
-  const traceId = crypto.randomUUID();
+  const requestId = getRequestId();  // the ID the propagation middleware stored: don't mint a second one
 
   res.on('finish', () => {
     const duration = Date.now() - start;
     logger.info({
-      traceId,
+      request_id: requestId,
       method: req.method,
       path: req.path,
       statusCode: res.statusCode,
@@ -385,23 +374,30 @@ app.use((req, res, next) => {
 });
 ```
 
+In production, `pino-http` does this for you: it accepts your ID through `genReqId`, gives each request a child logger as `req.log`, and skips health checks through `autoLogging.ignore`. Its default request serializer logs the full URL, query string included, and every header, so pair it with the redaction above and a `req` serializer that keeps only the path.
+
 ### Python (FastAPI)
 
 ```python
+# structlog 25, FastAPI. request_id arrives through merge_contextvars when this runs inside
+# the propagation middleware: Starlette runs the last-registered middleware outermost,
+# so register this one first.
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start = time.monotonic()
-    response = await call_next(request)
-    duration = (time.monotonic() - start) * 1000
-
-    logger.info(
-        "Request completed",
-        method=request.method,
-        path=str(request.url.path),
-        status_code=response.status_code,
-        duration_ms=round(duration, 2),
-    )
-    return response
+    status_code = 500  # if call_next raises: Starlette renders this 500 outside every middleware
+    try:
+        response = await call_next(request)  # re-raises the app's exception
+        status_code = response.status_code
+        return response
+    finally:
+        logger.info(
+            "Request completed",
+            method=request.method,
+            path=request.url.path,
+            status_code=status_code,
+            duration_ms=round((time.monotonic() - start) * 1000, 2),
+        )
 ```
 
 ---
@@ -444,28 +440,30 @@ Backend logging is well-understood: use a structured logger, write JSON, ship to
 |-------|-----------|-----|
 | `console.log()` / `print()` in a deployed app | Use a structured logger (pino, structlog) | Unstructured text can't be searched, filtered, or aggregated (a CLI's `print` output is its interface — different thing) |
 | Log strings: `logger.info("User " + userId + " signed up")` | Log structured: `logger.info({userId}, "User signed up")` | String concatenation loses structure — can't filter by userId |
-| Log everything at ERROR level | Use warn for operational errors, error for bugs | Alert fatigue — team ignores alerts, misses real incidents |
-| Log secrets, passwords, tokens | Scrub sensitive fields before logging | Logs are stored, forwarded, and often accessible to many people |
+| Log everything at ERROR level | Use warn for operational errors, error for bugs and for failures a human must act on | Alert fatigue — team ignores alerts, misses real incidents |
+| Log secrets, passwords, tokens | Scrub at the call site and redact in the logger; serialise errors safely | Logs are stored, forwarded, and often accessible to many people, and a driver's error text carries the query's values |
 | Log full request/response bodies at INFO | Log at DEBUG, or log only specific fields | Massive log volume, potential PII exposure |
-| Pass traceId through every function argument | Use AsyncLocalStorage / contextvars | Context propagation should be automatic, not manual plumbing |
+| Pass the request ID through every function argument | Use AsyncLocalStorage / contextvars | Context propagation should be automatic, not manual plumbing |
 | Log health check requests | Filter them out in middleware | Noise — every 5 seconds from the load balancer |
 
 ---
 
 ## Deciding for Your Project
 
-1. **Which logger?** pino for TypeScript, structlog for Python — these are the recommended defaults.
-2. **What fields on every log entry?** At minimum: timestamp, level, message, service name, trace ID.
-3. **Where do logs go?** In development: console (pretty-printed). In production: JSON to stdout, collected by your platform (Docker, Kubernetes, CloudWatch, etc.).
+1. **Which correlation header, and do you echo it?** One name for every service and queue hop (`x-request-id`, or `traceparent` once OTel owns propagation), validated on the way in and echoed on every response.
+2. **What fields on every log entry?** At minimum: timestamp, level, message, service name, request ID (`request_id`), and the tenant ID in a multi-tenant app. Decide which names every language shares: at least `request_id`, plus any field you search across services.
+3. **Where do logs go, and for how long?** In development: console (pretty-printed). In production: JSON to stdout, collected by your platform (Docker, Kubernetes, CloudWatch, etc.), with a retention period set on the store.
 4. **What log level in production?** Typically `info`. Switch to `debug` temporarily when investigating issues.
-5. **Do you need cross-service correlation?** If you have multiple services, propagate trace IDs in HTTP headers.
 
 ---
 
 ## Related Topics
 
-- **Error logging** — see [Error Handling](./error-handling.md) for the operational vs programming error distinction that determines log level
+- **Error logging** — see [Error Handling](./error-handling.md) for the operational vs programming error distinction that determines log level, and the problem-details body that carries the request ID
 - **Metrics and alerting** — see [Monitoring](./monitoring.md) for the aggregate view that logs can't provide
-- **Distributed tracing** — see [Monitoring](./monitoring.md) for how correlation IDs evolve into full distributed traces
+- **Distributed tracing** — see [Monitoring](./monitoring.md) for how correlation IDs evolve into full distributed traces, and the Collector that can scrub span attributes centrally
+- **Audit logs** — see [Authentication & Authorization](./authentication-authorization.md#audit-logging) for the separate, long-retention stream that authorization events need
 - **Log-based secrets exposure** — see [Security](./security.md) for why scrubbing secrets from logs matters
 - **Log level configuration** — see [Configuration](./configuration.md) for making log level configurable per environment
+- **Frontend failure states** — see [Frontend Development](./frontend-development.md) for treating a failed request as a failure, not an empty result, the UI side of the swallowed-catch rule
+- **Behaviour events** — see [Product Analytics](./product-analytics.md) for the events that belong in analytics rather than logs, and the consent rules for them

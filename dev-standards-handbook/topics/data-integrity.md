@@ -1,9 +1,11 @@
 # Data Integrity
 
 > **Calibrate to your context.** Validating data where it crosses a trust boundary is
-> worth it almost anywhere data arrives from outside. The depth scales with how much
-> you'd regret bad data: a system-of-record earns all three layers plus DB constraints
-> and contract tests; a scratch tool earns a boundary parse and little else.
+> worth it almost anywhere data arrives from outside, and declaring `NOT NULL`, foreign
+> keys and `UNIQUE` when a table is created costs nothing at any size. What scales with
+> how much you'd regret bad data is the rest: a system-of-record earns broad `CHECK`
+> coverage and schema-conformance tests; a scratch tool earns a boundary parse, the free
+> constraints and little else. Reference material, not a checklist.
 
 ## The Problem
 
@@ -30,50 +32,18 @@ This code works perfectly when the data is what you expect. It explodes in unpre
 
 ---
 
-## Manual Validation vs Schema Validation
-
-The naive approach is manual validation:
-
-```typescript
-app.post('/users', (req, res) => {
-  if (!req.body.name || typeof req.body.name !== 'string') {
-    return res.status(400).json({ error: 'name must be a string' });
-  }
-  if (!req.body.email || typeof req.body.email !== 'string') {
-    return res.status(400).json({ error: 'email must be a string' });
-  }
-  if (!req.body.email.includes('@')) {
-    return res.status(400).json({ error: 'email must be valid' });
-  }
-  if (req.body.age !== undefined && typeof req.body.age !== 'number') {
-    return res.status(400).json({ error: 'age must be a number' });
-  }
-  // ... finally, the actual logic
-});
-```
-
-This works but has serious problems:
-
-- **Tedious and error-prone.** Same kind of checks for every endpoint. Miss one and you have a bug.
-- **Validation and business logic are tangled.** The handler is 80% validation, 20% actual work.
-- **No single source of truth.** "What does a valid user look like?" is scattered across every endpoint that accepts user data.
-- **TypeScript still doesn't know the type.** After all those checks, `req.body` is still `any`. No autocomplete, no compile-time safety.
-
-Schema validation libraries solve all of these.
-
----
-
 ## Zod (TypeScript)
 
-Zod lets you define a schema — a description of what valid data looks like — and then validate data against it at runtime.
+A schema library replaces hand-written `typeof` checks with one declaration that validates at runtime and gives the compiler the type. **Zod is the default** on TypeScript.
 
 ```typescript
+// Zod 4
 import { z } from 'zod';
 
 // Define the schema ONCE
 const UserSchema = z.object({
   name: z.string().min(1),                        // non-empty string
-  email: z.string().email(),                       // string that looks like an email
+  email: z.email(),                               // string that looks like an email
   age: z.number().int().positive().optional(),     // optional positive integer
 });
 
@@ -82,8 +52,12 @@ app.post('/users', (req, res) => {
   const result = UserSchema.safeParse(req.body);
 
   if (!result.success) {
-    // Zod gives you detailed, structured error messages automatically
-    return res.status(400).json({ errors: result.error.issues });
+    // Map Zod's issues to the field-level `errors` array from Error Handling;
+    // returning raw `issues` would make Zod's internal format your API contract
+    const errors = result.error.issues.map((i) => ({ field: i.path.join('.'), message: i.message }));
+    return res.status(400).json({
+      type: 'about:blank', code: 'VALIDATION_ERROR', title: 'Invalid request data', status: 400, errors,
+    });
   }
 
   // result.data is fully typed: { name: string, email: string, age?: number }
@@ -93,31 +67,9 @@ app.post('/users', (req, res) => {
 });
 ```
 
-What Zod gives you:
+### Parse, Don't Assert
 
-1. **Single source of truth** — the schema defines "what is a valid user" in one place, used everywhere
-2. **Runtime validation** — it actually checks the data when code runs (TypeScript types alone don't)
-3. **Type inference** — after validation, TypeScript knows the exact type
-4. **Composability** — schemas extend, combine, and transform
-5. **Detailed errors** — structured list of exactly what's wrong
-
-### The Critical Insight: TypeScript Types vs Runtime Validation
-
-TypeScript types only exist at compile time. They're erased when your code runs:
-
-```typescript
-interface User {
-  name: string;
-  email: string;
-}
-
-// This compiles fine, but at runtime, req.body could be ANYTHING
-const user: User = req.body;  // TypeScript trusts you. It shouldn't.
-```
-
-TypeScript is saying "I'll treat this as a User" — it's not checking that it actually IS a User. The type is a promise you're making to the compiler. If the data comes from outside your system (HTTP request, database query, JSON file), that promise might be a lie.
-
-Zod bridges this gap. It validates at runtime AND gives you the TypeScript type. The validation is the proof that the type is correct.
+TypeScript types are erased at runtime. `const user = req.body as User` (or an annotation on an `any`) compiles, but it checks nothing: it is a promise to the compiler that outside data cannot keep. Parsing is the proof that the type is true, so data from outside your system reaches typed code only through `.parse()` or `.safeParse()`.
 
 ### .parse() vs .safeParse()
 
@@ -136,15 +88,6 @@ if (result.success) {
 
 Use `.safeParse()` at API boundaries where invalid data is expected (user input). Use `.parse()` in internal code where invalid data means a programming error.
 
-### Alternatives to Zod
-
-- **Joi** — older, established, but doesn't infer TypeScript types (you define the type separately from the schema, so they can drift apart)
-- **Yup** — similar to Joi, popular in React form validation
-- **ArkType** — newer, claims better performance
-- **Valibot** — smaller bundle size, similar API
-
-Zod won the ecosystem because it solved the type inference problem cleanly. Most new TypeScript projects use it. **Zod is our default** — it's what we reach for on new TypeScript projects. The alternatives above are fine when a project already uses one.
-
 ---
 
 ## Pydantic (Python)
@@ -152,6 +95,7 @@ Zod won the ecosystem because it solved the type inference problem cleanly. Most
 Pydantic uses Python's type hints as its schema language. You write normal Python classes with type annotations, and Pydantic makes them validated at runtime.
 
 ```python
+# Pydantic 2 — EmailStr needs the extra: pip install "pydantic[email]"
 from pydantic import BaseModel, EmailStr, ValidationError
 
 class User(BaseModel):
@@ -159,11 +103,18 @@ class User(BaseModel):
     email: EmailStr          # validates email format
     age: int | None = None   # optional, must be int if present
 
-# Validate incoming data — validates on construction
+# Validate incoming data — model_validate() runs the same validation as construction
 try:
-    user = User(**request_body)
+    user = User.model_validate(request_body)
 except ValidationError as e:
-    return {"errors": e.errors()}, 400
+    # Map to the field-level `errors` array from Error Handling. Raw e.errors() would make
+    # Pydantic's format your contract and echo submitted values (passwords too) back
+    errors = [
+        {"field": ".".join(str(p) for p in err["loc"]), "message": err["msg"]}
+        for err in e.errors(include_input=False, include_url=False)
+    ]
+    return {"type": "about:blank", "code": "VALIDATION_ERROR",
+            "title": "Invalid request data", "status": 400, "errors": errors}, 400
 
 # user.name, user.email, user.age are all validated and typed
 db.insert("users", user.model_dump())
@@ -171,32 +122,31 @@ db.insert("users", user.model_dump())
 
 ### Key Differences from Zod
 
-| Aspect                 | Zod (TypeScript)                               | Pydantic (Python)                       |
-| ---------------------- | ---------------------------------------------- | --------------------------------------- |
-| Schema definition      | Values: `z.string()`, `z.object({...})`        | Classes: `class User(BaseModel)`        |
-| Validation trigger     | Explicit: call `.parse()` or `.safeParse()`    | On construction: `User(**data)`         |
-| Type inference         | Inferred from schema: `z.infer<typeof Schema>` | The class IS the type                   |
-| Forgetting to validate | Possible (if you skip `.parse()`)              | Impossible (construction IS validation) |
+| Aspect                 | Zod (TypeScript)                               | Pydantic (Python)                            |
+| ---------------------- | ---------------------------------------------- | -------------------------------------------- |
+| Schema definition      | Values: `z.string()`, `z.object({...})`        | Classes: `class User(BaseModel)`             |
+| Validation trigger     | Explicit: call `.parse()` or `.safeParse()`    | On construction: `User.model_validate(data)` |
+| Type inference         | Inferred from schema: `z.infer<typeof Schema>` | The class IS the type                        |
+| Forgetting to validate | Possible (if you skip `.parse()`)              | Unlikely (construction validates)            |
 
-Pydantic's "validate on construction" means you can't create an invalid instance. If you have a `User` object, it was validated. This is a strong safety property.
+Pydantic's "validate on construction" means a `User` built the normal way was validated — a strong safety property, with two gaps. Assignment isn't validated by default (`user.age = "abc"` succeeds silently), and `User.model_construct()` skips validation entirely. Where that matters, set `ConfigDict(validate_assignment=True)` or make the model immutable with `ConfigDict(frozen=True)`.
 
 ### Pydantic Strict Mode
 
-By default, Pydantic coerces types — `"42"` becomes `42` for an `int` field. Strict mode rejects this:
+By default, Pydantic coerces types — `"42"` becomes `42` for an `int` field. Strict mode rejects that, and model-wide strict is a trap. In Python mode it also rejects the ISO strings a JSON body carries for `datetime`, `UUID` and `Decimal` fields, and FastAPI validates request bodies in Python mode after decoding the JSON. Make strictness field-level instead:
 
 ```python
-class StrictUser(BaseModel):
-    model_config = ConfigDict(strict=True)
-    age: int  # "42" is rejected — must be actual int
+# Pydantic 2.14, FastAPI 0.162 (both verified)
+from datetime import datetime
+from typing import Annotated
+from pydantic import BaseModel, Strict
 
-class CoercingUser(BaseModel):
-    age: int  # "42" becomes 42 automatically
+class Order(BaseModel):
+    quantity: Annotated[int, Strict()]  # "42" rejected: must be a real int
+    placed_at: datetime                 # ISO string still parsed
 ```
 
-**When to use which:**
-
-- **Strict:** API boundaries where you control the client (your own frontend). The client should send correct types.
-- **Coercing:** Environment variables (always strings), form data (always strings), third-party APIs with inconsistent types.
+Model-wide `ConfigDict(strict=True)` is safe only where you call `model_validate_json` on the raw JSON yourself, because JSON mode still accepts strings for those types. Keep coercion for environment variables and form data, which are always strings.
 
 **Pydantic is our default** for Python schema validation.
 
@@ -204,7 +154,7 @@ class CoercingUser(BaseModel):
 
 ## The Three-Layer Model
 
-Data correctness is enforced by three layers, each catching failures the others miss. In production systems you'll usually want all three; smaller or lower-stakes code often leans on Layers 1–2 and skips the database constraints.
+Data correctness is enforced by three layers, each catching failures the others miss. Keep all three at any size: the basic database constraints cost nothing when a table is created, and what scales down is how much `CHECK` coverage and testing you add.
 
 ### Layer 1: Type System (compile-time)
 
@@ -219,7 +169,7 @@ Zod schemas (TypeScript), Pydantic models (Python). Code that runs and inspects 
 **What a boundary is:** The line between code you control and data you don't:
 
 - An API request arrives from a client → validate the JSON body
-- A database returns a record → validate it matches your schema
+- A database returns a record whose shape it cannot vouch for (a `jsonb` document, a table other writers share) → validate it
 - A third-party webhook sends data → validate the payload
 - A file is uploaded → validate its structure
 - An environment variable is read → validate its format and type
@@ -228,7 +178,7 @@ Zod schemas (TypeScript), Pydantic models (Python). Code that runs and inspects 
 
 Rules enforced by the database itself, regardless of what code sent the data. In relational databases: `NOT NULL`, `FOREIGN KEY`, `CHECK`, `UNIQUE` constraints. These catch everything that bypasses your application — migration scripts, manual console edits, bugs that somehow get past validation.
 
-**NoSQL databases (DynamoDB, MongoDB, etc.):** Enforce very little — typically just key schema. No CHECK constraints, no foreign keys, no UNIQUE on non-key attributes. This means Layers 1 and 2 carry significantly more weight.
+**NoSQL databases (DynamoDB, MongoDB, etc.):** Enforce less, and it varies. DynamoDB enforces little beyond the key schema — no CHECK constraints, no foreign keys, no UNIQUE on non-key attributes. MongoDB has unique indexes on any field and `$jsonSchema` collection validators, but no foreign keys. Either way, Layers 1 and 2 carry significantly more weight.
 
 ### Why All Three Layers
 
@@ -252,6 +202,7 @@ When using a relational database with an ORM (Drizzle, SQLAlchemy, Prisma), you 
 **The validation schema** (Zod/Pydantic) defines what the application expects data to look like at runtime. It validates data crossing boundaries (Layer 2) — API requests, database results, external payloads.
 
 ```typescript
+// Zod 4, drizzle-orm 0.45
 // Drizzle schema — defines the DATABASE table (Layers 1 + 3)
 const courses = pgTable('courses', {
   courseId: uuid('course_id').primaryKey(),
@@ -262,10 +213,10 @@ const courses = pgTable('courses', {
 
 // Zod schema — defines the APPLICATION contract (Layer 2)
 const CourseSchema = z.object({
-  courseId: z.string().uuid(),
+  courseId: z.uuid(),
   title: z.string().min(1),
   items: z.array(CourseItemSchema),           // validated nested structure
-  createdAt: z.string().datetime(),           // ISO string, not a Date
+  createdAt: z.iso.datetime(),                // ISO string with Z; an input schema needs { offset: true }
 });
 ```
 
@@ -273,9 +224,11 @@ Notice the differences: Drizzle says `items` is `jsonb` — the database stores 
 
 **The repository layer is the bridge** — it sits between the ORM queries and the validation schemas. It queries via the ORM (type-safe SQL), then parses results through the Zod schema before returning to the rest of the application. Both checks happen, each catching what the other can't.
 
+**Parsing every row has a cost, so choose where.** Parse results where the database cannot vouch for the shape: a `jsonb` column it stores opaquely, or a table another service or script also writes. For plain typed columns your own migrations control, a schema-conformance test (see Testing Data Correctness below) proves the same thing once instead of on every read. Where the two schemas mostly agree, derive the validation schema from the table and override only the columns that differ, such as the `jsonb` structure. `createSelectSchema` and `createInsertSchema` do this for Drizzle: they ship in the separate `drizzle-zod` package on drizzle-orm 0.x and move to `drizzle-orm/zod` in Drizzle v1, so check the installed version. On Python, SQLModel declares one class that is both the SQLAlchemy table and the Pydantic model.
+
 **Why not just one schema?** Some ORMs (Prisma) try to be the single source of truth for both database structure and application types. This works until your database representation and application representation genuinely differ — a `jsonb` column containing a validated nested structure, a timestamp stored as a Date but serialised as a string, a composite key split into separate application fields. Two schemas let each side describe what it actually cares about without forcing the other to compromise.
 
-**JSON databases (MongoDB, DynamoDB) don't have this problem.** There's no second language to bridge — queries are JavaScript objects, results are JavaScript objects. The ORM layer exists specifically because SQL databases speak a different language than your application code. Zod alone handles validation for JSON databases; the ORM handles the SQL translation that JSON databases don't need.
+**Document databases (MongoDB, DynamoDB) have a smaller version of this problem.** There's no second query language to bridge — queries and results are plain objects. But the stored types still aren't JSON: MongoDB hands back BSON `ObjectId` and `Date` values where your API schema has strings, so the repository layer still converts. The ORM layer exists specifically because SQL databases speak a different language than your application code; for a document database, a validation schema plus that conversion usually does the job.
 
 ---
 
@@ -289,7 +242,7 @@ Validate data when it crosses a trust boundary:
 | **User input → App**   | Form submission, API request body | Validate with schema                                                  |
 | **File → App**         | CSV/JSON import                   | Validate each record                                                  |
 | **App → Database**     | Insert/update                     | Schema ensures correct shape before write                             |
-| **Database → App**     | Query result                      | Parse through schema (proves DB returns what you expect)              |
+| **Database → App**     | Query result                      | Parse `jsonb` and shared tables; conformance-test the rest            |
 | **Service → Service**  | RPC response, webhook             | Parse through boundary contract                                       |
 | **Environment → App**  | Config / env vars                 | Parse through config schema (see [Configuration](./configuration.md)) |
 
@@ -299,82 +252,18 @@ Validate data when it crosses a trust boundary:
 
 ## Established Patterns
 
-### Nested Composition
+### Separate Input and Output Schemas
 
-Build complex structures from simple building blocks:
-
-**TypeScript (Zod):**
-
-```typescript
-const AddressSchema = z.object({
-  street: z.string(),
-  city: z.string(),
-  country: z.string(),
-});
-
-const UserSchema = z.object({
-  name: z.string(),
-  address: AddressSchema,  // Nested schema
-});
-type User = z.infer<typeof UserSchema>;
-```
-
-**Python (Pydantic):**
-
-```python
-class Address(BaseModel):
-    street: str
-    city: str
-    country: str
-
-class User(BaseModel):
-    name: str
-    address: Address  # Nested model
-```
-
-### Literal Types for Constrained Values
-
-Don't use loose strings when only specific values are valid:
-
-**TypeScript:**
-
-```typescript
-const OrderSchema = z.object({
-  status: z.enum(["pending", "confirmed", "shipped", "delivered"]),
-  priority: z.enum(["low", "medium", "high"]),
-});
-```
-
-**Python:**
-
-```python
-from typing import Literal
-
-class Order(BaseModel):
-    status: Literal["pending", "confirmed", "shipped", "delivered"]
-    priority: Literal["low", "medium", "high"]
-```
+The input schema lists only the fields a client may set. Server-owned fields, such as `id`, `createdAt`, the tenant id, a role or a price, belong to the output schema and are filled by the server. If they sit in the input schema, a client that sends them gets to choose them: that is mass assignment (OWASP API3:2023). Zod's `z.object` and Pydantic's default config both drop unknown keys, so leaving a field out of the input schema is enough, provided the parsed result, never the raw body, reaches the write. A schema derived from the table needs the same care: omit the server-owned columns from it.
 
 ### Discriminated Unions
 
-Handle data that can be one of several types, distinguished by a field:
-
-**TypeScript:**
-
-```typescript
-const EventSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("click"), x: z.number(), y: z.number() }),
-  z.object({ type: z.literal("keypress"), key: z.string() }),
-  z.object({ type: z.literal("scroll"), delta: z.number() }),
-]);
-// TypeScript knows: if event.type === "click", then event.x and event.y exist
-```
-
-**Python:**
+For data that is one of several shapes, distinguished by a field, use Zod's `z.discriminatedUnion("type", [...])`, or in Pydantic a union with an explicit discriminator:
 
 ```python
-from pydantic import BaseModel
-from typing import Literal, Union
+# Pydantic 2
+from typing import Annotated, Literal, Union
+from pydantic import BaseModel, Field, TypeAdapter
 
 class ClickEvent(BaseModel):
     type: Literal["click"]
@@ -385,38 +274,10 @@ class KeypressEvent(BaseModel):
     type: Literal["keypress"]
     key: str
 
-class ScrollEvent(BaseModel):
-    type: Literal["scroll"]
-    delta: int
+Event = Annotated[Union[ClickEvent, KeypressEvent], Field(discriminator="type")]
+# The discriminator makes Pydantic pick the model from "type"; a bare Union tries every member
 
-Event = Union[ClickEvent, KeypressEvent, ScrollEvent]
-# Pydantic uses the "type" field to decide which model to validate against
-```
-
-### Factory Methods and Defaults
-
-Generate IDs and timestamps automatically:
-
-**TypeScript:**
-
-```typescript
-const RecordSchema = z.object({
-  id: z.string().default(() => crypto.randomUUID()),
-  createdAt: z.string().datetime().default(() => new Date().toISOString()),
-  data: z.unknown(),
-});
-```
-
-**Python:**
-
-```python
-from datetime import datetime, timezone
-from secrets import token_hex
-
-class Record(BaseModel):
-    id: str = Field(default_factory=lambda: f"rec_{token_hex(8)}")
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    data: Any
+event = TypeAdapter(Event).validate_python(payload)  # or use Event as a field on a model
 ```
 
 ---
@@ -427,36 +288,30 @@ Application-layer validation (Zod, Pydantic) protects the happy path. Database c
 
 ### Enforce at Both Layers
 
-| Constraint          | Application Layer       | Database Layer                     |
-| ------------------- | ----------------------- | ---------------------------------- |
-| **Required fields** | Schema validation       | `NOT NULL`                         |
-| **Valid values**    | Enum/literal types      | `CHECK` constraints                |
-| **Relationships**   | Type references         | `FOREIGN KEY` constraints          |
-| **Uniqueness**      | Pre-check before insert | `UNIQUE` constraints               |
-| **Data format**     | String parsing, regex   | `CHECK` with regex or domain types |
+| Constraint          | Application Layer                     | Database Layer                     |
+| ------------------- | ------------------------------------- | ---------------------------------- |
+| **Required fields** | Schema validation                     | `NOT NULL`                         |
+| **Valid values**    | Enum/literal types                    | `CHECK` constraints                |
+| **Relationships**   | Type references                       | `FOREIGN KEY` constraints          |
+| **Uniqueness**      | Map the constraint violation to a 409 | `UNIQUE` constraints               |
+| **Data format**     | String parsing, regex                 | `CHECK` with regex or domain types |
 
 Application validation gives good error messages. Database constraints prevent bad data. Both are needed.
 
-### Adding Constraints to Existing Tables
+For uniqueness, don't pre-check with a `SELECT` before the `INSERT`: two requests can both pass the check and both insert. The `UNIQUE` constraint is the guard — insert, catch Postgres error `23505` (`unique_violation`), and map it to a 409 Conflict. Match the constraint name as well as the code, because a table's primary key and each unique constraint all raise `23505`. On Drizzle 0.44.4+ read both from the error's `cause` chain, because the driver error is wrapped in a `DrizzleQueryError`. Inside a larger transaction, catching the error is not enough: the failed statement aborts the transaction, and every later statement fails until it rolls back. There, use `INSERT … ON CONFLICT (tenant_id, email) DO NOTHING RETURNING` (Drizzle `.onConflictDoNothing({ target: [users.tenantId, users.email] })`), naming the target so other conflicts still raise, and treat no returned row as the conflict, or wrap the insert in a savepoint (a nested `tx.transaction()` in Drizzle, `session.begin_nested()` in SQLAlchemy). In a multi-tenant table, include the tenant column in the unique constraint, `UNIQUE (tenant_id, email)`, so one tenant's value never blocks or reveals another's, and lead with it so the index also serves tenant-scoped lookups.
 
-When adding constraints to tables with existing data, use `NOT VALID` to avoid scanning all rows:
-
-```sql
-ALTER TABLE orders ADD CONSTRAINT fk_customer
-  FOREIGN KEY (customer_code) REFERENCES customers(customer_code)
-  NOT VALID;
-
--- Validate later after confirming data quality:
-ALTER TABLE orders VALIDATE CONSTRAINT fk_customer;
-```
+**Adding a constraint to a table that already holds data** is a locking problem as much as a data one: add a foreign key, `CHECK` or `NOT NULL` as `NOT VALID` and validate it in a later deploy, and build a `UNIQUE` index concurrently first. The recipes are in [Schema Evolution](./schema-evolution.md#adding-constraints-to-existing-tables).
 
 ### Normalise at Ingest
 
-String values that serve as categories or statuses must be normalised on entry — lowercase at insert, then add a CHECK constraint:
+String values that serve as categories or statuses must be normalised on entry — lowercase at insert — then checked against the set of valid values, which also rejects any case variant that slips through. For emails, where you usually keep the case the user typed, enforce case-insensitive uniqueness instead: a unique index on `lower(email)`, or the `citext` column type.
 
 ```sql
-ALTER TABLE users ADD CONSTRAINT chk_role_lowercase
-  CHECK (role = LOWER(role));
+-- PostgreSQL
+ALTER TABLE users ADD CONSTRAINT chk_role_valid
+  CHECK (role IN ('member', 'admin'));
+
+CREATE UNIQUE INDEX users_email_lower_key ON users (lower(email));
 ```
 
 ---
@@ -491,25 +346,22 @@ COMMIT;
 - `COMMIT` — makes all provisional operations permanent.
 - `ROLLBACK` — undoes all provisional operations (as if they never happened).
 
-If your code throws an error between `BEGIN` and `COMMIT`, the database rolls back automatically (when the connection closes without committing).
+If your code throws between `BEGIN` and `COMMIT`, the database only rolls back on its own when the connection closes — and a pooled connection is never closed, just returned to the pool. The transaction stays open on that session, holding its locks (and, after a failed statement, rejecting every command) until something sends `ROLLBACK`, and the next request to borrow the connection inherits it. So roll back explicitly, or use a helper that does it on throw.
 
 ### In Application Code
 
-**TypeScript (using a pool/client):**
+**TypeScript (Drizzle):**
 
 ```typescript
-const client = await pool.connect();
-try {
-  await client.query('BEGIN');
-  await client.query('UPDATE accounts SET balance = balance - $1 WHERE id = $2', [amount, fromId]);
-  await client.query('UPDATE accounts SET balance = balance + $1 WHERE id = $2', [amount, toId]);
-  await client.query('COMMIT');
-} catch (err) {
-  await client.query('ROLLBACK');
-  throw err;  // re-throw so the error is handled by your error hierarchy
-} finally {
-  client.release();  // return connection to pool
-}
+// drizzle-orm 0.36+
+import { eq, sql } from 'drizzle-orm';
+
+await db.transaction(async (tx) => {
+  await tx.update(accounts).set({ balance: sql`${accounts.balance} - ${amount}` }).where(eq(accounts.id, fromId));
+  await tx.update(accounts).set({ balance: sql`${accounts.balance} + ${amount}` }).where(eq(accounts.id, toId));
+});
+// Commits when the callback resolves. If it throws, Drizzle sends ROLLBACK and re-throws,
+// so the error still reaches your error hierarchy and the connection goes back to the pool clean.
 ```
 
 **Python (SQLAlchemy async session):**
@@ -532,13 +384,41 @@ Any time you have multiple database operations that must succeed or fail togethe
 
 - Transferring between accounts (debit + credit)
 - Creating an order (insert order + insert order items + decrement inventory)
-- User signup (create user + create profile + send welcome email record)
+- User signup (create user + create profile + queue the welcome email as an outbox row, below)
 
 Single operations (one INSERT, one UPDATE) are already atomic — they don't need explicit transactions.
 
 ### Connection to Error Handling
 
 Transactions connect directly to your error hierarchy (see [Error Handling](./error-handling.md)): if step 3 of 5 fails, the transaction rolls back steps 1-2 automatically. Your error handler then classifies the failure (was it a validation error? a constraint violation? a timeout?) and responds appropriately.
+
+### Atomicity Is Not Isolation
+
+A transaction makes its writes all-or-nothing; it does not stop two transactions interleaving. Postgres defaults to READ COMMITTED, where each statement sees whatever was committed before it began, so read-then-write logic still loses updates: two requests both read a balance of 100, both subtract 80, and both write 20. Concurrency Control below closes that gap. Nor does a transaction reach outside the database. An email sent, an HTTP call made or a message published inside it stays done when the transaction rolls back, and waiting on the call holds a connection and its locks open (see [Resilience](./resilience.md#idempotency)).
+
+**The transactional outbox** answers "commit, then send". Write the message as a row in an outbox table inside the same transaction as the data change, and let a separate relay read committed rows, send them and mark them sent. The message then exists exactly when the change does. The relay can crash between sending and marking, so delivery is at-least-once and the receiver must tolerate a repeat.
+
+### Concurrency Control
+
+When the check and the write fit in one statement, put the check in the `WHERE` clause and read the row count:
+
+```sql
+-- PostgreSQL
+UPDATE accounts SET balance = balance - 80
+WHERE id = 123 AND balance >= 80;
+-- 0 rows affected → insufficient funds; a concurrent withdrawal cannot overdraw
+```
+
+When logic must run between the read and the write, take a lock:
+
+- **Optimistic locking:** keep a `version` column, write with `WHERE id = $1 AND version = $2`, and bump the version. Zero rows affected means someone else changed the row: re-read and retry, or return 409. It pays in retries, so it suits rare conflicts, which is most web apps.
+- **Pessimistic locking:** `SELECT … FOR UPDATE` inside an explicit transaction, so other writers wait (in autocommit the lock ends with the statement). It pays in waiting, so it suits a hot row many requests update.
+
+**Deadlocks** happen when two transactions each hold a lock the other needs. Postgres detects the cycle after `deadlock_timeout` (1s by default) and aborts one of them with SQLSTATE `40P01`. Taking locks in a consistent order, such as ascending id, makes deadlocks rarer but cannot rule them out, because foreign-key checks, unique-index inserts and lock upgrades take locks your code never ordered. So retry the whole transaction a bounded number of times on `40P01`, and on `40001` (serialization failure, raised at REPEATABLE READ and SERIALIZABLE). Retry the transaction, not the failed statement, which has already aborted it. [Testing → Concurrency and Race-Condition Tests](./testing.md#concurrency-and-race-condition-tests--does-the-guard-hold-when-two-callers-race) shows how to prove a guard holds.
+
+### Transactions Behind a Pooler
+
+Managed pooled endpoints (Neon's pooled connection string, Supabase's pooler, PgBouncer) usually run in transaction mode, where consecutive transactions from one client may land on different server connections. Session state breaks there: a session-level `SET`, a session advisory lock, `LISTEN`. A session `SET` of tenant context is worse than broken, because it can stay on the server connection for the next client's transaction to inherit, which is a cross-tenant leak. Use `SET LOCAL` (or `set_config(…, true)`) and `pg_advisory_xact_lock` inside a transaction, and the direct connection for `LISTEN`. See [Multi-Tenant Isolation](./multi-tenant-isolation.md#the-database-backstop) and the [Leaky Pooled Connection](./pitfalls.md#the-leaky-pooled-connection) pitfall.
 
 ---
 
@@ -557,7 +437,7 @@ Prefer enabling strict mode from day one. Retrofitting it onto an existing codeb
 
 Zod and Pydantic only help if your schemas are correct and actually wired in — testing that `z.string().parse("hello")` works is testing the library, not your system. Four things are worth asserting, each mapping to a layer or boundary defined above:
 
-- **Schema-to-reality alignment.** Parse real rows from the tables you own (and real responses from the APIs you consume) against your schema — a contract test that proves the schema matches what the store actually sends, not what you assume. This is also where lossy serialization hides (a value that parses but changes shape on the round trip through `jsonb` or timezone normalisation), which matters most at the repository-layer bridge, where the ORM and application representations deliberately differ.
+- **Schema-to-reality alignment.** Parse real rows from the tables you own (and real responses from the APIs you consume) against your schema — a schema-conformance test that proves the schema matches what the store actually sends, not what you assume. This is also where lossy serialization hides (a value that parses but changes shape on the round trip through `jsonb` or timezone normalisation), which matters most at the repository-layer bridge, where the ORM and application representations deliberately differ.
 - **Validation wiring.** A schema that is never called protects nothing. Drive an endpoint with an invalid payload and assert it is rejected at the boundary — a missing required field returns a 400, not a 500 or a silent insert. (The *shape* of that 400 — the RFC 9457 envelope and its field-level error array — is Error Handling's to verify.)
 - **Transformation correctness.** Data enters valid but is reshaped at every stage (DB row → API → hook → component props), and each stage can mangle it — so test the stages that derive or aggregate, not the ones that just pass through.
 - **Complex schema logic.** Any hand-written schema logic — a `.refine()`, a discriminated union, conditional validation — has branches that can be wrong, so assert both the accept and the reject case (the classic trap: a percentage discount must be 0–100 but a fixed discount may exceed 100).
@@ -578,18 +458,25 @@ These all lean on a real database rather than a mock — see [Testing](./testing
 | Store unvalidated external data             | Always parse through a schema first               | Garbage in, garbage out — but worse, garbage stored permanently                                     |
 | Use TypeScript `as` type assertions         | Use `.parse()` — assertions skip validation       | `as User` tells the compiler to trust you; `.parse()` actually checks                               |
 | Validate at the database layer only         | Validate at the application boundary too          | DB errors are cryptic ("constraint violation on column X") vs schema errors ("email must be valid") |
+| Put server-owned fields (`id`, `createdAt`, tenant, role) in the input schema | Separate input and output schemas | A client that sends them gets to set them (mass assignment) |
+| Pre-check uniqueness with a `SELECT` before inserting | Insert and map `23505` to 409; inside a transaction, `ON CONFLICT DO NOTHING` or a savepoint | Two requests both pass the check, and a caught error still aborts the surrounding transaction |
+| Read, compute and write back with no guard | A conditional `UPDATE`, or optimistic or pessimistic locking | Under READ COMMITTED two read-then-write requests overwrite each other |
+| Acquire locks in inconsistent order | Lock in a consistent order (e.g. by id), and retry the transaction on `40P01` and `40001` | Inconsistent ordering causes deadlocks, and ordering alone cannot prevent them all |
+| Send an email or call an API inside a transaction | Write an outbox row in the transaction and send after commit | A rollback cannot unsend, and the open transaction holds its locks across the call |
 
 ---
 
 ## Deciding for Your Project
 
-When starting a new project, determine:
+When starting a new project, decide these. Each line gives the default.
 
-1. What external data sources exist? (APIs, files, user input, webhooks)
-2. Where are the trust boundaries? (What's "inside" vs "outside" your system?)
-3. What database are you using? (Relational with constraints, or NoSQL where app validation carries more weight?)
-4. What entities does the system work with? (Users, orders, events — each needs a schema)
-5. Strict or coercing mode? (Depends on data sources — see the strict mode section above)
+1. **Where are the trust boundaries?** Every request body, third-party response, webhook, file and env var is parsed at entry, and code inside trusts the typed result.
+2. **Which schema library?** Zod on TypeScript, Pydantic on Python.
+3. **Strict or coercing?** Coerce, with field-level `Strict` where a coerced value would be wrong (a quantity, an amount). Model-wide strict only with `model_validate_json`.
+4. **Which database constraints?** `NOT NULL`, foreign keys and `UNIQUE` on every table from creation, plus `CHECK` for enumerated values. On a document store, which enforces less, application validation carries more of the weight.
+5. **Which reads get parsed?** `jsonb` columns and tables other writers share; conformance-test the rest.
+6. **How are concurrent writes guarded?** A conditional `UPDATE` first, optimistic locking where logic runs between the read and the write, pessimistic locking for a hot row, and a bounded transaction retry on `40001` and `40P01`.
+7. **What follows a commit?** Anything sent outside the database goes through an outbox row, never from inside the transaction.
 
 ---
 
@@ -597,6 +484,8 @@ When starting a new project, determine:
 
 - **When validation fails** — see [Error Handling](./error-handling.md) for how to structure error responses and classify validation errors
 - **Validating configuration** — see [Configuration](./configuration.md) for treating env vars and settings as validated data
-- **When schemas change over time** — see [Schema Evolution](./schema-evolution.md) for database migrations and the expand-and-contract pattern
+- **When schemas change over time** — see [Schema Evolution](./schema-evolution.md) for migrations, expand-and-contract, and adding constraints to tables that already hold data
+- **Side effects around a transaction** — see [Resilience](./resilience.md) → Idempotency for keeping a provider call out of the transaction and making a repeated request safe
+- **Tenant context per transaction** — see [Multi-Tenant Isolation](./multi-tenant-isolation.md) → The Database Backstop for confining the tenant setting to the transaction
 - **Validation as security** — see [Security](./security.md) for the OWASP perspective on input validation as a defence against injection attacks
-- **Testing data at every stage** — see [Testing](./testing.md) for contract tests, integration tests, and transformation tests that verify data correctness beyond what schemas catch
+- **Testing data at every stage** — see [Testing](./testing.md) for schema-conformance tests, transformation tests, and the race tests that prove a concurrency guard holds

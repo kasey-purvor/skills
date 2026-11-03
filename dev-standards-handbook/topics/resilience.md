@@ -26,18 +26,7 @@ Resilience is the discipline of designing your system to survive and recover fro
 
 ## Retries with Exponential Backoff
 
-When an external call fails, you retry — but not immediately and not forever.
-
-**Naive retry (don't do this):**
-
-```typescript
-// BAD: hammers the service 3 times as fast as possible
-for (let i = 0; i < 3; i++) {
-  try { return await callService(); } catch {}
-}
-```
-
-This makes a failing service worse — if it's struggling under load, you're tripling that load instantly.
+When an external call fails, you retry — but not immediately and not forever. A loop that retries at once, with no wait between attempts, makes a failing service worse: if it is struggling under load, you triple that load instantly.
 
 **Exponential backoff with jitter:**
 
@@ -52,40 +41,44 @@ Attempt 4: fails
 Give up, return error to caller
 ```
 
-Each wait doubles. Add a small random jitter (±100ms) so that if 1000 clients all retry at the same time, they spread out instead of stampeding.
+Each wait doubles, up to a cap (say 30 seconds). The waits shown are ceilings: pick each actual wait at random between zero and the ceiling — AWS's "full jitter", `random(0, min(cap, base × 2^attempt))` — so that if 1000 clients all retry at the same time, they spread out instead of stampeding.
 
 ### What to Configure
 
 Three parameters drive retry behaviour, regardless of which library you use:
 
 - **`maxAttempts`** — typically 3 to 5. Beyond 5, the extra attempts rarely succeed and you're better off failing loudly so an alert fires.
-- **Backoff schedule** — exponential base delay (1s → 2s → 4s → 8s) with added jitter. AWS's ["full jitter"](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/) (`random(0, base × 2^attempt)`) spreads retries better than a fixed ±100ms window if many clients retry simultaneously.
-- **Retry predicate** — which errors are retryable (see table below). Default should be *not* retrying; opt specific errors in. Many retry libraries default to retrying everything, which is a trap — validation errors, 401s, and 404s will never succeed on retry and just consume attempts.
+- **Backoff schedule** — full jitter with a cap: `random(0, min(cap, base × 2^attempt))`, e.g. base 1s, cap 30s ([AWS's write-up](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/)). It spreads simultaneous retries far better than a fixed ±100ms jitter added to 1s → 2s → 4s → 8s.
+- **Retry predicate** — which errors are retryable (see table below). Default should be *not* retrying; opt specific errors in. Many retry libraries default to retrying everything, which is a trap — validation errors, 401s, and 404s will never succeed on retry and just consume attempts. Retryability is error × operation, not a property of the error class: the same upstream failure is safe to retry on a GET and unsafe on an unkeyed POST. So retry transient [`ExternalServiceError`](./error-handling.md#error-hierarchies) subclasses only when the call is idempotent or keyed, and never retry the circuit breaker's open-circuit error.
+
+**Retry at one layer.** Three layers that each try three times turn one failing call into 27. Let the layer nearest the call retry (often the SDK's built-in retry) and have the layers above pass the failure up. Attempts × timeout, plus the backoff waits, must fit inside the caller's own deadline, or the caller has given up before the last attempt runs.
 
 ### Libraries
 
 In practice, use a library rather than hand-rolling the loop:
 
 - **Python:** `tenacity` — the standard. Exponential backoff, jitter, conditional retries, async operations.
-- **TypeScript:** `p-retry` or `cockatiel`. The AWS SDK (`@aws-sdk/middleware-retry`) and many HTTP clients have their own retry layer — check before adding a second one.
+- **TypeScript:** `p-retry` or `cockatiel`. The AWS SDK v3 retries on its own (`maxAttempts` / `retryMode` on the client), and many HTTP clients have their own retry layer — check before adding a second one.
 - **HTTP clients:** `axios-retry`, `got`'s built-in retry, `httpx` + tenacity.
 
 ### What's Retryable?
 
-**Critical: only retry what's retryable.** Retrying a client error wastes time and resources.
+**Critical: only retry what's retryable.** Retrying a client error wastes time and resources. The status alone doesn't decide it, either: when the request may already have executed (a 5xx or a read timeout), retry **only if the operation is idempotent or carries an idempotency key** (see [Idempotency](#idempotency)), or the retry duplicates the work.
 
 | Response | Retryable? | Why |
 |----------|-----------|-----|
 | **400** Bad Request | No | The request is wrong — sending it again won't fix it |
 | **401** Unauthorized | No | Authentication is invalid — retry won't help |
 | **404** Not Found | No | Resource doesn't exist — retry won't create it |
+| **408** Request Timeout | Yes | The server gave up waiting for the request to arrive, so it never ran it |
 | **409** Conflict | Maybe | If the conflict is transient (optimistic lock), retry might work |
-| **429** Too Many Requests | Yes | Wait for the rate limit window to reset, then retry |
-| **500** Internal Server Error | Maybe | Could be transient or permanent — retry with caution |
-| **502** Bad Gateway | Yes | Upstream might recover |
-| **503** Service Unavailable | Yes | Service might recover |
-| **Connection timeout** | Yes | Network blip |
-| **Connection refused** | Maybe | Service might be restarting |
+| **429** Too Many Requests | Yes | Rejected before it ran. Wait as long as `Retry-After` says (if present), then retry |
+| **500** Internal Server Error | Maybe, only if idempotent or keyed | Could be transient or permanent, and the work may have partly run |
+| **502** Bad Gateway | Yes, only if idempotent or keyed | Upstream might recover — but it may already have received the request |
+| **503** Service Unavailable | Yes, only if idempotent or keyed | Service might recover. Honour `Retry-After` if present |
+| **504** Gateway Timeout | Yes, only if idempotent or keyed | Upstream may have finished the work after the gateway gave up |
+| **Connect failure** (refused, connect timeout) | Yes | The request was never sent, so retry is safe even for non-idempotent calls. Service might be restarting |
+| **Read timeout** (sent, no response) | Only if idempotent or keyed | The request may have executed — a blind retry can duplicate it |
 
 ---
 
@@ -127,10 +120,21 @@ With a circuit breaker:
 **In practice**, you'd use a library rather than hand-roll the state machine — `cockatiel` or `opossum` (TypeScript), `pybreaker` (Python):
 
 ```typescript
-// Wrap the risky call; when the circuit is open, fail fast to a fallback
-const breaker = circuitBreaker({ failureThreshold: 0.5, resetTimeout: 30_000 });
-const charge = await breaker.execute(() => paymentService.charge(order))
-  .catch(() => ({ status: 'unavailable' }));
+// cockatiel 3+ — count only upstream failures; catch only the open-circuit error
+import { circuitBreaker, handleType, SamplingBreaker, BrokenCircuitError } from 'cockatiel';
+
+const breaker = circuitBreaker(handleType(ExternalServiceError), {
+  halfOpenAfter: 30_000,
+  // open when over half the calls in 10s fail — only above 5 req/s, so low traffic can't trip it
+  breaker: new SamplingBreaker({ threshold: 0.5, duration: 10_000, minimumRps: 5 }),
+});
+
+try {
+  return await breaker.execute(() => paymentService.charge(order));
+} catch (err) {
+  if (err instanceof BrokenCircuitError) return { status: 'unavailable' }; // circuit open: fail fast
+  throw err; // card declines, validation errors and bugs keep their own type
+}
 ```
 
 The state machine is the concept; the exact API varies by library.
@@ -139,24 +143,20 @@ The state machine is the concept; the exact API varies by library.
 
 ## Timeouts
 
-Every external call needs a timeout. Without one, a single slow service can hang your entire application. If your database hangs and you have no timeout, every request that touches the database hangs too — and your connection pool fills up, and new requests can't get connections, and your entire service becomes unresponsive. (Pool sizing and exhaustion are covered in [Deployment](./deployment.md).)
+Every external call needs a timeout. Without one, a single slow service can hang your entire application. If your database hangs and you have no timeout, every request that touches the database hangs too — and your connection pool fills up, and new requests can't get connections, and your entire service becomes unresponsive. (Pool sizing and the wait for a free connection are in [Fan-out and Connection Pools](#fan-out-and-connection-pools).)
 
 ```typescript
+// Node 18+ (AbortSignal.timeout)
 // BAD: no timeout — if the service hangs, this request hangs forever
 const result = await externalApi.fetch(data);
 
-// GOOD: timeout after 10 seconds
-const controller = new AbortController();
-const timeout = setTimeout(() => controller.abort(), 10_000);
-try {
-  const result = await fetch(url, { signal: controller.signal });
-  return await result.json();
-} finally {
-  clearTimeout(timeout);
-}
+// GOOD: abort after 10 seconds (rejects with a DOMException named "TimeoutError")
+const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+return await res.json();
 ```
 
 ```python
+# Python 3.11+ (asyncio.timeout)
 import asyncio
 
 # BAD: no timeout
@@ -164,10 +164,16 @@ result = await external_api.fetch(data)
 
 # GOOD: timeout after 10 seconds
 try:
-    result = await asyncio.wait_for(external_api.fetch(data), timeout=10.0)
-except asyncio.TimeoutError:
-    raise ExternalServiceError("external_api")
+    async with asyncio.timeout(10):
+        result = await external_api.fetch(data)
+except TimeoutError as e:  # asyncio.TimeoutError is the built-in TimeoutError since 3.11
+    # Error Handling's UpstreamTimeoutError (an ExternalServiceError); `from e` keeps the chain
+    raise UpstreamTimeoutError("external_api") from e
 ```
+
+**A client timeout stops the waiting, not the work.** The database keeps running the query after your code gives up. Set Postgres `statement_timeout` and `lock_timeout` too, so the server abandons it as well.
+
+**Check the client's default before relying on it.** `requests` has no timeout at all, `httpx` defaults to 5 seconds, and Node's built-in `fetch` (undici) waits 300 seconds for response headers.
 
 ### Timeout Values
 
@@ -181,6 +187,23 @@ There's no universal right answer, but these are reasonable starting points:
 | Internal service-to-service call | 5-10 seconds | These should be fast if the network is healthy |
 
 Set timeouts in your [Configuration](./configuration.md) so they can be tuned without code changes.
+
+---
+
+## Fan-out and Connection Pools
+
+**Bound every fan-out.** `Promise.all(items.map(fetchOne))` over 10,000 items starts 10,000 calls at once and exhausts sockets, the connection pool or the other side's rate limit. Cap concurrency with `p-limit` (TypeScript) or an `asyncio.Semaphore` (Python).
+
+**Decide all-or-nothing or partial before picking the combinator:**
+
+- **Every result is needed and one failure aborts:** `Promise.all`, or `asyncio.TaskGroup` (Python 3.11+), which also cancels the siblings on the first failure. `Promise.all` and `asyncio.gather` cancel nothing, so the losers keep running unobserved; pass an `AbortSignal` if they should stop. A `TaskGroup` failure arrives wrapped in an `ExceptionGroup`, which [Error Handling](./error-handling.md#fastapi-python) shows how to unwrap.
+- **Results are independent and partial success is useful:** `Promise.allSettled`, or `asyncio.gather(..., return_exceptions=True)`, then handle each failure. `Promise.all` here throws away every result that succeeded.
+
+**One pool per process, created at startup.** A connection per request pays for TCP, TLS and authentication every time, and exhausts the database's connection limit under load.
+
+**Multiply before you size it.** The database sees instances × worker processes per instance × the pool's maximum (in SQLAlchemy, `pool_size` + `max_overflow`). That total must stay under Postgres's `max_connections` (100 by default), with headroom for migrations and admin sessions: three instances with two workers and 30 connections each could open 180. Start near 10 per process and tune from the pool's saturation metrics. A transaction-mode pooler (PgBouncer, or a managed pooled endpoint) changes what a connection can hold; see [Transactions Behind a Pooler](./data-integrity.md#transactions-behind-a-pooler).
+
+**Bound the wait for a connection.** A node-postgres `Pool` waits forever for a free connection unless `connectionTimeoutMillis` is set, and SQLAlchemy's `pool_timeout` defaults to 30 seconds. Set it below the request's own deadline, so an exhausted pool fails fast with a 503 instead of queueing every request behind it.
 
 ---
 
@@ -206,21 +229,39 @@ An **idempotent** operation produces the same result whether you execute it once
 
 ### The Idempotency Key Pattern
 
-The client sends a unique `Idempotency-Key` header with each request (e.g., `Idempotency-Key: order-abc-123-payment`). The server stores the key alongside the operation's result. On retry, the server returns the stored result instead of repeating the side effect.
+The client sends an `Idempotency-Key` header and sends the same key again on every retry of that request. The server stores the key with the operation's result, and a retry gets the stored result instead of a second side effect. The header is being standardised in an IETF Internet-Draft, [draft-ietf-httpapi-idempotency-key-header](https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/) (draft 08 as of October 2026, not yet an RFC). It answers 400 when a required key is missing, 409 while the original request is still in flight, and 422 when a key is reused with a different payload.
 
-**Key generation.** The client derives the key from (entity + operation): `order-{orderId}-payment`, `user-{userId}-signup-email`. Using the same derivation on every retry means the same logical operation always produces the same key.
+**Key generation.** By default the client mints a random key (a UUID) per logical attempt and reuses it only for retries of that attempt. A user who changes the card and presses Pay again is making a new attempt, with a new key; a key derived from the order would replay the first card's decline, or with a fingerprint refuse the new card with 422, for the whole retention window. Derive the key from the entity only where the effect is once per entity, whatever the attempts: `user-{userId}-signup-email` is right, because a second welcome email is always wrong.
+
+**Scope the key and fingerprint the request.** Make keys unique per tenant (or per caller), `UNIQUE (tenant_id, key)`, never globally: with a global key, a tenant that sends a key another tenant already used is handed that tenant's stored result. Store a hash of the request body on the key row too. A retry whose hash differs is a different request reusing the key, and gets the 422 instead of the stored result.
 
 **The implementation trap — check-then-act races.** The naive implementation (look up the key; if not found, do the work; then save) is subject to a race condition: two concurrent retries both observe the key as absent, both perform the side effect, and both save. That's exactly the duplicate charge the pattern is supposed to prevent.
 
 **The correct implementation enforces uniqueness at the storage layer, not in application code.** Common shapes:
 
-- **Insert-then-commit.** Write a row keyed on the idempotency key with a `UNIQUE` constraint *before* the side effect runs, inside a transaction that wraps the side effect. A retry attempting the same insert hits the conflict branch, which fetches the stored result and returns it.
-- **Distributed lock on the key.** Acquire a lock (Redis `SET NX`, Postgres advisory lock) keyed on the idempotency key; release when the operation completes. Concurrent retries queue or fail fast.
-- **Provider-native idempotency.** Stripe, Shopify, and most modern payment APIs accept an `Idempotency-Key` header on their side, so retries against them are safe without adding a second layer of keys in your app.
+- **Record the key first, in its own committed transaction.** Insert a row keyed on `(tenant_id, key)` (`UNIQUE`) with status `in_progress`, the request fingerprint and the parameters the side effect needs, and *commit it* before calling the provider. Perform the side effect. Then, in a second short transaction, store the result and mark the row `completed`. A concurrent retry hits the unique conflict and reads the row: `in_progress` means the original is still running (return 409 and let the client retry later); `completed` means return the stored result. **Treat `in_progress` as a lease**, or a crash after the charge leaves the row stuck and every retry gets 409 forever. Stamp the row with a claim time and an attempt number. A retry that finds the claim older than the lease bound takes it over with one atomic conditional `UPDATE` that bumps the attempt, then re-runs the side effect from the parameters stored on the row, not from its own request (Stripe rejects a reused key sent with different parameters). The bound must exceed the whole span the row guards, meaning every inner attempt, its backoff and the result write, not one provider call's timeout. Fence the completion write on the attempt (`UPDATE … WHERE tenant_id = $1 AND key = $2 AND attempt = $3`), so an original that was only slow cannot overwrite the result of the retry that took over. The re-run is safe only where the provider honours a key (next bullet), which makes it return the original result. Where it takes none, as with SES `SendEmail`, taking over the lease makes the effect at-least-once: fine for a notification, not for a payment. Take over only inside the provider's own key retention (24 h for Stripe's API v1); past it, look the charge up at the provider instead of re-running. **Never wrap the side effect inside the same transaction as the key row.** A database transaction can roll back; a card charge cannot. If anything fails after the provider succeeded — the result write, the connection, the process — the rollback deletes the key row, the retry finds nothing, and the card is charged again: the exact failure the pattern exists to prevent. It also holds a connection and a row lock open across a network call.
+- **Pass a derived key to the provider, one per call.** Send the provider its own key derived from yours, such as `{tenantId}:{key}:charge`, so that if you crash between "charge succeeded" and "result stored", the re-run's call returns the original charge instead of creating a second one. Prefix it with the tenant: one Stripe account is one key namespace across all your tenants.
+- **Provider-native idempotency alone.** Stripe, Shopify, and most modern payment APIs honour an `Idempotency-Key` on their side. If that one provider call is the only side effect, the derived key may be all you need — but only if the *same* derived key reaches the provider on every retry; minting a fresh provider key per attempt defeats it.
 
-**Retention.** Store idempotency records long enough to cover realistic retry windows — typically 24 hours. Stripe keeps them for 24h; shorter windows leave a gap where a delayed retry creates a duplicate. Longer windows balloon storage without benefit.
+A lock on the key (Redis `SET NX`, a Postgres advisory lock) is no substitute for the stored row, and with the row in place it adds nothing: it stores no result, and held across the provider call it either pins a pooled connection or, with a TTL, can expire mid-call.
 
-**Edge cases to think about.** What does your server return if a retry arrives *while* the original is still in flight? What if the original succeeded but the stored-result write failed? What does "same result" mean if the original returned a non-deterministic payload (a generated ID)? These are the questions that make idempotency non-trivial — the pattern shape is simple; the edge cases are where production bugs live. Stripe's API reference is the most thorough public treatment of these cases.
+**Retention.** Store idempotency records long enough to cover realistic retry windows — typically 24 hours. Stripe (API v1) keeps them for 24h; shorter windows leave a gap where a delayed retry creates a duplicate. Longer windows balloon storage without benefit.
+
+**Still open once the shape is right.** "The same result" for a response carrying a generated value (a new id, a timestamp) means storing the whole response and replaying it, not rendering it again. And decide which outcomes to store at all: Stripe (API v1) stores a response once the endpoint has started executing, but not a request that failed validation or collided with one in flight, so those can be retried with the same key. Stripe's API reference is the most thorough public treatment.
+
+---
+
+## Background Jobs
+
+Queue consumers and scheduled jobs fail the same ways requests do, with nobody waiting on the result to notice.
+
+- **Delivery is at-least-once.** Queues redeliver after a crash or a visibility timeout, so every handler must be idempotent, as in [Idempotency](#idempotency): key its effect on an id the producer assigns and carries in the message (the outbox row id, the job id), never the broker's delivery id, which a re-send changes.
+- **A job carries its tenant.** Stamp the tenant on the message at enqueue and re-establish tenant context from it in the worker, inside the job's own transaction. A worker that inherits a pooled connection's leftover context, or runs with none, is a cross-tenant leak. See [Multi-Tenant Isolation](./multi-tenant-isolation.md#beyond-the-database).
+- **Claim work without blocking other workers.** From a Postgres work table, claim rows with `FOR UPDATE SKIP LOCKED` in a short transaction that marks them taken, then do the work outside it; long work holds a lease, with the lease rules above. Cap the attempts, then move the message to a dead-letter queue, or mark the row failed, where someone will see it.
+- **Never let scheduled runs overlap.** A run that outlasts its interval, or a scheduler on every replica, starts a second copy on top of the first. Make each job single-flight: take a lease row for it with one conditional `UPDATE` (`… WHERE job = $1 AND lease_expires_at < now()`, where zero rows means a run is live), or `pg_try_advisory_lock` on a dedicated direct connection, and skip the run when it is held. A session advisory lock does not survive a [transaction-mode pooler](./data-integrity.md#transactions-behind-a-pooler).
+- **Record that each run succeeded.** A job that silently stopped looks exactly like one with nothing to do. Write each run's outcome and finish time, and alert when no success has landed within the expected interval (a heartbeat check; see [Monitoring](./monitoring.md#background-work--scheduled-jobs-and-queue-consumers)), not only on errors.
+- **Commit, then send, loses the send.** A job that commits a change and then sends the email loses the email if it crashes between the two, and sending first can announce a change that rolled back. The transactional outbox closes the gap: write the message as a row in the same transaction as the change, and let a relay send it after commit. See [Data Integrity](./data-integrity.md#atomicity-is-not-isolation).
+- **On shutdown, stop fetching first** (step 2 of [Graceful Shutdown](#graceful-shutdown)), finish what was already claimed, then close.
 
 ---
 
@@ -239,35 +280,44 @@ When you deploy new code, the platform sends your process a `SIGTERM` signal —
 
 The correct sequence on SIGTERM:
 
-1. **Stop accepting new connections.** Close the server socket so the load balancer sees the instance go unhealthy and routes new traffic away.
-2. **Drain in-flight requests.** Wait for the requests already mid-flight to finish. Bound this with a hard timeout (typically 30s) so a hung request can't block shutdown forever.
-3. **Close dependencies.** Only after all in-flight requests are done: disconnect the database pool, close queue consumers, flush buffered logs.
-4. **Exit cleanly.** Exit code 0 signals to the process manager that shutdown was orderly.
+1. **Leave the load balancer, keep serving.** Keep handling requests until no new traffic is routed to you. A closed socket tells the load balancer nothing; it learns from deregistration or failing health checks, and how depends on the platform:
+   - **Kubernetes:** the pod's endpoint is marked not-ready as soon as termination starts, so failing your own readiness probe adds nothing. The removal takes a few seconds to reach every proxy while SIGTERM arrives at once, and only a `preStop` sleep covers that gap. The native `sleep` action (on by default since 1.30) needs no shell in the image.
+   - **ECS behind a load balancer:** ECS deregisters the task and waits out the target group's `deregistration_delay` (default 300s) *before* sending SIGTERM, so the app needs no wait of its own. That delay is the lever to lower if deploys are slow.
+   - **A load balancer that learns only from health checks:** fail readiness, then keep serving for the probe interval × the failure threshold before step 2.
+2. **Stop taking new work.** Close the server socket, and stop queue consumers fetching new messages at the same moment, or they keep pulling fresh work through the drain.
+3. **Drain in-flight work.** Wait for the requests and messages already in hand to finish. Bound this with a hard timeout so a hung request can't block shutdown forever, and keep it inside the platform's kill deadline with room left for step 4. On Kubernetes that deadline is `terminationGracePeriodSeconds` (default 30s), and its clock includes the preStop sleep: a 5s sleep and a 20s drain leave 5s to close dependencies before SIGKILL. On ECS it is the container's `stopTimeout` (default 30s), counted from SIGTERM.
+4. **Close dependencies.** Only after the drain: disconnect the database pool, close the queue consumers, flush buffered logs.
+5. **Exit before the deadline.** Exit 0, or re-raise the signal as uvicorn does (status 143). Both are orderly; 137 means SIGKILL landed mid-drain.
 
 **The common bug: closing dependencies before requests drain.** In Node.js, `server.close(callback)` is non-blocking — it returns immediately and fires the callback after draining. Calling `await db.disconnect()` right after `server.close(...)` disconnects the database while requests are still handling — those requests fail with connection errors. The fix is to promisify `server.close` (or `util.promisify(server.close.bind(server))()`) and `await` it before closing dependencies.
 
+**Make sure SIGTERM reaches your process at all.** A shell-form Docker `CMD node server.js` runs under `/bin/sh -c`, so `sh` becomes PID 1 and does not pass SIGTERM on. None of the above runs, and the platform SIGKILLs the container when its grace period ends. Use the exec form, `CMD ["node", "server.js"]`.
+
 ### Python (FastAPI with lifespan)
 
-FastAPI's lifespan context manager handles the ordering for you — setup code runs before `yield`, teardown code after, and uvicorn coordinates signal handling and request draining around the lifespan. Put dependency open/close inside the lifespan context:
+FastAPI's lifespan and uvicorn handle steps 2 to 4 for you, but not step 1: on SIGTERM uvicorn closes its listener at once, so the wait has to come from the platform (the preStop sleep, or ECS's deregistration). Setup code runs before `yield` and teardown after it, so close dependencies after the `yield`:
 
 ```python
+# FastAPI 0.100+, SQLAlchemy 2 async
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from sqlalchemy.ext.asyncio import create_async_engine
+
+engine = create_async_engine(DATABASE_URL)  # one pool per process; it connects lazily
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await db.connect()
     yield
-    await db.disconnect()
+    await engine.dispose()  # step 4: runs only after uvicorn has drained in-flight requests
 
 app = FastAPI(lifespan=lifespan)
 ```
 
-Uvicorn will catch SIGTERM, stop accepting new connections, wait for in-flight requests, *then* run the post-yield shutdown code. If you run with a process manager (gunicorn + uvicorn workers, supervisord), tune its shutdown grace period to at least match the longest reasonable request duration.
+Uvicorn will catch SIGTERM, stop accepting new connections, wait for in-flight requests, *then* run the post-yield shutdown code. By default it waits for that drain indefinitely, so set `--timeout-graceful-shutdown` below the platform's grace period. If you run with a process manager (gunicorn + uvicorn workers, supervisord), tune its shutdown grace period to at least match the longest reasonable request duration.
 
 ### Node.js libraries worth using
 
-Rather than hand-rolling the SIGTERM handler, libraries like [`stoppable`](https://github.com/hunterloftis/stoppable) or the built-in `server.closeAllConnections()` + `server.closeIdleConnections()` (Node 18.2+) handle the tricky parts (keep-alive sockets that would otherwise extend drain time indefinitely).
+Rather than hand-rolling the SIGTERM handler, libraries like [`stoppable`](https://github.com/hunterloftis/stoppable) handle the tricky parts. On Node 19+ the built-ins cover most of it: `server.close()` now closes idle keep-alive sockets itself (these used to extend drain time indefinitely), and `server.closeAllConnections()` (Node 18.2+) is the hard cut for connections still busy at the drain deadline.
 
 ### Why This Matters in Practice
 
@@ -297,39 +347,51 @@ async def liveness():
 
 ### Readiness Probe — "Can you handle requests right now?"
 
-If this fails, traffic is **routed away from you** (but the process keeps running). Should check dependencies — can you reach the database? Is the cache connected?
+If this fails, traffic is **routed away from you** (but the process keeps running). It can check dependencies — can you reach the database? Is the cache connected? — but weigh one tradeoff. A dependency every replica shares, such as the database, fails readiness on all of them at once: the service drops to zero endpoints, and clients get the load balancer's error instead of your app's problem response. If that matters, check only instance-local health (this instance's pool, its warm-up) and let requests fail with your own 502 or 503 ([Error Handling's mapping](./error-handling.md#connecting-error-hierarchy-to-http-responses)) while the shared dependency is down.
+
+The endpoint is unauthenticated, so return a fixed reason per dependency and keep the error detail in the logs:
 
 ```typescript
+// Express 4 or 5 — every await is caught inline; never return err.message here
+const checks = {
+  database: () => db.query('SELECT 1'),
+  cache: () => cache.ping(),
+};
+
 app.get('/health/ready', async (req, res) => {
-  try {
-    await db.query('SELECT 1');   // DB reachable?
-    await cache.ping();            // Cache reachable?
-    res.json({ status: 'ready' });
-  } catch (err) {
-    res.status(503).json({
-      status: 'not ready',
-      reason: err.message,
-    });
+  for (const [dependency, check] of Object.entries(checks)) {
+    try {
+      await check();
+    } catch (err) {
+      logger.warn({ err, dependency }, 'Readiness check failed');
+      return res.status(503).json({ status: 'not ready', reason: `${dependency} unavailable` });
+    }
   }
+  res.json({ status: 'ready' });
 });
 ```
 
 ```python
+# FastAPI, SQLAlchemy 2 async (`engine` from the lifespan above) — never return str(e); log it
+from sqlalchemy import text
+
 @app.get("/health/ready")
 async def readiness():
     try:
-        await db.execute("SELECT 1")
-        return {"status": "ready"}
-    except Exception as e:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))  # SQLAlchemy 2 refuses a bare SQL string
+    except Exception:
+        logger.warning("Readiness check failed", dependency="database", exc_info=True)
         return JSONResponse(
             status_code=503,
-            content={"status": "not ready", "reason": str(e)},
+            content={"status": "not ready", "reason": "database unavailable"},
         )
+    return {"status": "ready"}
 ```
 
 ### Startup Probe — "Have you finished initializing?"
 
-Gives slow-starting apps time to boot without being killed. Only runs during startup, then liveness takes over. Useful when your app needs to load a large model, warm a cache, or run migrations before it's ready.
+Gives slow-starting apps time to boot without being killed. Only runs during startup, then liveness takes over. Useful when your app needs to load a large model or warm a cache before it's ready. Not for running migrations: replicas start together and race to apply them, so run them as a one-off job before the rollout (see [Migrations in the Pipeline](./deployment.md#migrations-in-the-pipeline)).
 
 ### Why the Liveness/Readiness Split Matters
 
@@ -341,7 +403,7 @@ A process can be "running" (liveness = ok) but unable to serve requests (readine
 With the split:
 - Liveness = ok (process is fine)
 - Readiness = not ok (DB connection lost)
-- Platform routes traffic to other healthy instances
+- Platform routes traffic to other healthy instances — if the failure is local to this one. A shared database fails every replica's readiness at once, leaving nothing to route to (see the tradeoff above)
 - Your instance keeps running and recovers when the DB comes back
 
 ### Where Health Checks Are Configured
@@ -352,17 +414,23 @@ The endpoints are just HTTP routes in your app — framework-agnostic. Where the
 |----------|--------------|
 | **Kubernetes** | `livenessProbe`, `readinessProbe`, `startupProbe` in pod spec |
 | **Docker Compose** | `healthcheck` directive |
-| **AWS ECS** | Health check path + grace period in task definition |
+| **AWS ECS** | Target group health-check path; service `healthCheckGracePeriodSeconds`; optional container `healthCheck` command in the task definition |
 | **Load balancers (ALB, nginx)** | Target group health check path |
 
 ---
 
 ## Testing Resilience
 
-Assert the behaviours with a clear before/after contract — not the timing-dependent internals of backoff or circuit breakers (leave those to the library). Both high-value targets need a real database:
+Assert the behaviours with a clear before/after contract — not the timing-dependent internals of backoff or circuit breakers (leave those to the library). The two highest-value targets need a real database:
 
-- **Liveness/readiness split.** With a dependency forced down, readiness returns 503 with a not-ready body (it actually probes the dependency, not a hardcoded 200) while liveness still returns 200 (a dead dependency routes traffic away instead of triggering a restart loop). Test both halves against a dependency you can actually stop.
+- **Liveness/readiness split.** With a dependency forced down, readiness returns 503 with a not-ready body (it actually probes the dependency, not a hardcoded 200) while liveness still returns 200 (a dead dependency routes traffic away instead of triggering a restart loop). Test both halves against a dependency you can actually stop, then restart it and assert readiness is 200 again: a probe that can never pass fails no other test.
 - **Idempotency de-duplicates.** Two requests with the same key produce one effect; the second returns the stored result, not a duplicate. Drive them *concurrently* — a sequential test false-greens against the broken implementation, because the failure mode is the check-then-act race from "The implementation trap".
+
+Three cheap deterministic tests need nothing but the process:
+
+- **The retry predicate.** A table over error × operation: a 503 on a GET retries, the same 503 on an unkeyed POST does not, and the open-circuit error never does.
+- **A stub that never responds.** Point the client at a local server that accepts the connection and never answers, and assert the call fails within its timeout. A missing timeout is invisible to every other test, because every other stub answers.
+- **SIGTERM mid-request.** Start a slow request, send SIGTERM, and assert the request still completes and the process exits on its own inside the grace period (0 or 143, never 137).
 
 See [Testing](./testing.md) for the real-database test setup.
 
@@ -372,14 +440,16 @@ See [Testing](./testing.md) for the real-database test setup.
 
 | Don't | Do Instead | Why |
 |-------|-----------|-----|
-| Retry client errors (400, 401, 404) | Only retry server errors and timeouts | Client errors won't succeed on retry |
+| Retry client errors (400, 401, 404) | Only retry transient failures (408, 429, 5xx, timeouts) — and 5xx or read timeouts only if the operation is idempotent or carries an idempotency key | Client errors won't succeed on retry; a retried non-idempotent call can repeat work that already happened |
 | Retry immediately without backoff | Use exponential backoff with jitter | Immediate retries overwhelm struggling services |
 | Retry indefinitely | Set a max attempt count | Infinite retries waste resources and delay error responses |
 | No timeout on external calls | Set a timeout on every external call | One slow service can hang your entire application |
-| Kill process immediately on SIGTERM | Graceful shutdown: stop accepting, drain, close, exit | Immediate kill drops in-flight requests |
+| Kill process immediately on SIGTERM | Graceful shutdown: leave the load balancer, stop taking work, drain, close, exit | Immediate kill drops in-flight requests |
 | Check dependencies in liveness probe | Only check dependencies in readiness probe | Failed dependency doesn't mean your process needs a restart |
 | Skip idempotency on payment/creation endpoints | Use idempotency keys for non-idempotent operations | Retries without idempotency cause duplicate charges, orders, emails |
 | Hardcode timeout values | Put timeouts in configuration | Different environments and services need different timeouts |
+| Retry at every layer | Retry at one layer, within the caller's deadline | Three layers of three attempts turn one failure into 27 calls |
+| `Promise.all` over an unbounded list | Cap concurrency with `p-limit` or an `asyncio.Semaphore` | Thousands of simultaneous calls exhaust sockets, the pool and the other side's rate limit |
 
 ---
 
@@ -389,17 +459,21 @@ When starting a new project, determine:
 
 1. **What external services do you depend on?** Each one needs timeout + retry strategy.
 2. **Which operations have side effects?** These need idempotency keys (payments, emails, order creation).
-3. **What's your deployment model?** Containers need graceful shutdown + health checks. Serverless (Lambda, Vercel functions) handles this for you.
+3. **What's your deployment model?** Containers need graceful shutdown + health checks. Serverless (Lambda, Vercel functions) handles those for you, but not work after the response: anything fire-and-forget is frozen or dropped once the response is sent unless you register it with `waitUntil` (Vercel, Cloudflare) or Next.js `after()`. Lambda async invocations and queue triggers are at-least-once, so serverless needs idempotent handlers more, not less.
 4. **Do you need circuit breakers?** Usually not for simple apps with 1-2 external dependencies. More valuable when you have many external services or high traffic.
-5. **What are your timeout budgets?** If your API has a 30-second SLO, and it calls 3 services sequentially, each service gets at most ~8 seconds.
+5. **Which layer owns retries, and what's the timeout budget?** Retry at one layer only. If your API has a 30-second SLO and calls 3 services sequentially, each gets at most ~8 seconds, retries and backoff included.
+6. **Does readiness check shared dependencies?** Checking the database takes every replica out at once when it fails; checking only instance-local health keeps your own problem responses flowing. Decide per service.
 
 ---
 
 ## Related Topics
 
-- **Error classification** — see [Error Handling](./error-handling.md) for how to classify failures using custom error hierarchies
-- **Logging failures** — see [Logging](./logging.md) for how to log retries, circuit breaker state changes, and timeout events with proper context
-- **Monitoring resilience** — see [Monitoring](./monitoring.md) for metrics to track: retry rates, circuit breaker trips, timeout frequency, error budgets
-- **Config for timeouts** — see [Configuration](./configuration.md) for making timeouts and retry counts configurable
-- **Deployment patterns** — see [Deployment](./deployment.md) for how graceful shutdown fits into deploy pipelines
+- **Error classification** — see [Error Handling](./error-handling.md#error-hierarchies) for the `ExternalServiceError` subtree the retry predicate and breaker match on, and the 502, 503 and 504 it maps to
+- **Method idempotency** — see [API Design](./api-design.md#http-methods) for which HTTP methods are idempotent by definition, which decides where a key is needed
+- **The transaction behind the key row** — see [Data Integrity](./data-integrity.md#database-transactions) for transactions and the transactional outbox
+- **Server-side rate limiting** — see [Security](./security.md#rate-limiting) for the 429 and `Retry-After` your retrying clients must honour
+- **Logging failures** — see [Logging](./logging.md#what-to-log) for what a retry attempt records and the level it logs at
+- **Monitoring resilience** — see [Monitoring](./monitoring.md#alerting) for alerting on the error rate that retries and open circuits produce, and keeping self-recovering events such as a breaker reset on a dashboard
+- **Config for timeouts** — see [Configuration](./configuration.md) for making timeouts, retry counts and pool timeouts tunable
+- **Release patterns** — see [Deployment](./deployment.md) for the rollouts that replace instances and so run the shutdown sequence on every deploy
 - **Testing resilience** — see [Testing](./testing.md) for the real-database setup the health-check and idempotency tests need
