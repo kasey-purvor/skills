@@ -71,6 +71,9 @@ abstract class AppError extends Error {
   // Stable, machine-readable code clients branch on, chosen independently of the class name
   // so a refactor never breaks the contract. Abstract, so a subclass without one won't compile.
   abstract readonly code: string;
+  // Headers the status requires, which the global handler sends: WWW-Authenticate on a 401,
+  // Retry-After on a 503. A subclass that needs one overrides this.
+  readonly headers: Record<string, string> = {};
 
   constructor(
     message: string,
@@ -118,6 +121,7 @@ class UpstreamTimeoutError extends ExternalServiceError {
 
 class AuthenticationError extends AppError {
   readonly code = "AUTHENTICATION_REQUIRED";
+  override readonly headers = { "WWW-Authenticate": 'Bearer realm="api"' }; // a 401 must send one
   constructor(message = "Authentication required") {
     super(message, 401);
   }
@@ -152,6 +156,7 @@ class AppError(Exception):
     # machine-readable code clients branch on, chosen independently of the class name.
     code: str = "INTERNAL_ERROR"
     status_code: int = 500
+    headers: dict[str, str] | None = None  # WWW-Authenticate on a 401, Retry-After on a 503
 
 class ConflictError(AppError):
     code = "CONFLICT"
@@ -185,7 +190,7 @@ class UpstreamTimeoutError(ExternalServiceError):
     status_code = 504
 ```
 
-The other classes in the tree are two-line subclasses like `ConflictError`: only a subclass that carries data needs an `__init__`. Keep the cause with `raise ... from e` (see Error Chaining below), not by assigning `__cause__`.
+The other classes in the tree are two-line subclasses like `ConflictError`: only a subclass that carries data needs an `__init__`. `AuthenticationError` adds a third line, `headers = {"WWW-Authenticate": 'Bearer realm="api"'}`. Keep the cause with `raise ... from e` (see Error Chaining below), not by assigning `__cause__`.
 
 ### Using the Hierarchy
 
@@ -202,7 +207,8 @@ try {
     return res.status(404).json({ error: error.message });
   }
   if (error instanceof ExternalServiceError) {
-    return res.status(502).json({ error: "Service temporarily unavailable" });
+    // 502, 503 or 504: the subclass chose it
+    return res.status(error.statusCode).json({ error: "Service temporarily unavailable" });
   }
   // Unknown error — this is a bug
   return res.status(500).json({ error: "Internal server error" });
@@ -331,6 +337,7 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
       }));
     }
 
+    res.set(err.headers); // WWW-Authenticate on a 401, Retry-After on a 503
     return res.status(err.statusCode).type("application/problem+json").json(body);
   }
 
@@ -381,7 +388,12 @@ async def app_error_handler(request: Request, exc: AppError):
             for field, msg in exc.fields.items()
         ]
 
-    return JSONResponse(status_code=exc.status_code, content=body, media_type=PROBLEM_JSON)
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=body,
+        media_type=PROBLEM_JSON,
+        headers=exc.headers,  # WWW-Authenticate on a 401, Retry-After on a 503
+    )
 
 @app.exception_handler(Exception)
 async def unhandled_error_handler(request: Request, exc: Exception):
@@ -578,7 +590,7 @@ ExternalServiceError     → 502
 Unknown Error            → 500 (never expose internal details)
 ```
 
-A pool-acquire timeout is the same case: raise a 503 error, since the work never started, not a 502.
+A pool-acquire timeout is the same case: raise a 503 error, since the work never started, not a 502. The two headers ride on the error's `headers`, which the handler copies onto the response.
 
 This mapping is defined **once** in the global error handler, not in every route. Your route handlers just throw the right error type:
 

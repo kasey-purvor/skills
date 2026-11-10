@@ -22,7 +22,7 @@ Use these terms exactly in every suggestion. Consistent language is the point â€
 
 Key principles (see [LANGUAGE.md](LANGUAGE.md) for the full list):
 
-- **Deletion test**: imagine deleting the module. If complexity vanishes, it was a pass-through. If complexity reappears across N callers, it was earning its keep.
+- **Deletion test**: imagine deleting the module. If complexity vanishes, it was a pass-through. If complexity reappears in its callers, even one, it was earning its keep.
 - **The interface is the test surface.**
 - **One adapter = hypothetical seam. Two adapters = real seam.**
 

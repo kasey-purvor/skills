@@ -84,7 +84,7 @@ const heapUsed = meter.createObservableGauge('app.memory.heap.used', {
 heapUsed.addCallback((result) => result.observe(process.memoryUsage().heapUsed));
 ```
 
-**OTel terminology note:** OpenTelemetry distinguishes between `UpDownCounter` (you increment/decrement it) and `ObservableGauge` (you read a value via callback). Both represent gauge-like metrics that go up and down. The concept is "gauge" — the OTel API has two instruments for it depending on how you collect the value. API 1.9 also has a synchronous `createGauge`, whose `record()` sets a value you hold directly, such as a last-success timestamp.
+**OTel terminology note:** OpenTelemetry distinguishes between `UpDownCounter` (you increment/decrement it) and `ObservableGauge` (you read a value via callback). Both represent gauge-like metrics that go up and down. The concept is "gauge" — the OTel API has three instruments for it depending on how you collect the value: those two, and since API 1.9 a synchronous `createGauge`, whose `record()` sets a value you hold directly, such as a last-success timestamp.
 
 **Example:** Current memory usage, active connections, queue depth, CPU utilization.
 

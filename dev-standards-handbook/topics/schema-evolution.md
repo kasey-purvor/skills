@@ -171,7 +171,7 @@ The key difference from Prisma: your schema IS your TypeScript types. No separat
 **Five drizzle-kit behaviours shape the rules below** (read from drizzle-orm 0.45 and drizzle-kit 0.31 source; check the installed version):
 
 - `migrate` applies **every pending migration inside one transaction**. Separate files are therefore not separate transactions, `CREATE INDEX CONCURRENTLY` cannot go through it at all, and a lock the first migration takes is held until the last one commits.
-- `migrate` applies by timestamp, not by name (drizzle-orm 0.x; v1 selects by name): it runs only migrations newer than the newest one already applied. One generated on a branch before another that has since deployed is skipped for ever, and the deploy reports success. Regenerate a branch's migration on current `main` before merging, and make the migrate step fail when a journal entry is older than the newest applied one and has no row.
+- `migrate` applies by timestamp, not by name (drizzle-orm 0.x; v1 selects by name), so a branch's migration can be skipped silently. [The Migration Skipped by Its Timestamp](./pitfalls.md#the-migration-skipped-by-its-timestamp) has the mechanism and the guard.
 - It takes no lock against a second runner, so two processes migrating at once race each other (see [Deployment](./deployment.md#migrations-in-the-pipeline)).
 - `push` applies the schema diff straight to a database with no migration file, so keep it to throwaway prototype databases.
 - `generate` stops to ask whether a changed column is a rename or a drop plus an add, so run it where someone can answer.
