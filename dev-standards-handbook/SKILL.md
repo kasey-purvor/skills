@@ -7,7 +7,8 @@ description: >-
   auth, multi-tenant isolation, data integrity, error handling, resilience, security,
   testing, deployment, monitoring, logging, configuration, schema evolution, product
   analytics, module design, front-end development, code pitfalls, and traps in shared tools and
-  machines). Not for pure research, Q&A, or trivial edits such as a typo or a rename.
+  machines). Not for pure research, Q&A, or trivial edits such as a comment typo. A rename
+  across a schema, API or module boundary is not trivial.
 ---
 
 # Production Engineering Handbook
@@ -56,10 +57,11 @@ with them**: which chapters you'll read, which you'll skip, and why. Saying it *
 you act guards against both failures: reading too little, and digging into chapters that
 don't help. A small change gets one sentence; a big one gets a real check-in.
 
-**Delegated work:** under a coordinator's standing authorisation (a review, a browser
-verification, a lane build), give the plan and its reasons to the coordinator and proceed.
-Questions go to the coordinator, only for a material scope change or genuine uncertainty,
-and you dispatch no agent your brief does not allow.
+**Delegated work:** if another agent dispatched you (a reviewer, a browser verifier, a lane
+builder), that agent stands in for "the user" throughout this section: give it your plan and
+reasons, then proceed without waiting, whatever the task's size; ask it only about a material scope change or genuine
+uncertainty; dispatch a subagent only if your brief allows it. A session the user is talking
+to is never delegated work, even when it holds standing authority to dispatch reviews.
 
 - **Justify deviations.** Say why you pulled in a chapter the router didn't flag, or
   skipped one it did. When you can't tell whether one applies, lean toward reading it.
@@ -77,7 +79,9 @@ and you dispatch no agent your brief does not allow.
 ## Start here — what are you doing?
 
 Pick the **one** row closest to what you're fundamentally doing, then add any
-**modifiers** below that the task involves.
+**modifiers** below that the task involves. A migration, or a config, timeout or
+secret change to a running production system, also takes the live-system row whatever its
+size; a review takes its own row plus the row its change would take.
 
 **Whatever the row, two chapters ride along:** read `environment` before the first
 command of a piece of work (known traps in the tools, the harness and the machines), and
@@ -87,12 +91,12 @@ they become embedded).
 | What you're doing | Core chapters (start here, then adjust) | Read them for |
 |---|---|---|
 | **Start a new project** (greenfield) | module-design · configuration · data-integrity · api-design · error-handling · testing · deployment | Each **Deciding for Your Project** section: the choices painful to retrofit. Name the project's kind first (below). |
-| **Build a feature** in an existing app | module-design · data-integrity · error-handling · testing | The established patterns; each **Anti-Patterns** table before you finish. |
-| **Fix a bug or make a small change** | error-handling · testing, plus the chapter that owns the concern | The rule the defect broke; a test that fails without the fix. |
-| **Refactor** without changing behaviour | module-design · testing | Interfaces and seams; tests on the interface stay green. |
-| **Change how a live system behaves** | deployment · resilience · monitoring · testing | Not breaking what runs (migrations, rollout, shutdown); watch the metrics after. |
+| **Build a feature** in an existing app | module-design · data-integrity · error-handling · testing, plus the chapter that owns the concern | The established patterns; each **Anti-Patterns** table before you finish. |
+| **Fix a bug** | error-handling · testing, plus the chapter that owns the concern | The rule the defect broke; a test that fails without the fix. |
+| **Refactor** without changing behaviour | module-design · testing, plus the chapter that owns the code you move (data-integrity for persistence or transaction code) | Interfaces and seams; tests on the interface stay green. Moving a transaction, lock or retry boundary changes behaviour. |
+| **Change how a live system behaves** | deployment · resilience · monitoring · testing, plus configuration for a config or secret change | Not breaking what runs (migrations, rollout, shutdown); watch the metrics after. |
 | **Debug an incident** or chase a perf/latency regression | error-handling · logging · monitoring · resilience | Process: the `diagnose` skill. |
-| **Review or audit** a change | testing, plus the row and modifiers the change itself triggers | Anti-Patterns against the diff. Process: the `change-review` skill. |
+| **Review or audit** a change or a codebase | testing · security, plus the row and modifiers the change itself triggers (drop the default security for a presentation-only or documentation-only diff, or a browser-only verification; a modifier can still add it) | Anti-Patterns against the diff. Process: the `change-review` skill. |
 
 **Starting a new project? First name what *kind* it is** — the greenfield list leans
 toward a web app/service, and the right set shifts with the shape. Say which you picked
@@ -107,10 +111,12 @@ and what you changed:
 
 | If the task… | also read |
 |---|---|
-| …builds, changes, or reviews front-end code: a rendered interface, React components, client state, or front-end structure | frontend-development; module-design when changing boundaries, testing for behaviour changes; no backend chapters unless a contract or backend behaviour changes. A browser review reads the relevant groups of frontend-patterns |
+| …builds, changes, or reviews front-end code: a rendered interface, React components, client state, or front-end structure | frontend-development; module-design when changing boundaries, testing for behaviour changes. For a front-end-only change the primary row's data-integrity and server-side error-handling drop out unless a contract or backend behaviour changes. A browser review reads only the relevant groups of frontend-patterns |
 | …changes the database schema | schema-evolution · data-integrity |
 | …calls another service over the network (third-party API, payment provider, internal service, queue) | resilience · error-handling · configuration · testing, for timeouts, retries, error mapping and mocking the boundary |
 | …handles identity or sensitive data (auth, payments, PII, admin actions) | authentication-authorization · security |
+| …accepts untrusted input in a new way (uploads, rendered HTML or markdown, redirects, a URL the server fetches) or adds or upgrades a dependency | security, for injection, XSS, SSRF and supply-chain trust; deployment for the lockfile |
+| …adds product analytics or tracking events | product-analytics |
 | …serves multiple customer orgs from one system (multi-tenant SaaS) | multi-tenant-isolation · authentication-authorization · security |
 | …adds or changes an API contract (public ones most of all) | api-design |
 | …creates a new module, or reshapes how code is split into modules (new service/package/layer, extracting or merging modules) | module-design |
@@ -158,7 +164,7 @@ If your task matches no row, pick chapters by keyword from the **Topic index** b
 - **Foundation** — `configuration` · `deployment`
 - **`testing`** and **`module-design`** cross-cut all of the above (every module has an interface, and the interface is the test surface).
 
-Each chapter ends with a **Related Topics** list — follow those when a concern pulls in a neighbour.
+Most chapters end with a **Related Topics** list — follow those when a concern pulls in a neighbour.
 
 ## Cross-cutting scenarios
 
