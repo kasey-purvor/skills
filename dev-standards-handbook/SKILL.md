@@ -7,17 +7,15 @@ description: >-
   auth, multi-tenant isolation, data integrity, error handling, resilience, security,
   testing, deployment, monitoring, logging, configuration, schema evolution, product
   analytics, module design, front-end development, code pitfalls, and traps in shared tools and
-  machines). Not for pure research, Q&A, or one-line edits.
+  machines). Not for pure research, Q&A, or trivial edits such as a typo or a rename.
 ---
 
 # Production Engineering Handbook
 
-Reference material for production engineering. Each chapter lives in `topics/` —
-one project-independent markdown per concern (patterns, tradeoffs, common mistakes).
-
-This file is a **router** — it narrows the chapters down to the few your task most
-likely needs. It's a starting point for your judgment, not a checklist to obey, and
-not a substitute for thinking.
+Each chapter in `topics/` covers one concern, independent of any project: patterns,
+tradeoffs, common mistakes. This file is a **router**: it narrows the chapters to the few
+your task most likely needs. It is a starting point for your judgment, not a checklist.
+When the user points you at a specific chapter or concern, read it directly.
 
 ## First: calibrate rigor to the context
 
@@ -54,33 +52,27 @@ database backstop (RLS on Postgres) is core, not optional defence-in-depth.
 ## Show your reasoning — don't run on confidence
 
 Before you start reading, **tell the user your plan in plain language and check it
-with them**: which chapters you'll read, which you'll skip, and why. Two failure
-modes hurt equally — reading too little and missing something, or digging into
-chapters that don't help. You guard against both by saying your reasoning *before*
-you act on it, not after.
+with them**: which chapters you'll read, which you'll skip, and why. Saying it *before*
+you act guards against both failures: reading too little, and digging into chapters that
+don't help. A small change gets one sentence; a big one gets a real check-in.
 
-- **Justify every call, especially deviations.** Pulling in a chapter the router
-  didn't flag, or skipping one it did — say so, and say why, in plain terms.
-- **Don't assume — confirm.** Don't assume you've understood the task, and
-  *especially* don't assume the user already knows the concepts or the tradeoffs.
-  Explain them simply, so they can actually judge your plan. Unsure what they want?
-  Ask — don't guess.
-- **When you're genuinely torn** — skip something that might matter, or go deep on
-  something the router didn't flag? — don't trust your own confidence. **Get a
-  second opinion from a subagent, or stop and put the question to the user.**
-- **Raise what the task doesn't force.** Something smart to handle now but not
-  strictly required — structured logging before it grows, a metric worth emitting,
-  an auth boundary starting to form — surface it as a suggestion or a question.
+**Delegated work:** under a coordinator's standing authorisation (a review, a browser
+verification, a lane build), give the plan and its reasons to the coordinator and proceed.
+Questions go to the coordinator, only for a material scope change or genuine uncertainty,
+and you dispatch no agent your brief does not allow.
+
+- **Justify deviations.** Say why you pulled in a chapter the router didn't flag, or
+  skipped one it did. When you can't tell whether one applies, lean toward reading it.
+- **Don't assume — confirm.** Don't assume you've understood the task, or that the user
+  knows the concepts and tradeoffs; explain them simply so they can judge your plan.
+  Unsure what they want? Ask.
+- **When you're genuinely torn**, don't trust your own confidence: get a second opinion
+  from a subagent, or put the question to the user.
+- **Raise what the task doesn't force** — structured logging before it grows, a metric
+  worth emitting, an auth boundary starting to form — as a suggestion or a question.
   Don't silently decide either way.
-- **An agreed plan or spec wins.** If the work is already scoped, follow it —
-  surface anything the handbook flags that it missed as a *suggestion*, and don't
-  unilaterally expand scope.
-- When you truly can't tell whether something applies, lean toward reading it over
-  skipping — but still say why.
-
-Scale this to the task: a one-line change gets a one-sentence plan ("reading
-error-handling and data-integrity, skipping the rest — here's why"); a big one gets
-a real check-in. Always say it; never assume.
+- **An agreed plan or spec wins.** Follow it; surface anything the handbook flags that it
+  missed as a *suggestion*, without expanding scope.
 
 ## Start here — what are you doing?
 
@@ -92,13 +84,15 @@ command of a piece of work (known traps in the tools, the harness and the machin
 scan `pitfalls` alongside any new code or module (named anti-patterns to catch before
 they become embedded).
 
-**Primary — pick the closest:**
-
-| What you're doing | Core chapters (start here, then adjust) |
-|---|---|
-| **Start a new project** (greenfield) | module-design · configuration · data-integrity · api-design · error-handling · testing · deployment |
-| **Build a feature** in an existing app | module-design · api-design · data-integrity · error-handling · testing |
-| **Change how a live system behaves** | deployment · resilience · monitoring · testing |
+| What you're doing | Core chapters (start here, then adjust) | Read them for |
+|---|---|---|
+| **Start a new project** (greenfield) | module-design · configuration · data-integrity · api-design · error-handling · testing · deployment | Each **Deciding for Your Project** section: the choices painful to retrofit. Name the project's kind first (below). |
+| **Build a feature** in an existing app | module-design · data-integrity · error-handling · testing | The established patterns; each **Anti-Patterns** table before you finish. |
+| **Fix a bug or make a small change** | error-handling · testing, plus the chapter that owns the concern | The rule the defect broke; a test that fails without the fix. |
+| **Refactor** without changing behaviour | module-design · testing | Interfaces and seams; tests on the interface stay green. |
+| **Change how a live system behaves** | deployment · resilience · monitoring · testing | Not breaking what runs (migrations, rollout, shutdown); watch the metrics after. |
+| **Debug an incident** or chase a perf/latency regression | error-handling · logging · monitoring · resilience | Process: the `diagnose` skill. |
+| **Review or audit** a change | testing, plus the row and modifiers the change itself triggers | Anti-Patterns against the diff. Process: the `change-review` skill. |
 
 **Starting a new project? First name what *kind* it is** — the greenfield list leans
 toward a web app/service, and the right set shifts with the shape. Say which you picked
@@ -109,33 +103,18 @@ and what you changed:
 - **Data workflow / pipeline / batch job** → `data-integrity` + `resilience` become the heart of it — runs get retried and re-run, so idempotency and partial-failure handling matter most; `api-design` usually drops out (no HTTP contract, though an output schema is its own kind of contract); read `deployment`/`monitoring` as *"how does it get scheduled, and how do I know a run succeeded?"* — not web rollout and dashboards.
 - **Library / CLI / something else** → keep `configuration` · `error-handling` · `testing`; pull the rest in only as it applies.
 
-Don't inherit the list on autopilot.
-
-**Working with existing or running code** — lean on the dedicated skill for the *process*:
-
-| Situation | Chapters | Skill |
-|---|---|---|
-| **Debug an incident** or chase a perf/latency regression | error-handling · logging · monitoring · resilience | `diagnose` |
-| **Review or audit** code | testing · security · data-integrity | `change-review` |
-
 **Modifiers — add the chapters for any that apply:**
 
 | If the task… | also read |
 |---|---|
-| …builds, changes, or reviews front-end code: a rendered interface, React components, client state, or front-end structure | frontend-development; add module-design when changing boundaries, and testing for behaviour changes |
+| …builds, changes, or reviews front-end code: a rendered interface, React components, client state, or front-end structure | frontend-development; module-design when changing boundaries, testing for behaviour changes; no backend chapters unless a contract or backend behaviour changes. A browser review reads the relevant groups of frontend-patterns |
 | …changes the database schema | schema-evolution · data-integrity |
-| …calls another service over the network (third-party API, payment provider, internal service, queue) | resilience · error-handling · configuration · testing |
+| …calls another service over the network (third-party API, payment provider, internal service, queue) | resilience · error-handling · configuration · testing, for timeouts, retries, error mapping and mocking the boundary |
 | …handles identity or sensitive data (auth, payments, PII, admin actions) | authentication-authorization · security |
 | …serves multiple customer orgs from one system (multi-tenant SaaS) | multi-tenant-isolation · authentication-authorization · security |
-| …changes a public API contract | api-design |
+| …adds or changes an API contract (public ones most of all) | api-design |
 | …creates a new module, or reshapes how code is split into modules (new service/package/layer, extracting or merging modules) | module-design |
-| …is being deployed / going live | deployment · monitoring · resilience · logging · security |
-
-**Front-end work:** for a local layout or interaction change, start with `frontend-development` and the relevant testing guidance; the generic feature row does not require backend chapters when no backend contract or behaviour changes. Add contracts, identity, or isolation chapters only when those concerns are involved. Framework names select short sections within the chapter, not a separate framework manual.
-
-**Authorised review assignments:** chapter selection within the shared review workflow is already authorised. State the chapters and reasons to the coordinator without reopening routine approval; ask about material scope changes or genuine uncertainty. When you are already a reviewer, the process link to `change-review` does not dispatch another review.
-
-**Browser-only review:** an experience review (frontend-audit) or a browser verification (frontend-verify) reads only the relevant groups of `frontend-patterns`, the catalogue of observable interface faults with its probe sizes, within the workflow's and the user's assigned scope. Loading it does not authorise code inspection or start a code review.
+| …is being deployed / going live | deployment · monitoring · resilience · logging · security, for the security pass, alerts with runbooks, and recovery |
 
 If your task matches no row, pick chapters by keyword from the **Topic index** below
 — and say which you picked and why.
@@ -164,14 +143,6 @@ If your task matches no row, pick chapters by keyword from the **Topic index** b
 | `topics/security.md` | Access-control core rules, injection, SSRF and path traversal, XSS, CSRF and session cookies, CORS, headers and CSP, supply-chain trust, secrets, rate limiting |
 | `topics/testing.md` | Test types and the pyramid, per-concern negatives linking each owner, harness parity, proving a test can fail, test DBs and reset strategies, mocking, factories |
 
-## How to read them, per situation
-
-- **New project** — these are the decisions painful to retrofit. Start from each chapter's **"Deciding for Your Project"** section.
-- **Building a feature** — apply the established patterns and scan each chapter's **"Anti-Patterns"** table before you finish.
-- **Changing a live system** — read through the lens of *don't break what's running* (migrations, rollout, graceful shutdown), and watch your metrics after.
-- **Calling another service** (third-party or internal) — read for the timeout / retry / error-mapping / mock-the-boundary patterns.
-- **Going live / hardening** — read for the security pass, observability (alerts + runbooks), and recovery patterns.
-
 ## Topic map — how the chapters relate
 
 **Hub chapters** — almost everything connects to these; expect to touch them whatever you're doing:
@@ -183,7 +154,7 @@ If your task matches no row, pick chapters by keyword from the **Topic index** b
 - **Failure & Robustness** — `error-handling` · `resilience` (the error hierarchy tells retry predicates and circuit breakers which failures are upstream ones; the operation decides whether a retry is safe)
 - **Observability** — `logging` · `monitoring` · `product-analytics` (one request · whole system · are users using it)
 - **Identity & Protection** — `authentication-authorization` · `security` · `multi-tenant-isolation` (auth is the canonical reference for identity, sessions and authorization; security the web attack surface and the access-control rules a review checks; multi-tenant-isolation the tenant boundary)
-- **User Interfaces** — `frontend-development` · `module-design` · `testing` (keep behaviour understandable, boundaries useful, and journeys verified; recruit contracts and identity chapters when needed) · `frontend-patterns` for browser review
+- **User Interfaces** — `frontend-development` · `frontend-patterns` (how to build the interface · the observable faults a browser review checks)
 - **Foundation** — `configuration` · `deployment`
 - **`testing`** and **`module-design`** cross-cut all of the above (every module has an interface, and the interface is the test surface).
 
@@ -202,6 +173,7 @@ Some work spans several topics at once and the synthesis lives in none of them. 
 
 ## Planning vs implementing
 
-If you're **planning** work (especially alongside the user), record in the plan **which chapters/rows above apply** to it. The agent that implements should read the plan **and reload those chapters** — not the plan alone, which can't capture every standard. (Small task → the same agent can plan and implement. Larger task → a fresh implementing agent is fine, as long as the plan names the chapters for it to reload.)
-
-When the user points you at a specific chapter or concern, read it directly. Otherwise use the router above.
+If you're **planning** work, record which chapters apply: in a PRD's **Applicable
+Standards** section, a ticket's `Standards:` line, or the plan itself. The implementing
+agent reloads those chapters, not the plan alone, which can't capture every standard. A
+fresh implementer is fine for a larger task, provided the plan names the chapters.
