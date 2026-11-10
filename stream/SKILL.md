@@ -41,15 +41,15 @@ A ticket whose parent is a stream ticket is part of that stream. A lone ticket s
 
 ## Who does what in a lane
 
-The orchestrator runs the stream: the check above, the stream ticket, the pane pins and the close. Builder and reviewer subagents leave those alone and report to the orchestrator. (A reply to a subagent's message goes to its parent session, so a subagent running the check would wait forever.) A subagent reporting findings gives a ranked list, as [review-findings.md](review-findings.md) describes.
+The orchestrator runs the stream: the check above, the stream ticket, the pane pins and the close. Builder and reviewer subagents leave those alone and report to the orchestrator. (A reply to a subagent's message goes to its parent session, so a subagent running the check would wait forever.) A subagent reporting findings gives a ranked list, as [review-findings.md](review-findings.md) describes. The shared builder procedure is [lane-builder.md](lane-builder.md); reviewer procedures are [change-review](../change-review/SKILL.md) and [frontend-verify](../frontend-verify/SKILL.md). Harness-specific lane agents load these procedures rather than maintaining their own review checklists.
 
 ## Running a stream
 
-- **Pin it.** Attach the stream ticket to the pane first (`ticket attach`), then the tickets being worked.
+- **Pin it.** Follow the Ticket Panel section of the shared global instructions (`CLAUDE.md`, also loaded by Codex), the one place the pane rules live: the stream ticket first, then each ticket as it is picked up, and nothing is detached unless the human asks.
 - **Keep the Session line current.** It names the session running the stream, so other agents know who to message. A session picking up an existing stream sets it to its own name.
 - **The description is the plan.** Update it when the plan changes, Touches included.
 - **Comments are the log.** One short comment per event: a decision the human made, a pull request opened or merged, a change to the plan, a review's findings and what happened to them, a blocker. Routine progress gets no comment.
-- **Reviews:** after each lane or pull request, recommend reviewing now or deferring, with your reason. Review now when the next work is unrelated to what was just built; defer when the next lane builds on it and one review can cover both. The human decides.
+- **Reviews:** at a completed lane or pull request, follow the shared global review policy: dispatch `change-review` automatically and add `frontend-verify` for visible or interactive changes. Give each worker an exact target and scoped brief. The orchestrator owns findings and records; workers do not restart orchestration. The human can defer or narrow the routine reviews. Recommend extra specialists with a reason and obtain approval before dispatching them. After fixes, obtain verification against the new revision before treating the findings as resolved.
 - **Ending a session mid-stream:** record anything unrecorded as a comment, then use the `handoff` skill as usual. The handoff file names the stream ticket and does not restate the plan.
 
 The stream ticket's shape and the close checklist are in [stream-ticket.md](stream-ticket.md).

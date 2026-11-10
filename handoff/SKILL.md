@@ -16,4 +16,6 @@ State the continuation model explicitly, up front: whether the next session **co
 
 Redact any sensitive information, such as API keys, passwords, or personally identifiable information.
 
+**Exception — app login credentials are passed on, not redacted** (Kasey's standing instruction, 2026-10-02). If Kasey gave login credentials for the app being worked on during the session (email and password for the live app, a test account, and so on), put them in the handoff in a clearly headed section near the top, with what the login is (role, tenant, anything it cannot reach), so the next agent never has to ask for them again. Because the file then holds a password: keep it outside any repository and set it to mode 600. This exception covers app logins Kasey supplied; API keys, service-role keys, tokens and database URLs are still redacted.
+
 If the user passed arguments, treat them as a description of what the next session will focus on and tailor the doc accordingly.
