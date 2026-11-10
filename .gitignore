@@ -1,0 +1,4 @@
+# Claude Code manages these itself
+synced/
+.trash/
+__pycache__/

@@ -51,7 +51,7 @@ Run this when the stream's work is finished or the human ends it.
 
 1. **Settle leftovers with the human.** List the tickets and review findings that aren't finished, with a suggestion for each. They decide.
 2. **Write the Findings section** on the stream ticket.
-3. **Extract to the repo docs.** From the comments and the lane reports, list the decisions the human made in this stream and the traps that cost a lane time. Skip any trap a lane already added to `docs/pitfalls.md`. Propose one line each for `docs/decisions.md` and `docs/pitfalls.md`, in the shape the repo's `docs/agents/domain.md` gives; the human says yes or no per line. A decision that passes the ADR test gets an ADR instead. The lines land in the stream's last pull request, or a small docs pull request once everything has merged, or where `AGENTS.md` says if that is outside the repo. What the human declines stays in the comments.
+3. **Run the session review.** Run the `session-review` skill for the stream. It proposes the decision and trap lines, the human says yes or no per line, and the lines land where `session-review` says.
 4. **Post a status update on each project the stream touched:** what it shipped there, anything a later agent should know beyond the lines step 3 added, and the stream ticket's id.
 5. **Update the team document:** add or bump the recurring findings the human agreed, and tidy it. See [team-document.md](team-document.md).
 6. **Mark the stream ticket Done.** Leave it, and its tickets, on the pane: pins come off only when the human asks.

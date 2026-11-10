@@ -1,6 +1,6 @@
 ---
 name: grill-with-docs
-description: Grilling session that challenges your plan against the existing domain model, sharpens terminology, and updates documentation (CONTEXT.md, ADRs, docs/decisions.md) as decisions crystallise. Use when user wants to stress-test a plan against their project's language and documented decisions.
+description: Grilling session that challenges your plan against the existing domain model, sharpens terminology, and updates documentation (CONTEXT.md and ADRs as decisions crystallise; decision lines through session-review at the end). Use when user wants to stress-test a plan against their project's language and documented decisions.
 ---
 
 <what-to-do>
@@ -95,6 +95,6 @@ If any of the three is missing, skip the ADR. Use the format in [ADR-FORMAT.md](
 
 ### Record the settled decisions that don't earn an ADR
 
-A decision the user made that fails the ADR test is still a decision: the ticket comment keeps the history, and `docs/decisions.md` is where the next agent looks for the standing rule. At the end of the session, not inline, list them in one short message: one proposed line each for `docs/decisions.md`, in the shape the repo's `docs/agents/domain.md` gives. Write the ones the user says yes to. A decision that reverses an earlier line gets `superseded by:` filled in on the old line. Create the file on its first line if it doesn't exist. In a repo whose `AGENTS.md` names another place for these files in its `## Agent skills` block, write them where that block says.
+A decision the user made that fails the ADR test is still a decision: the ticket comment keeps the history, and `docs/decisions.md` is where the next agent looks for the standing rule. At the end of the session, not inline, run the `session-review` skill: it proposes the decision lines, and the user says yes or no to each.
 
 </supporting-info>

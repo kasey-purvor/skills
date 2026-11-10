@@ -9,8 +9,9 @@ How the engineering skills should consume this repo's domain documentation when 
 - **`docs/adr/`** — read ADRs that touch the area you're about to work in. In multi-context repos, also check `src/<context>/docs/adr/` for context-scoped decisions.
 - **`docs/decisions.md`** — settled decisions that didn't earn an ADR. Read it before proposing anything it covers, and before reporting a deliberate choice as a defect.
 - **`docs/pitfalls.md`** — traps that have cost agents time in this repo. Read it before the first command of a piece of work.
+- **The handbook's `topics/environment.md`** (in the `dev-standards-handbook` skill) — traps in the tools and machines, not this repo. Read it before the first command of a piece of work too.
 
-If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The producer skills (`/grill-with-docs`, the `stream` close checklist, a lane builder) create them lazily when terms, decisions or traps actually turn up.
+If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The producer skills (`/grill-with-docs` for the glossary and ADRs, `session-review` for decision and pitfall lines) create them lazily when terms, decisions or traps actually turn up.
 
 ## File structure
 
@@ -70,7 +71,9 @@ YYYY-MM-DD · <decision> · why: <reason> · from: <ticket, ADR or "chat"> · su
 
 A reversed decision is not deleted: fill in `superseded by:` on the old line and add the new line at the end.
 
-**`docs/pitfalls.md`** — a trap in this repo or its tooling that cost an agent more than about fifteen minutes: a hook that bites, a flaky test, a command that must run from a certain place, an environment quirk.
+**`docs/pitfalls.md`** — a trap in this repo (its code, hooks, scripts, tests) that cost an agent more than about fifteen minutes: a hook that bites, a flaky test, a command that must run from a certain place.
+
+Each trap has one home. A trap about this repo goes here. Any other trap (a tool, the harness, Codex, Linear, a scraping service, git and GitHub, the machines) goes in the `dev-standards-handbook` skill's `topics/environment.md`, in the same line shape.
 
 ```
 YYYY-MM-DD · <symptom, plainly> → <fix or rule> · seen: N · source: <measured | read in code | an agent's word | the human said>
@@ -78,6 +81,8 @@ YYYY-MM-DD · <symptom, plainly> → <fix or rule> · seen: N · source: <measur
 
 The date is the date the trap was first seen. Before adding a line, search the file for the same symptom; if it is there, bump `seen` instead of adding.
 
-**Who writes them.** A builder adds a pitfall line in the same pull request as the work that hit it (or, where the files live outside the repo, in its report). The orchestrator proposes lines at a stream's close (the `stream` skill's close checklist); `/grill-with-docs` proposes decision lines at the end of a session. Lines proposed at a stream's close or a grill session get the human's yes, line by line. A builder's line is checked in its pull request's review. Outside these three routes, nothing is written to either file on an agent's own initiative. Nothing goes in that the human didn't decide or an agent didn't actually hit.
+**`docs/pitfalls.md` is an inbox, not an archive.** Every line ends one of three ways: fixed at the source (a hook, a script or a preflight step now stops it), then deleted; moved into `AGENTS.md` as a how-to, then deleted; or kept, with its `seen` count, until one of those happens.
+
+**Who writes them.** One route: the `session-review` skill, run at a stream's close, at the end of a grill session, before a handoff, or when the human wraps up a session and says yes to the offer. It proposes each line, and each deletion the inbox rule calls for; the human says yes or no to each, and the lines land where `session-review` says. Builders report traps in their final report rather than writing them. Nothing is written to or deleted from either file outside that route. Nothing goes in that the human didn't decide or an agent didn't actually hit.
 
 **If a thing fits none of these files** (glossary, ADR, decisions, pitfalls), it stays in the ticket comment. Don't create another file for it.

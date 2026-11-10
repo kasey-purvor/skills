@@ -21,7 +21,7 @@ If you have not already explored the codebase, do so to understand the current s
 
 ### 3. Draft vertical slices
 
-**CRITICAL** For all work regarding code you must load the /dev-standards-handbook & /dev-standards-pitfalls skills.
+**CRITICAL** For all work regarding code you must load the /dev-standards-handbook skill & its Pitfalls chapter (`topics/pitfalls.md`).
 
 Break the plan into **tracer-bullet** issues. Each issue is a thin vertical slice that cuts through ALL integration layers end-to-end (schema, API, UI, tests), NOT a horizontal slice of one layer.
 

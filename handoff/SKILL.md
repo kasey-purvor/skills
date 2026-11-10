@@ -6,6 +6,8 @@ argument-hint: "What will the next session be used for?"
 
 Write a handoff document summarising the current conversation so a fresh agent can continue the work. Save to the temporary directory of the user's OS - not the current workspace.
 
+Before writing, offer the user a session review (the `session-review` skill), unless one was just run or declined in this session. If they say no or not now, carry on.
+
 Include a "suggested skills" section in the document, which suggests skills that the agent should invoke.
 
 Do not duplicate content already captured in other artifacts (PRDs, plans, ADRs, issues/tickets, commits, diffs). Reference them by path or URL instead.

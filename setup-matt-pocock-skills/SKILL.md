@@ -46,7 +46,7 @@ Summarise what's present and what's missing, then walk the user through the thre
 > - **Single-context** — one `CONTEXT.md` + `docs/adr/` at the repo root. Most repos.
 > - **Multi-context** — `CONTEXT-MAP.md` at the root pointing to per-context `CONTEXT.md` files (typically a monorepo).
 >
-> Two more files sit beside the ADRs, created when the first line is written: `docs/decisions.md` (settled decisions that don't earn an ADR: product rules, scope, taste) and `docs/pitfalls.md` (traps in this repo or its tooling that cost an agent time). Their line shapes and who may write them are in `docs/agents/domain.md`. If a rule blocks markdown files here, ask where the two should live instead, and where `docs/agents/domain.md` itself goes, and record those paths in the `## Agent skills` block.
+> Two more files sit beside the ADRs, created when the first line is written: `docs/decisions.md` (settled decisions that don't earn an ADR: product rules, scope, taste) and `docs/pitfalls.md` (traps in this repo that cost an agent time; traps in shared tools go to the handbook's `topics/environment.md`). Their line shapes and who may write them are in `docs/agents/domain.md`. If a rule blocks markdown files here, ask where the two should live instead, and where `docs/agents/domain.md` itself goes, and record those paths in the `## Agent skills` block.
 
 ### 3. Confirm and edit
 
