@@ -27,7 +27,7 @@ never gets a second line.
 3. **Kept,** with its `seen` count, until one of those happens. A high count is the
    sign it is worth fixing at the source.
 
-**Who writes it.** Only the `session-review` skill, and only lines (and deletions) the
+**Who writes it.** Only the `session-wrap-up` skill, and only lines (and deletions) the
 human says yes to. They land as one commit in the skills repo, which the human makes and pushes from
 their own profile. Builders and reviewers report traps; they never edit this file.
 

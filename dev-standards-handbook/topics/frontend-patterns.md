@@ -5,8 +5,8 @@ names what goes wrong, a proportionate alternative, and a **Check** a reviewer c
 through the running interface. The engineering guidance behind them (state, data loading,
 forms, accessibility) is in [Front-end Development](./frontend-development.md).
 
-**How to use:** a browser-only reviewer, such as a lens in a `frontend-audit` review or a
-`frontend-verify` run, reads only the groups relevant to its assignment and checks them through
+**How to use:** a browser-only reviewer, such as a lens in an `audit-frontend` review or a
+`verify-frontend-change` run, reads only the groups relevant to its assignment and checks them through
 visible behaviour. A builder scans the group for the screen being changed. What a reviewer
 may inspect, change or publish comes from the workflow and brief that assigned the work,
 not from this file.

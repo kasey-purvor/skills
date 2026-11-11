@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Condense one Claude Code or Codex session, with its subagents, for a session review.
+"""Condense one Claude Code or Codex session, with its subagents, for a session wrap-up.
 
 What the human typed is kept in full, including messages typed while the agent was
 working. The agent's own text is truncated, each tool call becomes one line, tool
@@ -352,7 +352,7 @@ def human_count(turns):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Condense a session transcript for a session review.")
+    ap = argparse.ArgumentParser(description="Condense a session transcript for a session wrap-up.")
     ap.add_argument("--file", help="one transcript (.jsonl), Claude Code or Codex")
     ap.add_argument("--latest", action="store_true", help="this Claude Code session ($CLAUDE_CODE_SESSION_ID), else the newest for this directory")
     ap.add_argument("--codex", action="store_true", help="the newest Codex session for this directory")

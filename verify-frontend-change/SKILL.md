@@ -1,11 +1,11 @@
 ---
-name: frontend-verify
-description: Verify a frontend change by driving the actual app through affected journeys and inspecting behaviour, screenshots, relevant browser errors, responsive layouts and keyboard interaction. Use after visible or interactive changes or for an assigned browser verification. Broader usability audits belong to frontend-audit; this does not install test-generation or healing agents.
+name: verify-frontend-change
+description: Verify a frontend change by driving the actual app through affected journeys and inspecting behaviour, screenshots, relevant browser errors, responsive layouts and keyboard interaction. Use after visible or interactive changes or for an assigned browser verification. Broader usability audits belong to audit-frontend; this does not install test-generation or healing agents.
 ---
 
 # Frontend verification
 
-Produce evidence that the delivered interface satisfies the assigned change, using the existing app and browser tools. This focused verification does not start frontend-audit or require an HTML report.
+Produce evidence that the delivered interface satisfies the assigned change, using the existing app and browser tools. This focused verification does not start audit-frontend or require an HTML report.
 
 ## Ownership and preparation
 

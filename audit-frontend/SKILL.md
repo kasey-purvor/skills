@@ -1,14 +1,14 @@
 ---
-name: frontend-audit
+name: audit-frontend
 disable-model-invocation: true
-description: Use only when the user explicitly invokes frontend-audit or asks to run this named skill. Guides a usability and visual-design review for the user, with highlighted screenshots, a local HTML report and Keep / Drop / Discuss feedback. Do not select automatically for front-end work, agent reviews, implementation verification or screenshot capture.
+description: Use only when the user explicitly invokes audit-frontend or asks to run this named skill. Guides a usability and visual-design review for the user, with highlighted screenshots, a local HTML report and Keep / Drop / Discuss feedback. Do not select automatically for front-end work, agent reviews, implementation verification or screenshot capture.
 ---
 
 # UX and UI review
 
 ## Invocation and purpose
 
-**Only the human user initiates this skill.** Use it when they invoke `$frontend-audit` in Codex, `/frontend-audit` in Claude Code, or explicitly name the skill and ask to run it. Do not load or start it on your own initiative because a task involves the front end, navigation, responsiveness, accessibility, browser testing or screenshots. A general request to review or verify a front-end change is not an invocation of this skill.
+**Only the human user initiates this skill.** Use it when they invoke `$audit-frontend` in Codex, `/audit-frontend` in Claude Code, or explicitly name the skill and ask to run it. Do not load or start it on your own initiative because a task involves the front end, navigation, responsiveness, accessibility, browser testing or screenshots. A general request to review or verify a front-end change is not an invocation of this skill.
 
 This skill guides the review presented to the user: how to explore, gather evidence, explain findings, deliver a visual report and work through their feedback. It is not a prerequisite for an agent to assess the interface, test a change or take screenshots; do those tasks within their own scope without activating this workflow.
 

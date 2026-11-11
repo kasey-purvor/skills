@@ -1,6 +1,6 @@
 # Assignments and delegation
 
-These assignments belong to an explicitly user-initiated `frontend-audit` workflow. The coordinator's brief identifies the user's invocation and the worker's portion. A routine request to test a front-end change or capture screenshots does not activate this skill.
+These assignments belong to an explicitly user-initiated `audit-frontend` workflow. The coordinator's brief identifies the user's invocation and the worker's portion. A routine request to test a front-end change or capture screenshots does not activate this skill.
 
 The coordinator selects assignments that fit the application and available concurrency. Agents work only their assigned portion; loading this skill does not make every agent a coordinator. They do not dispatch more agents unless explicitly assigned to do so.
 

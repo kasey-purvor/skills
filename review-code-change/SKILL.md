@@ -1,6 +1,6 @@
 ---
-name: change-review
-description: Independently review a completed change, branch, commit or working tree for correctness, requirements, test quality and applicable handbook standards. Use at a delivery boundary or when asked to review changes. Browser journeys belong to frontend-verify; a requested usability audit belongs to frontend-audit.
+name: review-code-change
+description: Independently review a completed change, branch, commit or working tree for correctness, requirements, test quality and applicable handbook standards. Use at a delivery boundary or when asked to review changes. Browser journeys belong to verify-frontend-change; a requested usability audit belongs to audit-frontend.
 ---
 
 # Change review
@@ -28,7 +28,7 @@ Read the patch and surrounding execution paths. Coordinate a stable review inter
 
 Use the originating ticket, approved plan or supplied task as the specification. When a ticket is involved, load the linear skill and read its description **and comments**. A tooling change without a ticket can use its authorised task brief; do not create tracker work just to review it. Disclose missing requirements rather than inventing acceptance criteria.
 
-Read applicable repository instructions and domain decisions: the ADRs and `docs/decisions.md` when present, so a deliberate choice is not reported as a defect; name the decision when you set a concern aside for that reason. A new line in `docs/decisions.md` or `docs/pitfalls.md` (or in the handbook's `topics/environment.md`) inside the change is reviewed like code: it must fit the shape `docs/agents/domain.md` gives (for a handbook line, the shape in `topics/environment.md`) and be one the human approved in a session review: a repo line appears in the pull request body's list of approved lines; a handbook line is one the human commits themselves. Load [dev-standards-handbook](../dev-standards-handbook/SKILL.md), use its router and the ticket's Standards line, and read the relevant chapters before reviewing. State the chapter selection and reason to the coordinator; add concerns revealed by the actual change. Routine chapter selection is inside the authorised review, not a fresh approval request. The router's reference back to this skill does not start another review.
+Read applicable repository instructions and domain decisions: the ADRs and `docs/decisions.md` when present, so a deliberate choice is not reported as a defect; name the decision when you set a concern aside for that reason. A new line in `docs/decisions.md` or `docs/pitfalls.md` (or in the handbook's `topics/environment.md`) inside the change is reviewed like code: it must fit the shape `docs/agents/domain.md` gives (for a handbook line, the shape in `topics/environment.md`) and be one the human approved in a session wrap-up: a repo line appears in the pull request body's list of approved lines; a handbook line is one the human commits themselves. Load [dev-standards-handbook](../dev-standards-handbook/SKILL.md), use its router and the ticket's Standards line, and read the relevant chapters before reviewing. State the chapter selection and reason to the coordinator; add concerns revealed by the actual change. Routine chapter selection is inside the authorised review, not a fresh approval request. The router's reference back to this skill does not start another review.
 
 Calibrate rigor to the project and risk. The handbook owns topic guidance: use its frontend, identity/isolation, schema, network and deployment modifiers when applicable instead of copying permanent topic checklists here. Cite the relevant rule for a standards finding. A recommendation is not automatically a defect or permission to expand scope.
 
@@ -41,11 +41,11 @@ Cover these concerns together unless the coordinator has split the assignment:
 - Test quality: check that assertions pin required behaviour and would detect the relevant defect. Inspect available failing-then-passing evidence where TDD is required; a green suite does not establish test order. Record missing evidence as a verification gap. Never weaken, skip or rewrite a test simply to obtain green.
 - Standards and maintainability: apply the selected chapters and repository conventions with concrete consequences, avoiding personal style preferences. Existing lint/type checks supply their own results; avoid duplicating their routine output as findings.
 
-Verify findings against current source and, where useful and authorised, a focused test or reproduction. Separate confirmed findings from unresolved leads. Do not edit the app during review. Test execution does not grant permission for production mutations or messages to real recipients. Assign browser work through [frontend-verify](../frontend-verify/SKILL.md); code inspection is not browser coverage.
+Verify findings against current source and, where useful and authorised, a focused test or reproduction. Separate confirmed findings from unresolved leads. Do not edit the app during review. Test execution does not grant permission for production mutations or messages to real recipients. Assign browser work through [verify-frontend-change](../verify-frontend-change/SKILL.md); code inspection is not browser coverage.
 
 ## Report and fixes
 
-Return the reviewed target, selected handbook chapters, checks actually performed and coverage gaps, followed by one ranked findings list. Each finding needs severity, a precise file/line or evidence anchor, the affected requirement/standard, what is wrong, why it matters, supporting evidence and the suggested outcome with its reason.
+Return the reviewed target, selected handbook chapters, checks actually performed and coverage gaps, followed by one ranked findings list. Each finding needs severity, a precise file/line or evidence anchor, the affected requirement/standard, what is wrong, why it matters, supporting evidence and the suggested outcome with its reason. A correctness finding also states a concrete failure scenario: the input or state that gives the wrong result.
 
 Use [stream/review-findings.md](../stream/review-findings.md) for findings disposition and the user-facing report. The coordinator owns fixes, records and decisions. Reviewers do not file tickets or drop security findings themselves. A standalone local review need not invent a ticket or stream.
 

@@ -11,7 +11,7 @@ How the engineering skills should consume this repo's domain documentation when 
 - **`docs/pitfalls.md`** — traps that have cost agents time in this repo. Read it before the first command of a piece of work.
 - **The handbook's `topics/environment.md`** (in the `dev-standards-handbook` skill) — traps in the tools and machines, not this repo. Read it before the first command of a piece of work too.
 
-If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The producer skills (`/grill-with-docs` for the glossary and ADRs, `session-review` for decision and pitfall lines) create them lazily when terms, decisions or traps actually turn up.
+If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The producer skills (`/grill-with-docs` for the glossary and ADRs, `session-wrap-up` for decision and pitfall lines) create them lazily when terms, decisions or traps actually turn up.
 
 ## File structure
 
@@ -83,6 +83,6 @@ The date is the date the trap was first seen. Before adding a line, search the f
 
 **`docs/pitfalls.md` is an inbox, not an archive.** Every line ends one of three ways: fixed at the source (a hook, a script or a preflight step now stops it), then deleted; moved into `AGENTS.md` as a how-to, then deleted; or kept, with its `seen` count, until one of those happens.
 
-**Who writes them.** One route: the `session-review` skill, run at a stream's close, at the end of a grill session, before a handoff, or when the human wraps up a session and says yes to the offer. It proposes each line, and each deletion the inbox rule calls for; the human says yes or no to each, and the lines land where `session-review` says. Builders report traps in their final report rather than writing them. Nothing is written to or deleted from either file outside that route. Nothing goes in that the human didn't decide or an agent didn't actually hit.
+**Who writes them.** One route: the `session-wrap-up` skill, run at a stream's close, at the end of a grill session, before a handoff, or when the human wraps up a session and says yes to the offer. It proposes each line, and each deletion the inbox rule calls for; the human says yes or no to each, and the lines land where `session-wrap-up` says. Builders report traps in their final report rather than writing them. Nothing is written to or deleted from either file outside that route. Nothing goes in that the human didn't decide or an agent didn't actually hit.
 
 **If a thing fits none of these files** (glossary, ADR, decisions, pitfalls), it stays in the ticket comment. Don't create another file for it.

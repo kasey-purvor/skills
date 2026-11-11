@@ -1,9 +1,9 @@
 ---
-name: session-review
+name: session-wrap-up
 description: Review a session's transcript for worthwhile, durable decisions, traps and instruction corrections. Propose only those that earn a place in the relevant docs; a review may yield no proposals. Use at a stream's close, at the end of a `grill-with-docs` session, before a handoff, or when the human asks to review a session for decisions and traps. Also offer it, in one line, when the human signals they are wrapping up (wrapping up, closing, done for today, signing off); start it only on a yes.
 ---
 
-# Session review
+# Session wrap-up
 
 Preserve only what will materially help future work: durable decisions, non-obvious traps, and instructions proved wrong. There is no quota for proposals or destinations. If nothing qualifies, say "No durable additions warranted" and stop without an approval prompt. The human says yes or no to each qualifying line. Nothing is written without a yes.
 
@@ -22,7 +22,7 @@ Otherwise never on your own initiative. A no or a "not now" just drops it: the r
 Your memory of a long session is compressed and drifts; the transcript does not. Run the bundled script and work from its output:
 
 ```bash
-python3 -I ~/.agents/skills/session-review/scripts/extract-session.py --latest --out <scratchpad>/session.md
+python3 -I ~/.agents/skills/session-wrap-up/scripts/extract-session.py --latest --out <scratchpad>/session.md
 ```
 
 - **Claude Code** keeps each session at `$CLAUDE_CONFIG_DIR/projects/<cwd>/<session-id>.jsonl`, where `<cwd>` is the directory the session started in, with every character other than a letter or digit turned to `-` (`/home/kasey/dev_wsl/x` → `-home-kasey-dev-wsl-x`). Its subagents are under `<session-id>/subagents/*.jsonl`. `--latest` reads the session `$CLAUDE_CODE_SESSION_ID` names, wherever it started, and every subagent. When that is not set, it falls back to the newest `.jsonl` for this directory, which may be another session.
@@ -83,7 +83,7 @@ Only if proposals survive selection, send one short message, grouped by destinat
 
 ## Write
 
-- **Repo changes** (decisions, pitfalls, instruction fixes including repo-local skills, and deletions) land in one pull request: the stream's last pull request if there is one and it has not merged, otherwise a small docs pull request. Its body lists each approved change under "Approved in a session review on <date>", so a reviewer can see the human said yes.
+- **Repo changes** (decisions, pitfalls, instruction fixes including repo-local skills, and deletions) land in one pull request: the stream's last pull request if there is one and it has not merged, otherwise a small docs pull request. Its body lists each approved change under "Approved in a session wrap-up on <date>", so a reviewer can see the human said yes.
 - **A place outside the repo:** where the repo's `## Agent skills` block names one, write the approved lines there, with no pull request.
 - **Shared-skill edits and handbook lines** land as one change in the skills repo (`~/.agents/skills`). Leave it uncommitted: the human commits and pushes it from their own profile.
 

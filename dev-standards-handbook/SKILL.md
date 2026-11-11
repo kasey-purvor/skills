@@ -96,7 +96,7 @@ they become embedded).
 | **Refactor** without changing behaviour | module-design · testing, plus the chapter that owns the code you move (data-integrity for persistence or transaction code) | Interfaces and seams; tests on the interface stay green. Moving a transaction, lock or retry boundary changes behaviour. |
 | **Change how a live system behaves** | deployment · resilience · monitoring · testing, plus configuration for a config or secret change | Not breaking what runs (migrations, rollout, shutdown); watch the metrics after. |
 | **Debug an incident** or chase a perf/latency regression | error-handling · logging · monitoring · resilience | Process: the `diagnose` skill. |
-| **Review or audit** a change or a codebase | testing · security, plus the row and modifiers the change itself triggers (drop the default security for a presentation-only or documentation-only diff, or a browser-only verification; a modifier can still add it) | Anti-Patterns against the diff. Process: the `change-review` skill. |
+| **Review or audit** a change or a codebase | testing · security, plus the row and modifiers the change itself triggers (drop the default security for a presentation-only or documentation-only diff, or a browser-only verification; a modifier can still add it) | Anti-Patterns against the diff. Process: the `review-code-change` skill. |
 
 **Starting a new project? First name what *kind* it is** — the greenfield list leans
 toward a web app/service, and the right set shifts with the shape. Say which you picked
