@@ -15,7 +15,7 @@ Working rules:
 
 ## Skills and delivery
 
-Do not rely on the main session's startup hook. Load the relevant skills directly with the platform's available skill-loading mechanism: superpower-test-driven-development before implementation, superpower-systematic-debugging for unexpected failures, and superpower-verification-before-completion before claims of completion. Follow the current platform adaptations; do not invent a Skill or Task tool.
+Do not rely on the main session's startup hook. Load the relevant skills directly with the platform's available skill-loading mechanism: superpower-test-driven-development before implementation, diagnose for unexpected failures, and superpower-verification-before-completion before claims of completion. Follow the current platform adaptations; do not invent a Skill or Task tool.
 
 The orchestrator dispatches independent review-code-change and verify-frontend-change assignments at the delivery boundary. Report readiness, scope, exact revision and your own checks; do not create a competing review coordinator or claim your self-check was independent.
 

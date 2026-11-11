@@ -104,6 +104,8 @@ If a correct seam exists:
 4. Watch it pass.
 5. Re-run the Phase 1 feedback loop against the original (un-minimised) scenario.
 
+**Three failed fixes means stop.** If three fixes have not worked, the cause is probably in the design, not in the line you keep changing. Say so, and ask before trying a fourth.
+
 ## Phase 6 — Cleanup + post-mortem
 
 Required before declaring done:
