@@ -7,7 +7,7 @@ description: Break a plan, spec, or PRD into independently-grabbable issues on t
 
 Break a plan into independently-grabbable issues using vertical slices (tracer bullets).
 
-The team + issue prefix come from the repo's `AGENTS.md` (`## Agent skills`); label vocabulary and ticket conventions from the `linear` skill — run `/setup-matt-pocock-skills` first if the repo isn't configured yet.
+The team + issue prefix come from the repo's `AGENTS.md` (`## Agent skills`); label vocabulary and ticket conventions from the `linear` skill — run `/set-up-sdlc` first if the repo isn't configured yet.
 
 ## Process
 

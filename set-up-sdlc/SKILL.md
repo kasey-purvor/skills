@@ -1,5 +1,5 @@
 ---
-name: setup-matt-pocock-skills
+name: set-up-sdlc
 description: Scaffold a repo's `## Agent skills` block and `docs/agents/` so the engineering skills know this repo's Linear tracker, team document and domain-doc layout. Run once per repo before first use of `to-issues`, `stream`, or any skill that needs the issue tracker, the team document or domain docs.
 disable-model-invocation: true
 ---

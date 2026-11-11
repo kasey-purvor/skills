@@ -9,7 +9,7 @@ A trap about one repo belongs in that repo's `docs/pitfalls.md` (or the place it
 too? Then it lives here.
 
 **One line per trap,** in the same shape as a repo's `docs/pitfalls.md`
-(`setup-matt-pocock-skills/domain.md` gives it):
+(`set-up-sdlc/domain.md` gives it):
 
 ```
 YYYY-MM-DD · <symptom, plainly> → <fix or rule> · seen: N · source: <measured | read in code | an agent's word | the human said>

@@ -7,7 +7,7 @@ AGENTS.md verbatim; write that repo's own sections below the divider
 
 # Agent instructions
 
-<!-- setup-matt-pocock-skills REPLACES this comment with this repo's `## Agent skills` block (team + prefix, team document) — the one per-repo section above the divider. -->
+<!-- set-up-sdlc REPLACES this comment with this repo's `## Agent skills` block (team + prefix, team document) — the one per-repo section above the divider. -->
 
 > **Two parts.** Everything above the `═══ REPO-SPECIFIC ═══` divider is the **portable workflow** — generic, copied into every repo's `AGENTS.md` unchanged, **except the `## Agent skills` block at the top, which setup fills with this repo's team + prefix and team document**. Everything below the divider is specific to *this* repo and rewritten per project.
 
@@ -19,7 +19,7 @@ This codebase will outlive you. Every shortcut becomes someone else's burden; ev
 
 Where this repo's specifics live, so this block never has to name them:
 
-- **Issue tracker binding** — this repo's Linear **team + issue prefix** live in the `## Agent skills` → `### Issue tracker` block near the top of this file (`repo = team`, fixed). **Domain vocab** — `docs/agents/domain.md`, or the path the `### Domain docs` block names (scaffolded by `setup-matt-pocock-skills`).
+- **Issue tracker binding** — this repo's Linear **team + issue prefix** live in the `## Agent skills` → `### Issue tracker` block near the top of this file (`repo = team`, fixed). **Domain vocab** — `docs/agents/domain.md`, or the path the `### Domain docs` block names (scaffolded by `set-up-sdlc`).
 - **Decisions and pitfalls** — `docs/decisions.md` (settled decisions that didn't earn an ADR) and `docs/pitfalls.md` (traps that have cost agents time here), unless `## Agent skills` names another place. Traps outside this repo (tools, the harness, the machines) live in the `dev-standards-handbook` skill's `topics/environment.md`. Read all three before the first command of a piece of work; write them only as `docs/agents/domain.md` says.
 - **Linear conventions** (labels, states, ticket body, recipes) — the `linear` skill, auto-loaded on any Linear MCP call.
 - **Streams, review findings and the team document** — the `stream` skill. This repo's team document is named in the `## Agent skills` → `### Team document` block near the top of this file.
