@@ -73,7 +73,7 @@ Agents drive the **forward flow** of statuses; the **human decisions** are sched
 - **`quality/*` does not gate status** — everything lands in Backlog regardless of spec maturity; your go is what promotes it (Convention #6).
 - **Agents set `state: Backlog` explicitly on create** — a projectless ticket (e.g. a `drive-by`) would otherwise default to Triage natively (gotcha #13).
 - **`Canceled` (won't-do) is a human decision**, same gate as scheduling — comment first (Convention #3).
-- The **In Review** step may be handled by you *or* an agent (Playwright or otherwise); the review + evidence process lives in the `AGENTS.md` work lifecycle.
+- The **In Review** step may be handled by you *or* an agent (Playwright or otherwise); either way the ticket needs evidence (next section).
 
 ## A ticket and its pull request
 
@@ -82,7 +82,7 @@ Four rules that hold in every repo:
 - **Re-audit a ticket before starting it, even one that looks ready.** Check it against *Ticket body*, fix the description in place, then mark it `quality/audited`.
 - **One branch, one pull request.** Several tickets may share it when they are small or land together.
 - **The pull request names every ticket it closes (`Closes <ID>`), and each ticket carries the pull request number.**
-- **Every ticket carries evidence that the work did what it claimed**, as a comment, or under `## Verification` when the proof is definitive: screenshots for a visible change, test output or a command's result for anything else. Upload files with the recipes below; never commit them to the repo.
+- **Every ticket carries evidence that the work did what it claimed**, as a comment, with definitive proof also in the description; for example screenshots for a visible change, test output or a command's result for anything else. Upload files with the recipes below; never commit them to the repo.
 
 ## Review findings
 
@@ -331,4 +331,3 @@ Verified end-to-end against a live workspace on **2026-05-27**. This table is ca
 ## Pointers
 
 - **Per-repo binding:** `AGENTS.md` → `## Agent skills` → `### Issue tracker` (team name + issue prefix; `repo = team`, so this is fixed)
-- **Work lifecycle (ticket → branch → PR):** `AGENTS.md`
