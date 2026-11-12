@@ -119,6 +119,10 @@ A context file is a markdown file that agents and people read to understand a pr
 - First draft, to revisit, agreed alongside that test: a ticket may add a never-do rule and a pointer, never a section.
 - No line or size budget for any part of the file. The reviews' 150-line, 12 KB budget is rejected.
 - The half copied identically into every repo goes away (12 Nov). The whole file belongs to the repo, in sections that setup fills by asking. General lifecycle procedure lives in skills, one copy. Kasey: the copied half no longer fits, because the point is a flexible git and CI/CD setup that opens a discussion.
+- The file is a skeleton that works in any organisation, with the details guided at varying strictness (12 Nov).
+- Its sections are split by whether they are rigid (the same in every repo) or flexible (filled by setup). Sections may be grouped under a heading; they need not sit at one level.
+- Two rigid sections are agreed: the session-level skills this workflow uses (such as `linear`, `stream`, `grill-with-docs`, `to-prd`, `to-issues`, `handoff`, `session-wrap-up`; not the background ones a builder uses, such as test-driven development), and the context files.
+- The flexible part covers how work is done (git, reviews, merging) and CI/CD. Whatever is left is reviewed after those and slotted into a section or given a new one.
 
 **Why**
 - The repo-specific part is the main dumping ground. In two repos, about 80% and 85% of it is not needed by every session: 741 lines against about 140 needed, and 484 against about 70.
