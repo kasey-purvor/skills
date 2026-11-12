@@ -30,34 +30,34 @@ classes: {
 
 local: On your machine {
   grid-rows: 1
-  horizontal-gap: 260
+  horizontal-gap: 280
   style.font-size: 24
   change: Change made {class: station}
   commit: Committed {class: station}
-  change -> commit: 1 Commit hook {class: gate}
+  change -> commit: Commit hook\n(T1, T2) {class: gate}
 }
 
 github: On GitHub {
   grid-rows: 1
-  horizontal-gap: 260
+  horizontal-gap: 280
   style.font-size: 24
   pr: Pull request open {class: station}
   reviewed: Reviewed {class: station}
   merged: Merged to main {class: station}
-  pr -> reviewed: 2 CI\n3 Review {class: gate}
-  reviewed -> merged: 4 Up to date\n5 The human merges {class: gate}
+  pr -> reviewed: CI (T1 to T7)\nReview {class: gate}
+  reviewed -> merged: Up to date\nThe human merges {class: gate}
 }
 
 deployed: Deployed {
   grid-rows: 1
-  horizontal-gap: 260
+  horizontal-gap: 280
   style.font-size: 24
   uat: On UAT {class: station}
   proved: Proved on UAT {class: station}
   prod: In production {class: finish}
-  uat -> proved: 7 Deploy check\nand UAT journey {class: gate}
-  proved -> prod: 8 The human deploys {class: gate}
+  uat -> proved: Deploy check (T8)\nUAT journey (T9) {class: gate}
+  proved -> prod: The human deploys {class: gate}
 }
 
 local -> github: Pushed when the human asks {class: gate}
-github -> deployed: 6 Deploy {class: gate}
+github -> deployed: Deploy, if CI proved this code {class: gate}

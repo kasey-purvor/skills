@@ -121,7 +121,7 @@ A worktree is a second working folder on its own branch, sharing the repo's hist
 | Rule | |
 | --- | --- |
 | Branches | Cut from `origin/main`. Named `<user>/<ticket-id>-<slug>`, main ticket first. |
-| Up to date | Bring the branch up to date with `main` before a merge. GitHub allows a merge without it, and the deploy then refuses the result. |
+| Up to date | Bring the branch up to date with `main` before a merge, so `main` only ever holds changes that were tested together. GitHub allows a merge without it, and the deploy then refuses the result. Each merge puts every other open pull request out of date, so finish one before bringing the next up to date. |
 | Pushing | Only when the human asks. |
 | Merging | The human merges. Open the pull request and stop. |
 | Local tests | None are needed before a push. CI runs the full suite. |
@@ -150,22 +150,7 @@ Never change infrastructure by hand in any environment.
 
 ![The route a change takes, from a change on your machine to production](example_pipeline.png)
 
-Each number is a gate, explained in the next table. The picture is drawn from `example_pipeline.d2`.
-
-### The gates
-
-| # | Gate | What must be true | What checks it | If it stops you |
-| --- | --- | --- | --- | --- |
-| 1 | Commit hook | Format, lint and type checks pass on what you changed (T1, T2). | The commit hook | Fix the cause. Never skip the hook. |
-| 2 | CI | Every suite from T1 to T7 passes. | CI, each time the pull request is pushed | Fix it and push again. |
-| 3 | Review | Every finding is fixed, dropped or settled by the human. | You | Send a fresh builder to fix it. The same reviewer checks the fix. |
-| 4 | Up to date | The branch holds the latest `main`, and CI has passed on that. | Nothing at merge. Gate 6 catches it later. | Update the branch and wait for CI. |
-| 5 | Merge | The human says so. | The human | Stop and wait. |
-| 6 | Deploy | CI proved this exact code. | The deploy workflow | Find out why the proof is missing. Never work round it. |
-| 7 | Proved on UAT | The deploy check passes (T8), and the change is shown working in the deployed app (T9). | The deploy workflow, then you | The ticket stays In Review. |
-| 8 | Production | The change is proved on UAT. | The human | Stop and wait. |
-
-**Why gate 4 is worth the wait.** `main` should only ever hold a combination of changes that has been tested together. Each merge puts every other open pull request out of date, so they go in one at a time. Finish one before bringing the next up to date. Do not line several up and push them through together.
+The rules along this route are in Git, above. The tests it names (T1 to T9) are in the next table. The picture is drawn from `example_pipeline.d2`.
 
 ### The tests
 
@@ -195,7 +180,7 @@ Each number is a gate, explained in the next table. The picture is drawn from `e
 | T8 Deploy check | | | ● | |
 | T9 UAT journey | | | | ● feature work |
 
-Nothing runs on a merge or on a schedule. A deploy to production re-runs no tests: it checks the proof from gate 6.
+Nothing runs on a merge or on a schedule. A deploy to production re-runs no tests: it checks that CI proved the code.
 
 ### Test data and logins
 
