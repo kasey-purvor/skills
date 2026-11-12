@@ -18,7 +18,7 @@ How multi-ticket work is planned, run and recorded in Linear. These are defaults
 
 "Cluster" and "batch" are retired: say epic and lane.
 
-Streams are optional. When you are handed two or more tickets, suggest one. A lone ticket runs without one.
+Streams are optional. Suggest one when the human plans several tickets as one piece of work, or hands you several at once: a stream gives the session one place to coordinate and record them. When tickets simply come one after another in a session, carry on without one. A lone ticket runs without one.
 
 ## Suggest, don't act
 
