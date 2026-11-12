@@ -119,29 +119,48 @@ A stream is a parent ticket with the work's tickets beneath it. It gives one ses
 
 Never change infrastructure by hand in any environment.
 
-### The route a change takes
+### The route and its gates
 
-![The route a change takes, from a change on your machine to production](example_pipeline.png)
+![The route a change takes, from a change on your machine to production, through five gates](example_pipeline.png)
 
-Each C is a check and each T is a test. Both are in the tables below. The picture is drawn from `example_pipeline.d2`.
+A change passes five gates on its way to production. The cheap checks come first and the costly ones later. A machine checks wherever a machine can, and a person decides at the steps that cannot be undone.
 
-### The checks
+| Gate | Why it exists |
+| --- | --- |
+| G1 Commit | Catches careless mistakes in seconds, before anyone else sees them. |
+| G2 Pull request | Nothing reaches `main` until the full suite has passed on it. |
+| G3 Merge | `main` only ever holds changes that were reviewed and tested together, and a person decides. |
+| G4 To UAT | The change is proved in a real deployment, on safe data, before a customer meets it. |
+| G5 To production | Only proved code goes to customers, and only on a person's say. |
 
-Every check a change passes on its way to production, in order.
+The picture is drawn from `example_pipeline.d2`.
 
-| # | Check | What enforces it |
-| --- | --- | --- |
-| C1 | Formatting, lint and type checks pass on what you changed. | The commit hook |
-| C2 | Nothing is pushed until the human asks. | You |
-| C3 | A change reaches `main` only through a pull request. | GitHub |
-| C4 | CI is green on the pull request. | GitHub |
-| C5 | The change is reviewed and every finding is settled. | You |
-| C6 | The branch is up to date with `main` before a merge. | You. GitHub allows a merge without it. |
-| C7 | The human merges. | You stop and wait |
-| C8 | Only code that passed CI is deployed. | The deploy workflow |
-| C9 | The human starts a deploy to production. | You stop and wait |
+### What each gate demands
 
-C6 is worth the wait. `main` should only ever hold changes that were tested together, and each merge puts every other open pull request out of date. Finish one before bringing the next up to date.
+Read down a column to see everything a gate demands. Read along a row to see where a test or a rule applies. ● means a machine checks it. ○ means it rests on you.
+
+| | G1 Commit | G2 Pull request | G3 Merge | G4 To UAT | G5 To production |
+| --- | :---: | :---: | :---: | :---: | :---: |
+| *Enforced by* | *the commit hook* | *CI and GitHub* | *GitHub and the human* | *the deploy workflow* | *the deploy workflow and the human* |
+| **Tests** | | | | | |
+| T1 Format and lint | ● changed files | ● all | | | |
+| T2 Type check | ● changed packages | ● all | | | |
+| T3 Unit tests | | ● | | | |
+| T4 Integration tests | | ● | | | |
+| T5 Web tests | | ● | | | |
+| T6 Browser tests | | ● | | | |
+| T7 Dependency audit | | ● | | | |
+| T8 Deploy check | | | | ● | |
+| T9 UAT journey | | | | | ○ feature work, proved first |
+| **Rules** | | | | | |
+| Pushed only when the human asks | | ○ | | | |
+| Reaches `main` only through a pull request | | ● | | | |
+| Reviewed, and every finding settled | | | ○ | | |
+| Up to date with `main` | | | ○ | | |
+| Passed CI | | | ● | ● | ● |
+| The human decides | | | ○ | | ○ |
+
+Each merge puts every other open pull request out of date, so finish one before bringing the next up to date.
 
 Never:
 - skip the commit hook with `--no-verify`;
@@ -162,22 +181,6 @@ Never:
 | T7 | Dependency audit | No dependency has a known security hole. |
 | T8 | Deploy check | After a deploy to UAT, the app starts and a test user can sign in. |
 | T9 | UAT journey | The change itself works in the deployed app. An agent does this by hand and puts screenshots on the ticket. |
-
-### What runs when
-
-| | On a commit (C1) | On a pull request (C4) | On a deploy to UAT | After a deploy to UAT |
-| --- | :---: | :---: | :---: | :---: |
-| T1 Format and lint | ● changed files | ● | | |
-| T2 Type check | ● changed packages | ● | | |
-| T3 Unit tests | | ● | | |
-| T4 Integration tests | | ● | | |
-| T5 Web tests | | ● | | |
-| T6 Browser tests | | ● | | |
-| T7 Dependency audit | | ● | | |
-| T8 Deploy check | | | ● | |
-| T9 UAT journey | | | | ● feature work |
-
-Nothing runs on a merge or on a schedule, and no test run is needed before a push. A deploy to production re-runs no tests: it checks that CI proved the code.
 
 ### Test data and logins
 

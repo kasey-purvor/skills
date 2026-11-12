@@ -1,4 +1,4 @@
-# The route a change takes, for AGENTS-example.md.
+# The route a change takes and its five gates, for AGENTS-example.md.
 # Render to example_pipeline.png (layout elk, pad 40) whenever this changes.
 direction: down
 
@@ -21,8 +21,9 @@ classes: {
   }
   gate: {
     style: {
-      font-size: 18
-      font-color: "#1f2937"
+      font-size: 20
+      font-color: "#b45309"
+      bold: true
       italic: false
     }
   }
@@ -30,34 +31,30 @@ classes: {
 
 local: On your machine {
   grid-rows: 1
-  horizontal-gap: 300
+  horizontal-gap: 260
   style.font-size: 24
   change: Change made {class: station}
   commit: Committed {class: station}
-  change -> commit: C1 Commit hook\n(T1, T2) {class: gate}
+  change -> commit: G1 Commit {class: gate}
 }
 
 github: On GitHub {
   grid-rows: 1
-  horizontal-gap: 300
+  horizontal-gap: 260
   style.font-size: 24
-  pr: Pull request open {class: station}
-  reviewed: Reviewed {class: station}
+  pr: Pull request green {class: station}
   merged: Merged to main {class: station}
-  pr -> reviewed: C4 CI (T1 to T7)\nC5 Review {class: gate}
-  reviewed -> merged: C6 Up to date\nC7 The human merges {class: gate}
+  pr -> merged: G3 Merge {class: gate}
 }
 
 deployed: Deployed {
   grid-rows: 1
-  horizontal-gap: 300
+  horizontal-gap: 260
   style.font-size: 24
   uat: On UAT {class: station}
-  proved: Proved on UAT {class: station}
   prod: In production {class: finish}
-  uat -> proved: UAT journey (T9) {class: gate}
-  proved -> prod: C8 Passed CI\nC9 The human deploys {class: gate}
+  uat -> prod: G5 To production {class: gate}
 }
 
-local -> github: C2 Pushed when the human asks\nC3 Through a pull request {class: gate}
-github -> deployed: C8 Passed CI\nDeploy check (T8) {class: gate}
+local -> github: G2 Pull request {class: gate}
+github -> deployed: G4 To UAT {class: gate}
