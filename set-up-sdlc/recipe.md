@@ -77,6 +77,7 @@ A context file is a markdown file that agents and people read to understand a pr
 - The rules for each context file cover changing and removing lines as well as adding them.
 - The specific files take precedence over any catch-all. Something that fits an ADR, the vocabulary, decisions, pitfalls or a handbook chapter goes there first.
 - An agent asks the human first, every time, with no exceptions: for every new context file or folder for them, every new ADR, every planning document, and every decisions or pitfalls line. Code files and folders are free. This binds agents working in a product repo, not sessions where the human is redesigning the rules.
+- The ask-first rule is widened (12 Nov): it covers any change to any context file, not only new files and lines, and any idea for a new way of preserving context. The worked example adds that a change whose exact wording the human already approved in a ticket or plan needs no second ask; that follows from the ADR rule below and is not yet confirmed by Kasey.
 - The first versions of these rules will not be perfect. They are still controlled centrally.
 
 **Decided: ADRs**

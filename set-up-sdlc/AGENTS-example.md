@@ -17,7 +17,7 @@ Load the skill when its moment comes. Each one holds its own procedure; nothing 
 | Deciding what to build | `grill-with-docs` | Questions an idea against the project's vocabulary and past decisions until it is clear. |
 | | `to-prd` | Writes the agreed idea up as a requirements document. |
 | | `to-issues` | Breaks a plan into tickets that can each be picked up alone. |
-| Building | `stream` | Read before starting any ticket. Plans, runs and closes a run of several tickets. |
+| Building | `stream` | For two or more tickets: one session runs them all as a stream, recorded on a parent ticket. Also holds the check to make before starting any ticket. |
 | | `review-code-change` | Reviews a finished change with fresh reviewers. |
 | | `verify-frontend-change` | Checks a visible change by using the real app. |
 | Any time | `linear` | Everything about tickets: statuses, labels, what a good ticket holds. |
@@ -38,7 +38,12 @@ These are the files that explain the project. Read the ones your task touches.
 | `docs/agents/domain.md` | The rules for all of the above: what belongs in each file and what does not. |
 | `README.md` | What the project is and how to get it running. |
 
-**Ask the human first, every time,** before you create a context file or a folder for them, write a new ADR or planning document, or add a line to `docs/decisions.md` or `docs/pitfalls.md`. Code files and folders need no permission.
+**Ask the human first, every time,** before you:
+- add to, change or remove anything in any of these files, this one included;
+- create a new context file, ADR, planning document or folder for them;
+- start any new way of keeping context, such as a notes file, a log or a memory scheme.
+
+A change whose exact wording the human has already approved in a ticket or plan needs no second ask. Code files and folders need no permission.
 
 ## How work is done
 
@@ -51,13 +56,22 @@ These are the files that explain the project. Read the ones your task touches.
 
 ### Who does the work
 
-Deciding is done by you, with the human. Building is done by you directly, or by subagents you brief. A review is always done by fresh subagents, never by whoever built the change. You stay responsible: you brief them, read what they report, and decide what happens to their findings.
+Deciding is done by you, with the human. How building is done depends on how much there is:
 
-| Subagent | What it does | Its rules |
-| --- | --- | --- |
-| Builder | Builds the tickets in its brief, with tests and evidence, in its own worktree. | `stream` skill, builder file |
-| Code reviewers (two) | One checks the change against its ticket and the standards. One hunts for bugs. | `review-code-change` |
-| Frontend verifier | Drives the real app through the journeys a change affects. | `verify-frontend-change` |
+| | How it runs |
+| --- | --- |
+| One ticket | You build it yourself, or brief a builder to build it. |
+| Two or more tickets | Suggest a stream. A stream is a parent ticket with the work's tickets beneath it, run by one session, the orchestrator. That is you. You split the tickets into lanes, hand each lane to a builder, send the reviews, and keep the parent ticket current. It is how one session finishes many tickets without supervision. |
+
+A lane is one builder, one branch and one pull request. It may hold several tickets.
+
+A review is always done by fresh subagents, never by whoever built the change. You stay responsible throughout: you brief the subagents, read what they report, and decide what happens to their findings.
+
+| Subagent | What it does |
+| --- | --- |
+| Builder | Builds the tickets in its brief, with tests and evidence, in its own worktree. The brief may be a single ticket or one lane of a stream. |
+| Code reviewers (two) | One checks the change against its ticket and the standards. One hunts for bugs. |
+| Frontend verifier | Drives the real app through the journeys a change affects. |
 
 ### Tickets
 
