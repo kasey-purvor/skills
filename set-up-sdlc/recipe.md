@@ -123,6 +123,7 @@ A context file is a markdown file that agents and people read to understand a pr
 - Its sections are split by whether they are rigid (the same in every repo) or flexible (filled by setup). Sections may be grouped under a heading; they need not sit at one level.
 - Two rigid sections are agreed: the session-level skills this workflow uses (such as `linear`, `stream`, `grill-with-docs`, `to-prd`, `to-issues`, `handoff`, `session-wrap-up`; not the background ones a builder uses, such as test-driven development), and the context files.
 - The flexible part covers how work is done (git, reviews, merging) and CI/CD. Whatever is left is reviewed after those and slotted into a section or given a new one.
+- Sub-sections Kasey called largely right (12 Nov), in the order a change travels: starting work; while working; review; pull request and merge; then environments; what runs when; releasing; test data and logins.
 
 **Why**
 - The repo-specific part is the main dumping ground. In two repos, about 80% and 85% of it is not needed by every session: 741 lines against about 140 needed, and 484 against about 70.
@@ -143,6 +144,7 @@ A context file is a markdown file that agents and people read to understand a pr
 **Decided**
 - Every organisation differs, so this chapter offers options and asks. Setup discusses the workflow with the human and writes it down.
 - Good textbook options should be on offer.
+- What is flexible is narrower than first thought (12 Nov): the number of environments, how a change is promoted to production, and the git settings and restrictions a repo applies. Ticketing is not flexible (chapter 7).
 - Setup covers creating the repo and putting its git rules in place. The same goes for CI/CD and environments (chapter 6).
 - One organisation's git, CI/CD and merge rules come out of the global files. Code behaviour does not live there (standing since 3 Nov).
 - What is in the global files is sorted three ways (12 Nov): a procedure goes in a skill, one copy; a repo's choices go in that repo's `AGENTS.md`, written by setup as short lines; what is about the person or their machine stays in their global file.
@@ -195,6 +197,7 @@ A context file is a markdown file that agents and people read to understand a pr
 
 **Decided**
 - Linear, in every organisation Kasey works with. One line says another tracker needs a discussion.
+- Ticketing is rigid (12 Nov). Linear, its labels, what makes a good ticket and how a ticket progresses are a carefully curated way of working that preserves hard lessons. Setup offers no options on them.
 - Decisions and pitfalls live in repo files, not in Linear documents.
 - Routine progress comments on a stream ticket are fine. It is the tracking ticket.
 - The Linear team document is considered last. It is the intended flexible place and may cover whatever this iteration cannot settle. Agents should read it with a pinch of salt.
@@ -206,9 +209,11 @@ A context file is a markdown file that agents and people read to understand a pr
 - No team document exists in either team, though the skills assume one. Agents wrote "N/A" and parked its content in stream tickets.
 - The lesson written up to six times in Linear was one organisation's push-once rule. What Kasey took from it is that git rules vary by organisation (chapters 2 and 5).
 - The `stream` skill says "Routine progress gets no comment", which is not what Kasey wants.
+- The `linear` skill (325 lines) is about half lifecycle rules and half tool how-to. The rules: statuses and who moves them, labels, ten conventions, the ticket body, projects as epics, blocked and kickback. Kasey expected it to hold only how to use the tool. It also points back at the agents file's work lifecycle section, which goes when the copied half goes, and its kickback labels name one organisation's people.
 
 **Open**
 - Whether to have a team document at all.
+- Whether the ticket rules move out of the `linear` skill, leaving it as tool how-to. Asked 12 Nov.
 - When its entries move into repo files. Kasey expects to use it for a while and then write rules from what agents do.
 
 ## 8. Checks that guard the context files
