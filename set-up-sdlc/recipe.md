@@ -139,6 +139,9 @@ A context file is a markdown file that agents and people read to understand a pr
 - Good textbook options should be on offer.
 - Setup covers creating the repo and putting its git rules in place. The same goes for CI/CD and environments (chapter 6).
 - One organisation's git, CI/CD and merge rules come out of the global files. Code behaviour does not live there (standing since 3 Nov).
+- What is in the global files is sorted three ways (12 Nov): a procedure goes in a skill, one copy; a repo's choices go in that repo's `AGENTS.md`, written by setup as short lines; what is about the person or their machine stays in their global file.
+- Setup never changes anyone's global file. Someone else using this setup gets their version of these rules from the recipe and the repo.
+- How the person runs subagents stays in Kasey's global file and is also written into the recipe as its default. The duplication is accepted. His defaults (12 Nov): never Fable for a subagent unless he asks; Opus by default; extra-high effort for code reviews; perhaps Sonnet for research.
 
 **Why**
 - The global instruction files state one way of working for every organisation. They give agents standing permission to merge their own pull requests and say this overrides a repo's "never merge yourself"; the template and the repos say the opposite.
