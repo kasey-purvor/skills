@@ -123,7 +123,11 @@ A context file is a markdown file that agents and people read to understand a pr
 - Its sections are split by whether they are rigid (the same in every repo) or flexible (filled by setup). Sections may be grouped under a heading; they need not sit at one level.
 - Two rigid sections are agreed: the session-level skills this workflow uses (such as `linear`, `stream`, `grill-with-docs`, `to-prd`, `to-issues`, `handoff`, `session-wrap-up`; not the background ones a builder uses, such as test-driven development), and the context files.
 - The flexible part covers how work is done (git, reviews, merging) and CI/CD. Whatever is left is reviewed after those and slotted into a section or given a new one.
-- Sub-sections Kasey called largely right (12 Nov), in the order a change travels: starting work; while working; review; pull request and merge; then environments; what runs when; releasing; test data and logins.
+- The file reads for a human (12 Nov): similar things grouped together, tables where they help, plain sentences. A first draft ordered by the path of one change and written as slots to fill was rejected as unreadable.
+- Its groups, in order: the skills (a table, with what each is for); the context files (a table); how work is done; git; CI/CD and environments; about this repo (the stack and the like).
+- How work is done has two modes, deciding what to build and building. It says who does the work (the agent, or subagents, which it names), that product work always has a ticket and the `linear` skill holds the rest, and how worktrees are used to run work in parallel. It does not describe a ticket's stages.
+- References run one way: the agents file points at skills, and a skill does not point at a section of the agents file. Kasey: two-way references become spaghetti. The `linear` skill is re-reviewed against this at the end.
+- A worked example using one repo's current rules is at `set-up-sdlc/AGENTS-example.md`. Turning it into a flexible template comes later.
 
 **Why**
 - The repo-specific part is the main dumping ground. In two repos, about 80% and 85% of it is not needed by every session: 741 lines against about 140 needed, and 484 against about 70.
@@ -191,6 +195,7 @@ A context file is a markdown file that agents and people read to understand a pr
 **Open**
 - Where a repo's answers are recorded. This waits on chapter 4.
 - Whether CI/CD gets a file of its own in the repo.
+- How CI/CD grows with the project. Kasey (12 Nov): most people do not want to start with four environments.
 - Kasey is redesigning CI in another session.
 
 ## 7. The tracker
