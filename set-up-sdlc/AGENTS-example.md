@@ -63,6 +63,20 @@ The one exception is an ADR: when a ticket or plan the human approved carries th
 
 Work is in one of two modes. Each is a short path, and each step names the skill or subagent from the tables above.
 
+### Tickets
+
+Product work always has a ticket. Changes to agent tooling (skills, this file, hooks) have none. This repo's tickets are in the Linear team **Connect Assist**, prefix **CON**. For everything else about tickets, load the `linear` skill.
+
+### Worktrees
+
+A worktree is a second working folder on its own branch, sharing the repo's history. It is how several agents build at once without treading on each other.
+
+- All building happens in a worktree, never in the main folder. The main folder stays on `main`.
+- One branch, one worktree, one pull request.
+- Worktrees live in `.claude/worktrees/`, named for the ticket: `.claude/worktrees/con-123`.
+- A worktree you did not start in belongs to another session. Leave it alone.
+- Run `pnpm install` in every new worktree, or the commit hook will not exist there.
+
 ### Deciding what to build
 
 | Step | What happens | Skill |
@@ -90,20 +104,6 @@ Work is in one of two modes. Each is a short path, and each step names the skill
 **A stream is optional.** Offer one when the human plans several tickets as one piece of work, or hands you several at once. Do not start one just because a second ticket follows the first.
 
 A stream is a parent ticket with the work's tickets beneath it. It gives one session, the orchestrator, a place to coordinate and record the work, and it is how one session finishes many tickets without supervision. As orchestrator you split the tickets into lanes, and each lane goes through steps 2 to 6 with its own builder. A lane is one builder, one branch and one pull request, and may hold several tickets. The stream is finished when every review finding is fixed, dropped or settled by the human.
-
-### Tickets
-
-Product work always has a ticket. Changes to agent tooling (skills, this file, hooks) have none. This repo's tickets are in the Linear team **Connect Assist**, prefix **CON**. For everything else about tickets, load the `linear` skill.
-
-### Worktrees
-
-A worktree is a second working folder on its own branch, sharing the repo's history. It is how several agents build at once without treading on each other.
-
-- All building happens in a worktree, never in the main folder. The main folder stays on `main`.
-- One branch, one worktree, one pull request.
-- Worktrees live in `.claude/worktrees/`, named for the ticket: `.claude/worktrees/con-123`.
-- A worktree you did not start in belongs to another session. Leave it alone.
-- Run `pnpm install` in every new worktree, or the commit hook will not exist there.
 
 ## Git
 
