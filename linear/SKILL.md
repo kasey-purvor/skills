@@ -75,6 +75,15 @@ Agents drive the **forward flow** of statuses; the **human decisions** are sched
 - **`Canceled` (won't-do) is a human decision**, same gate as scheduling — comment first (Convention #3).
 - The **In Review** step may be handled by you *or* an agent (Playwright or otherwise); the review + evidence process lives in the `AGENTS.md` work lifecycle.
 
+## A ticket and its pull request
+
+Four rules that hold in every repo:
+
+- **Re-audit a ticket before starting it, even one that looks ready.** Check it against *Ticket body*, fix the description in place, then mark it `quality/audited`.
+- **One branch, one pull request.** Several tickets may share it when they are small or land together.
+- **The pull request names every ticket it closes (`Closes <ID>`), and each ticket carries the pull request number.**
+- **Every ticket carries evidence that the work did what it claimed**, as a comment, or under `## Verification` when the proof is definitive: screenshots for a visible change, test output or a command's result for anything else. Upload files with the recipes below; never commit them to the repo.
+
 ## Review findings
 
 What happens to a code-review finding (fix it, drop it, or suggest a ticket or a tally line) is behaviour, and it lives in the **`stream` skill** (`review-findings.md`). Load that skill when a review produces findings. The only Linear mechanics are: a ticket that came from a review carries the `review` label, and a security finding's ticket carries `security`.
