@@ -141,6 +141,13 @@ A context file is a markdown file that agents and people read to understand a pr
 **Open**
 - Its sections. The earlier three-part proposal (true everywhere, one organisation, one repo) is overtaken by dropping the copied half. Being worked out in a grilling session started 12 Nov.
 - Where each piece of procedure in today's copied half goes once that half is dropped.
+- Questions about the building flow that two readers of the worked example raised on 12 Nov (one reading as a person, one as an agent; reports `agents-example-human-read.md` and `agents-example-agent-read.md`). Their wording fixes are applied; these need Kasey:
+  - Where the agent stops and waits for the human. "Push only when asked" has no exception for fix rounds or for bringing a branch up to date, and "open the pull request and stop" comes before the review. A stream is described as running "without supervision" while pushes and merges still need the human.
+  - When a ticket is finished. The `linear` skill says at merge; the example says after proof in the test environment; and the tests grid applies that proof to feature work only.
+  - Who builds a lone ticket (the agent or a builder), and who fixes review findings on a change the agent built itself.
+  - `grill-with-docs` and `to-prd` write to context files and planning documents as they go, against the strict ask-first rule.
+  - What an agent reads before starting: the example says the files its task touches; the builder file says decisions and pitfalls before the first command.
+- Skills that point back at sections of the agents file, against the one-way rule: `linear`, `to-issues`, `stream` (and its team document and builder files), `session-wrap-up`, `handoff` and this skill's `domain.md`. The agent reader's report lists each line.
 - What is written out and what is pointed at. Kasey: pointing is fine, but the file may become a mapping document; look at past cases first.
 - Whether anything in the repos' own top halves is worth lifting into the template.
 

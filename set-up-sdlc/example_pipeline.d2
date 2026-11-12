@@ -55,9 +55,9 @@ deployed: Deployed {
   uat: On UAT {class: station}
   proved: Proved on UAT {class: station}
   prod: In production {class: finish}
-  uat -> proved: Deploy check (T8)\nUAT journey (T9) {class: gate}
-  proved -> prod: The human deploys {class: gate}
+  uat -> proved: UAT journey (T9) {class: gate}
+  proved -> prod: The human deploys,\nif it passed CI {class: gate}
 }
 
 local -> github: Pushed when the human asks {class: gate}
-github -> deployed: Deploy, if CI proved this code {class: gate}
+github -> deployed: You deploy main, if it passed CI\nDeploy check (T8) {class: gate}
