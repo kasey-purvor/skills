@@ -198,6 +198,7 @@ A context file is a markdown file that agents and people read to understand a pr
 **Decided**
 - Linear, in every organisation Kasey works with. One line says another tracker needs a discussion.
 - Ticketing is rigid (12 Nov). Linear, its labels, what makes a good ticket and how a ticket progresses are a carefully curated way of working that preserves hard lessons. Setup offers no options on them.
+- The `linear` skill stays as it is, holding the ticket rules alongside the tool how-to (12 Nov). Kasey: naming a label means saying what it is for, so the two are intrinsically linked. The aim is balance, and no repetition elsewhere.
 - Decisions and pitfalls live in repo files, not in Linear documents.
 - Routine progress comments on a stream ticket are fine. It is the tracking ticket.
 - The Linear team document is considered last. It is the intended flexible place and may cover whatever this iteration cannot settle. Agents should read it with a pinch of salt.
@@ -213,7 +214,6 @@ A context file is a markdown file that agents and people read to understand a pr
 
 **Open**
 - Whether to have a team document at all.
-- Whether the ticket rules move out of the `linear` skill, leaving it as tool how-to. Asked 12 Nov.
 - When its entries move into repo files. Kasey expects to use it for a while and then write rules from what agents do.
 
 ## 8. Checks that guard the context files
@@ -256,7 +256,7 @@ A context file is a markdown file that agents and people read to understand a pr
 **Open**
 - The router's levels. Proposed: skip; quick (this session only); tidy (one subagent checks the context files against the rules and recent code); full audit (several subagents, only when asked).
 - The scheduled run's design. Kasey's working assumption is a scheduled run on a virtual machine. A review of a pull request needs only the repo. A wrap-up needs the session transcripts, which live on the machine where the session ran.
-- Skill changes are parked. Another session is reviewing all the skills.
+- Deciding which skill owns which rule is no longer parked (12 Nov). Kasey: skills hold instructions about how the work is done, so where that context lives cannot be deferred. Another session is reviewing all the skills, so the edits themselves need agreeing with it.
 
 ## 10. What every agent loads
 
