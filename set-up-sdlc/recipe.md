@@ -256,7 +256,7 @@ A context file is a markdown file that agents and people read to understand a pr
 **Open**
 - The router's levels. Proposed: skip; quick (this session only); tidy (one subagent checks the context files against the rules and recent code); full audit (several subagents, only when asked).
 - The scheduled run's design. Kasey's working assumption is a scheduled run on a virtual machine. A review of a pull request needs only the repo. A wrap-up needs the session transcripts, which live on the machine where the session ran.
-- Deciding which skill owns which rule is no longer parked (12 Nov). Kasey: skills hold instructions about how the work is done, so where that context lives cannot be deferred. Another session is reviewing all the skills, so the edits themselves need agreeing with it.
+- Deciding which skill owns which rule is no longer parked (12 Nov). Kasey: skills hold instructions about how the work is done, so where that context lives cannot be deferred. The session that was reviewing all the skills finished on 12 Nov and handed its open questions (what builders and reviewers do, and how they load context) to this work. They are listed in `~/dev_wsl/projects/agent-context/skills-review/to-do.md` and not started.
 
 ## 10. What every agent loads
 
