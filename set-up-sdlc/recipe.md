@@ -128,6 +128,7 @@ A context file is a markdown file that agents and people read to understand a pr
 - Its groups, in order: the skills (a table, with what each is for); the context files (a table); how work is done; git; CI/CD and environments; about this repo (the stack and the like).
 - How work is done has two modes, deciding what to build and building. It says who does the work (the agent, or subagents, which it names), that product work always has a ticket and the `linear` skill holds the rest, and how worktrees are used to run work in parallel. It does not describe a ticket's stages.
 - References run one way: the agents file points at skills, and a skill does not point at a section of the agents file. Kasey: two-way references become spaghetti. The `linear` skill is re-reviewed against this at the end.
+- The last section, about the repo itself, holds the tech stack and the key facts every session needs that the repo does not show for itself. It is not forced into a fixed form to stop dumping: the ask-first rule, and later the checks on context file changes, are the protection (Kasey, 12 Nov). A map of the folders is left out.
 - A worked example using one repo's current rules is at `set-up-sdlc/AGENTS-example.md`. It stays a demo of that one repo for now. Later the setup becomes a grilling-style skill that works from the demo (Kasey, 12 Nov).
 
 **Why**
