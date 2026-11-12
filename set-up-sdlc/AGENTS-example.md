@@ -136,22 +136,29 @@ Never:
 
 **Stage: live, with real customers.** A project starts with one environment and adds more as there is more to protect.
 
-| Environment | What it is for | What data it holds |
+**The environments**
+
+| Environment | What it is for | What data it holds | How a change gets there |
+| --- | --- | --- | --- |
+| Local | Development and the test suites. | Made-up data from a seed script. Nothing leaves the machine. | You run it. |
+| UAT | Proving a change in the deployed app before customers get it. | Standing test organisations and logins. No customer data. | A deploy, started by hand. |
+| Production | Customers. | Customer data. No test accounts. | A deploy, started by hand, after UAT. |
+
+**What the pipeline checks.** These are checked by a machine.
+
+| When | What runs | What it stops |
 | --- | --- | --- |
-| Local | Development and the test suites. | Made-up data from a seed script. Nothing leaves the machine. |
-| UAT | Proving a change in the deployed app before customers get it. | Standing test organisations and logins. No customer data. |
-| Production | Customers. | Customer data. No test accounts. |
+| On every pull request | Type checks, lint, unit and integration tests, and browser tests against a production build. | A merge with a failing check. |
+| On a deploy | A check that CI proved this exact commit. Then migrations, then the API, then the web app. On UAT, a sign-in as a test user at the end. | A deploy of unproved code, and a rollout that leaves the app broken. |
+| On merge | Nothing. | |
+| On a schedule | Nothing yet. | |
 
-| When | What runs |
-| --- | --- |
-| On every pull request | The full suite: type checks, lint, unit and integration tests, and browser tests against a production build. |
-| On merge | Nothing. |
-| On a deploy, started by hand | The deploy refuses any commit CI has not proved. It runs migrations, then rolls out the API, then the web app. |
-| On a schedule | Nothing yet. |
+**What nothing will stop.** These rest on you.
 
-**Releasing**
-- A change goes to UAT first, then to production. Both deploys are started by hand.
+- A change goes to UAT before it goes to production.
 - A feature ticket is not finished at merge. It stays In Review until the change is proved on UAT, with the evidence on the ticket.
+- You may start a UAT deploy. Only the human starts a production deploy.
+- Never change infrastructure by hand.
 
 **Test data and logins**
 - Logins are in AWS Secrets Manager under `connect-assist/uat/`. Fetch one when you need it. Never print, log or paste one.
