@@ -77,7 +77,7 @@ A context file is a markdown file that agents and people read to understand a pr
 - The rules for each context file cover changing and removing lines as well as adding them.
 - The specific files take precedence over any catch-all. Something that fits an ADR, the vocabulary, decisions, pitfalls or a handbook chapter goes there first.
 - An agent asks the human first, every time, with no exceptions: for every new context file or folder for them, every new ADR, every planning document, and every decisions or pitfalls line. Code files and folders are free. This binds agents working in a product repo, not sessions where the human is redesigning the rules.
-- The ask-first rule is widened (12 Nov): it covers any change to any context file, not only new files and lines, and any idea for a new way of preserving context. The worked example adds that a change whose exact wording the human already approved in a ticket or plan needs no second ask; that follows from the ADR rule below and is not yet confirmed by Kasey.
+- The ask-first rule is widened (12 Nov): it covers any change to any context file, not only new files and lines, and any idea for a new way of preserving context. The one exception is an ADR: a change whose exact wording is in a ticket or plan the human approved is landed without a second ask. No other context file may be changed that way (Kasey, 12 Nov).
 - The first versions of these rules will not be perfect. They are still controlled centrally.
 
 **Decided: ADRs**
@@ -117,7 +117,7 @@ A context file is a markdown file that agents and people read to understand a pr
 - It carries a map of the context files. People read it too.
 - It was to be designed first (16:01). Its structure is now deferred, together with where the global git and CI rules go (chapter 5).
 - First-draft test for its repo-specific part, to revisit: every session needs it; it is a short rule or fact; it will stay true; nothing else says it; the other homes were offered it first.
-- First draft, to revisit, agreed alongside that test: a ticket may add a never-do rule and a pointer, never a section.
+- First draft, agreed alongside that test: a ticket may add a never-do rule and a pointer, never a section. Overtaken on 12 Nov: only an ADR may be changed through a ticket or plan, so any change to this file is asked first (chapter 3).
 - No line or size budget for any part of the file. The reviews' 150-line, 12 KB budget is rejected.
 - The half copied identically into every repo goes away (12 Nov). The whole file belongs to the repo, in sections that setup fills by asking. General lifecycle procedure lives in skills, one copy. Kasey: the copied half no longer fits, because the point is a flexible git and CI/CD setup that opens a discussion.
 - The file is a skeleton that works in any organisation, with the details guided at varying strictness (12 Nov).
@@ -241,6 +241,8 @@ A context file is a markdown file that agents and people read to understand a pr
 - How the human's yes is recorded so a check or a reviewer can see it. Today the agent that writes the lines also writes the list vouching for them, and that list is read only if a review happens.
 - Where the check lives: one shared script that setup installs, so copies do not drift. Kasey agreed in passing (16:35); not designed yet.
 - The wording of the `AGENTS.md` section that goes with the checks.
+- How Kasey reviews, or is made aware of, changes to the context files. He asked on 12 Nov for this to be kept on the list.
+- The builder file says a builder reports pitfalls and decisions instead of writing them. It needs widening to every context file except an ADR change carried in its brief.
 
 ## 9. Reviews and wrap-ups
 

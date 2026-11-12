@@ -43,7 +43,7 @@ These are the files that explain the project. Read the ones your task touches.
 - create a new context file, ADR, planning document or folder for them;
 - start any new way of keeping context, such as a notes file, a log or a memory scheme.
 
-A change whose exact wording the human has already approved in a ticket or plan needs no second ask. Code files and folders need no permission.
+The one exception is an ADR: when a ticket or plan the human approved carries the exact new wording, land it unchanged without asking again. Code files and folders need no permission.
 
 ## How work is done
 
