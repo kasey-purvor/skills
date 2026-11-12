@@ -12,17 +12,17 @@ Connect Assist is a multi-tenant web application that runs anonymous employee-fe
 
 Load the skill when its moment comes. Each one holds its own procedure; nothing here repeats it.
 
-| When | Skill | What it is for |
-| --- | --- | --- |
-| Deciding what to build | `grill-with-docs` | Questions an idea against the project's vocabulary and past decisions until it is clear. |
-| | `to-prd` | Writes the agreed idea up as a requirements document. |
-| | `to-issues` | Breaks a plan into tickets that can each be picked up alone. |
-| Building | `stream` | For two or more tickets: one session runs them all as a stream, recorded on a parent ticket. Also holds the check to make before starting any ticket. |
-| | `review-code-change` | Reviews a finished change with fresh reviewers. |
-| | `verify-frontend-change` | Checks a visible change by using the real app. |
-| Any time | `linear` | Everything about tickets: statuses, labels, what a good ticket holds. |
-| | `session-wrap-up` | When the human is wrapping up: proposes what from the session is worth keeping. |
-| | `handoff` | When a session ends with work unfinished: writes the note for the next one. |
+| When | Skill | What it is for | Who uses it |
+| --- | --- | --- | --- |
+| Deciding what to build | `grill-with-docs` | Questions an idea against the project's vocabulary and past decisions until it is clear. | You, with the human |
+| | `to-prd` | Writes the agreed idea up as a requirements document. | You |
+| | `to-issues` | Breaks a plan into tickets that can each be picked up alone. | You |
+| Building | `stream` | For two or more tickets: one session runs them all as a stream, recorded on a parent ticket. Also holds the check to make before starting any ticket. | You, as orchestrator |
+| | `review-code-change` | Reviews a finished change with fresh reviewers. | Subagents you send |
+| | `verify-frontend-change` | Checks a visible change by using the real app. | A subagent you send |
+| Any time | `linear` | Everything about tickets: statuses, labels, what a good ticket holds. | Anyone who touches a ticket |
+| | `session-wrap-up` | When the human is wrapping up: proposes what from the session is worth keeping. | You, with the human |
+| | `handoff` | When a session ends with work unfinished: writes the note for the next one. | You |
 
 ## Context files
 
