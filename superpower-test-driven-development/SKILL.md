@@ -214,9 +214,9 @@ Use this whenever a test passed without you seeing it fail: the behaviour alread
 1. Before you break anything, commit the file or copy it aside, so you can prove afterwards that it is back as it was.
 2. Make the smallest change to the production code that removes exactly the behaviour the test claims to check: drop the guard, flip the condition, remove the filter. Do not delete the whole function; that turns every test red and proves nothing. If no code provides the behaviour at all, the test is wrong: fix it until it fails.
 3. Run the test. It must fail on the assertion for that behaviour, with the message you expect. A compile error, an import error or a setup failure does not count.
-4. Put the code back exactly. `git diff` (or `diff` against your copy) must show nothing; then run the test again and see it pass. Never commit the broken state.
-5. Break one behaviour at a time, and give each behaviour its own break. A test that stays green while its behaviour is broken is not testing it: fix the test, then run this check again.
-6. If the behaviour depends on timing, concurrency or randomness, run the test several times each way: every broken run fails, every restored run passes.
+4. Put the code back exactly. Compare with what you saved in step 1 (`git diff -- <file>` if you committed it, `diff` against the copy if you copied it): it must show nothing. Then run the test again and see it pass. Never commit the broken state.
+5. Break one behaviour at a time, and give each behaviour its own break. A test that stays green while its behaviour is broken is not testing it: put the code back as in step 4, fix the test, then run this check again from step 1.
+6. If the behaviour depends on timing, concurrency or randomness, do steps 3 and 4 with several runs each: every broken run fails, every restored run passes.
 7. In your report, list each test proved this way: why it was not seen failing first (the behaviour already existed, or the code came first), what you broke, and the failure message.
 
 ## The Green Bar Is Sacred — Never Fake It
