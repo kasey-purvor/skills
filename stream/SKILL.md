@@ -41,7 +41,7 @@ A ticket whose parent is a stream ticket is part of that stream. A lone ticket s
 
 ## Who does what in a lane
 
-The orchestrator runs the stream: the check above, the stream ticket, the pane pins and the close. Builder and reviewer subagents leave those alone and report to the orchestrator. (A reply to a subagent's message goes to its parent session, so a subagent running the check would wait forever.) A subagent reporting findings gives a ranked list, as [review-findings.md](review-findings.md) describes. The shared builder procedure is [lane-builder.md](lane-builder.md); reviewer procedures are [review-code-change](../review-code-change/SKILL.md) and [verify-frontend-change](../verify-frontend-change/SKILL.md). Harness-specific lane agents load these procedures rather than maintaining their own review checklists.
+The orchestrator runs the stream: the check above, the stream ticket, the pane pins and the close. Builder and reviewer subagents leave those alone and report to the orchestrator. (A reply to a subagent's message goes to its parent session, so a subagent running the check would wait forever.) A subagent reporting findings gives a ranked list, as [review-findings.md](review-findings.md) describes. The shared builder procedure is [builder.md](builder.md); reviewer procedures are [review-code-change](../review-code-change/SKILL.md) and [verify-frontend-change](../verify-frontend-change/SKILL.md). Harness-specific lane agents load these procedures rather than maintaining their own review checklists.
 
 ## Running a stream
 

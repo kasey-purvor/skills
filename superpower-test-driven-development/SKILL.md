@@ -34,15 +34,7 @@ Thinking "skip TDD just this once"? Stop. That's rationalization.
 NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
 ```
 
-Write code before the test? Delete it. Start over.
-
-**No exceptions:**
-- Don't keep it as "reference"
-- Don't "adapt" it while writing tests
-- Don't look at it
-- Delete means delete
-
-Implement fresh from tests. Period.
+Test first is the default. If code got written before its test, do not delete it: write the test now, then prove the test can fail with the break-it check below. A test nobody has seen fail proves nothing.
 
 ## Before the First Test — Agree the Plan
 
@@ -143,7 +135,7 @@ Confirm:
 - Failure message is expected
 - Fails because feature missing (not typos)
 
-**Test passes?** You're testing existing behavior. Fix test.
+**Test passes straight away?** Either the behaviour already exists or the test is wrong. Run the break-it check below to find out which.
 
 **Test errors?** Fix error, re-run until it fails correctly.
 
@@ -215,6 +207,16 @@ Keep tests green. Don't add behavior.
 
 Next failing test for next feature.
 
+## The Break-It Check — Proving a Test Can Fail
+
+Use this whenever a test passed without you seeing it fail: the code was written first, or the behaviour already existed.
+
+1. Make the smallest change to the production code that removes exactly the behaviour the test claims to check: drop the guard, flip the condition, remove the filter. Do not delete the whole function; that turns every test red and proves nothing.
+2. Run the test. It must fail on its assertion, with the message you expect. A compile error, an import error or a setup failure does not count.
+3. Put the code back exactly. Confirm the file shows no difference from before, then run the test again and see it pass.
+4. One break per behaviour. A test that stays green while its behaviour is broken is not testing it: fix the test.
+5. Say in your report what you broke and what the failing line said.
+
 ## The Green Bar Is Sacred — Never Fake It
 
 When a test is RED and you can't quickly get it green, there is exactly one honest move: **make the production code satisfy the test as written.** A red bar means the code is wrong — not that the test is inconvenient.
@@ -228,6 +230,10 @@ When a test is RED and you can't quickly get it green, there is exactly one hone
 - **Blind snapshot updates** — running `-u`/`--updateSnapshot` to bless whatever came out, without reading the diff.
 - **Forcing the compiler green** — `any`, `as`, or `@ts-expect-error` in the test just to make it build.
 - **Mocking the thing under test** so it hands back the expected answer.
+- **Special-casing the test** — production code that recognises the test's input, or checks whether it is running under test, and behaves differently.
+- **Narrowing the run** — changing which test files the runner picks up, or accepting a run that found no tests, so the failing test never executes.
+- **Buying time** — raising a timeout or adding a retry until the test goes green, without finding out why it was slow or flaky.
+- **Bending shared test data** — editing a shared fixture or helper so this test passes, when other tests rely on it.
 
 **Changing the *test* is allowed only when the *specification* changed — and that is your human partner's call, said out loud, not a silent edit.** If you're stuck, say so and ask. Reporting "I made it pass" while any of the above is true is a false report.
 
@@ -274,9 +280,7 @@ Automated tests are systematic. They run the same way every time.
 
 **"Deleting X hours of work is wasteful"**
 
-Sunk cost fallacy. The time is already gone. Your choice now:
-- Delete and rewrite with TDD (X more hours, high confidence)
-- Keep it and add tests after (30 min, low confidence, likely bugs)
+You do not have to delete it. But tests added afterwards pass straight away, and a pass you have never seen fail proves nothing. Keep the code, write the tests, and prove each one with the break-it check before you rely on it.
 
 The "waste" is keeping code you can't trust. Working code without real tests is technical debt.
 
@@ -308,8 +312,8 @@ Tests-first force edge case discovery before implementing. Tests-after verify yo
 | "I'll test after" | Tests passing immediately prove nothing. |
 | "Tests after achieve same goals" | Tests-after = "what does this do?" Tests-first = "what should this do?" |
 | "Already manually tested" | Ad-hoc ≠ systematic. No record, can't re-run. |
-| "Deleting X hours is wasteful" | Sunk cost fallacy. Keeping unverified code is technical debt. |
-| "Keep as reference, write tests first" | You'll adapt it. That's testing after. Delete means delete. |
+| "The code already works, the tests are a formality" | A test you have not seen fail proves nothing. Run the break-it check. |
+| "I'll keep the code and test it later" | Later rarely comes. Write the test now and run the break-it check. |
 | "Need to explore first" | Fine. Throw away exploration, start with TDD. |
 | "Test hard = design unclear" | Listen to test. Hard to test = hard to use. |
 | "TDD will slow me down" | TDD faster than debugging. Pragmatic = test-first. |
@@ -318,19 +322,18 @@ Tests-first force edge case discovery before implementing. Tests-after verify yo
 | "Just loosen the assertion to get green" | Weakening a test to pass is faking the result. Fix the code. |
 | "I'll `.skip` it and come back" | A skipped test is a lie of omission. Make it pass or ask for help. |
 
-## Red Flags - STOP and Start Over
+## Red Flags - STOP
 
 - Code before test
 - Test after implementation
-- Test passes immediately
+- Test passes immediately and you moved on without the break-it check
 - Can't explain why test failed
 - Tests added "later"
 - Rationalizing "just this once"
 - "I already manually tested it"
 - "Tests after achieve the same purpose"
 - "It's about spirit not ritual"
-- "Keep as reference" or "adapt existing code"
-- "Already spent X hours, deleting is wasteful"
+- "The code already works, so the test is a formality"
 - "TDD is dogmatic, I'm being pragmatic"
 - "This is different because..."
 - Weakening, deleting, or `.skip`-ing a test to make it pass
@@ -339,7 +342,7 @@ Tests-first force edge case discovery before implementing. Tests-after verify yo
 - Running `--updateSnapshot` without reading the diff
 - Saying "I made it pass" after softening the test
 
-**All of these mean: Delete code. Start over with TDD.**
+**All of these mean: stop and put it right before going on.** Code without a proven test gets the break-it check. A weakened test gets restored.
 
 ## Example: Bug Fix
 
@@ -382,8 +385,8 @@ Extract validation for multiple fields if needed.
 
 Before marking work complete:
 
-- [ ] Every new function/method has a test
-- [ ] Watched each test fail before implementing
+- [ ] Every behaviour the ticket asks for has a test, through the code's public interface
+- [ ] Watched each test fail before implementing, or proved it with the break-it check
 - [ ] Each test failed for expected reason (feature missing, not typo)
 - [ ] Wrote minimal code to pass each test
 - [ ] All tests pass
@@ -393,7 +396,7 @@ Before marking work complete:
 - [ ] No assertion was weakened, skipped, or swallowed to reach green
 - [ ] Expected values are hand-derived, not recomputed by the code under test
 
-Can't check all boxes? You skipped TDD. Start over.
+Can't check all boxes? Go back and close the gap before you report done.
 
 ## When Stuck
 
