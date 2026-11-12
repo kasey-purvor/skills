@@ -136,31 +136,69 @@ Never:
 
 **Stage: live, with real customers.** A project starts with one environment and adds more as there is more to protect.
 
-**The environments**
+### The environments
 
-| Environment | What it is for | What data it holds | How a change gets there |
-| --- | --- | --- | --- |
-| Local | Development and the test suites. | Made-up data from a seed script. Nothing leaves the machine. | You run it. |
-| UAT | Proving a change in the deployed app before customers get it. | Standing test organisations and logins. No customer data. | A deploy, started by hand. |
-| Production | Customers. | Customer data. No test accounts. | A deploy, started by hand, after UAT. |
+| Environment | What it is for | What data it holds | How a change gets there | What you may do there |
+| --- | --- | --- | --- | --- |
+| Local | Development and the test suites. | Made-up data from a seed script. Nothing leaves the machine. | You run it. | Anything. |
+| UAT | Proving a change in the deployed app before customers get it. | Standing test organisations and logins. No customer data. | A deploy, started by hand. | Sign in with the test logins and use the app. Start a deploy. Never delete a standing fixture. |
+| Production | Customers. | Customer data. No test accounts. | A deploy the human starts, after UAT. | Nothing, unless the human asks. |
 
-**What the pipeline checks.** These are checked by a machine.
+Never change infrastructure by hand in any environment.
 
-| When | What runs | What it stops |
+### The route a change takes
+
+![The route a change takes, from a change on your machine to production](example_pipeline.png)
+
+Each number is a gate, explained in the next table. The picture is drawn from `example_pipeline.d2`.
+
+### The gates
+
+| # | Gate | What must be true | What checks it | If it stops you |
+| --- | --- | --- | --- | --- |
+| 1 | Commit hook | Format, lint and type checks pass on what you changed (T1, T2). | The commit hook | Fix the cause. Never skip the hook. |
+| 2 | CI | Every suite from T1 to T7 passes. | CI, each time the pull request is pushed | Fix it and push again. |
+| 3 | Review | Every finding is fixed, dropped or settled by the human. | You | Send a fresh builder to fix it. The same reviewer checks the fix. |
+| 4 | Up to date | The branch holds the latest `main`, and CI has passed on that. | Nothing at merge. Gate 6 catches it later. | Update the branch and wait for CI. |
+| 5 | Merge | The human says so. | The human | Stop and wait. |
+| 6 | Deploy | CI proved this exact code. | The deploy workflow | Find out why the proof is missing. Never work round it. |
+| 7 | Proved on UAT | The deploy check passes (T8), and the change is shown working in the deployed app (T9). | The deploy workflow, then you | The ticket stays In Review. |
+| 8 | Production | The change is proved on UAT. | The human | Stop and wait. |
+
+**Why gate 4 is worth the wait.** `main` should only ever hold a combination of changes that has been tested together. Each merge puts every other open pull request out of date, so they go in one at a time. Finish one before bringing the next up to date. Do not line several up and push them through together.
+
+### The tests
+
+| # | Suite | What it proves |
 | --- | --- | --- |
-| On every pull request | Type checks, lint, unit and integration tests, and browser tests against a production build. | A merge with a failing check. |
-| On a deploy | A check that CI proved this exact commit. Then migrations, then the API, then the web app. On UAT, a sign-in as a test user at the end. | A deploy of unproved code, and a rollout that leaves the app broken. |
-| On merge | Nothing. | |
-| On a schedule | Nothing yet. | |
+| T1 | Format and lint | The code follows the house style and avoids common mistakes. |
+| T2 | Type check | The types agree across the API and the web app. |
+| T3 | Unit tests | One module's logic is right, with nothing else running. |
+| T4 | Integration tests | Features work against a real database, including that one organisation cannot see another's rows. |
+| T5 | Web tests | The web app's components and client logic work. |
+| T6 | Browser tests | Whole journeys work in the built app, driven through a real browser. |
+| T7 | Dependency audit | No dependency has a known security hole. |
+| T8 | Deploy check | After a deploy to UAT, the app starts and a test user can sign in. |
+| T9 | UAT journey | The change itself works in the deployed app. An agent does this by hand and puts screenshots on the ticket. |
 
-**What nothing will stop.** These rest on you.
+### What runs when
 
-- A change goes to UAT before it goes to production.
-- A feature ticket is not finished at merge. It stays In Review until the change is proved on UAT, with the evidence on the ticket.
-- You may start a UAT deploy. Only the human starts a production deploy.
-- Never change infrastructure by hand.
+| | On a commit | On a pull request | On a deploy to UAT | After a deploy to UAT |
+| --- | :---: | :---: | :---: | :---: |
+| T1 Format and lint | ● changed files | ● | | |
+| T2 Type check | ● changed packages | ● | | |
+| T3 Unit tests | | ● | | |
+| T4 Integration tests | | ● | | |
+| T5 Web tests | | ● | | |
+| T6 Browser tests | | ● | | |
+| T7 Dependency audit | | ● | | |
+| T8 Deploy check | | | ● | |
+| T9 UAT journey | | | | ● feature work |
 
-**Test data and logins**
+Nothing runs on a merge or on a schedule. A deploy to production re-runs no tests: it checks the proof from gate 6.
+
+### Test data and logins
+
 - Logins are in AWS Secrets Manager under `connect-assist/uat/`. Fetch one when you need it. Never print, log or paste one.
 - Email from a test goes only to the shared agent inbox. Never sign up a made-up address.
 - Never delete these standing fixtures. Each is rebuilt by its own command:
