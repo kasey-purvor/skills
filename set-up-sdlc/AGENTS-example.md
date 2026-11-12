@@ -24,6 +24,19 @@ Load the skill when its moment comes. Each one holds its own procedure; nothing 
 | | `session-wrap-up` | When the human is wrapping up: proposes what from the session is worth keeping. | You, with the human |
 | | `handoff` | When a session ends with work unfinished: writes the note for the next one. | You |
 
+## Subagents
+
+A subagent is a separate agent you send to do one job and report back. You send all of them; none of them sends another.
+
+| Subagent | What it does | What it works from |
+| --- | --- | --- |
+| Builder | Builds the tickets in its brief, tests first, in its own worktree. The brief may be one ticket or one lane of a stream. | The builder file. Test-driven development. `diagnose` when something fails unexpectedly. The handbook chapters its tickets name. |
+| Ticket reviewer | Checks a finished change against its ticket, its tests and the standards. | `review-code-change`. The handbook. |
+| Bug hunter | Reads only the code of a finished change, looking for bugs. | `review-code-change`. |
+| Frontend verifier | Drives the real app through the journeys a change affects. | `verify-frontend-change`. |
+
+None of them changes a ticket's status. None of them writes to a context file, except a builder landing an ADR change carried in its brief. They report to you, and you decide what happens next.
+
 ## Context files
 
 These are the files that explain the project. Read the ones your task touches.
@@ -47,31 +60,33 @@ The one exception is an ADR: when a ticket or plan the human approved carries th
 
 ## How work is done
 
-### Two modes
+Work is in one of two modes. Each is a short path, and each step names the skill or subagent from the tables above.
 
-| Mode | What happens | It ends with |
+### Deciding what to build
+
+| Step | What happens | Skill |
 | --- | --- | --- |
-| Deciding what to build | You and the human work out what is wanted and why. | Tickets, each ready to pick up. |
-| Building | A ticket becomes a merged change, with evidence that it works. | A merged pull request and a finished ticket. |
+| 1. Question it | You and the human question the idea until it is clear. The vocabulary and the ADRs are updated as decisions are made, with the human there. | `grill-with-docs` |
+| 2. Write it up | The agreed idea becomes a requirements document. | `to-prd` |
+| 3. Break it down | The plan becomes tickets, which wait in Backlog. | `to-issues`, `linear` |
+| 4. Choose | The human picks what to start. Nothing starts without that. | |
 
-### Who does the work
+### Building
 
-Deciding is done by you, with the human. How building is done depends on how much there is:
+| Step | What happens | Who | Skill |
+| --- | --- | --- | --- |
+| 1. Check | Make sure no other session is working on the same ground, and re-audit the ticket. | You | `stream`, `linear` |
+| 2. Set up | A worktree and a branch for the work. | You | |
+| 3. Build | Tests first, then the code, with evidence that it works. | You, or a builder | |
+| 4. Pull request | Opened when the human says to push. CI runs. | You | |
+| 5. Review | The ticket reviewer and the bug hunter, at the same time. The frontend verifier too, for a visible change. | Subagents | `review-code-change`, `verify-frontend-change` |
+| 6. Fix | Each round of fixes goes to a fresh builder, and the same reviewer checks the fix. | A builder | `stream` |
+| 7. Merge | Once CI is green and the review is clean. | The human | |
+| 8. Prove | The change is deployed to UAT and proved there, with the evidence on the ticket. Then the ticket is finished. | You | `linear` |
 
-| | How it runs |
-| --- | --- |
-| One ticket | You build it yourself, or brief a builder to build it. |
-| Two or more tickets | Suggest a stream. A stream is a parent ticket with the work's tickets beneath it, run by one session, the orchestrator. That is you. You split the tickets into lanes, hand each lane to a builder, send the reviews, and keep the parent ticket current. It is how one session finishes many tickets without supervision. |
+**One ticket** goes through those steps by itself.
 
-A lane is one builder, one branch and one pull request. It may hold several tickets.
-
-A review is always done by fresh subagents, never by whoever built the change. You stay responsible throughout: you brief the subagents, read what they report, and decide what happens to their findings.
-
-| Subagent | What it does |
-| --- | --- |
-| Builder | Builds the tickets in its brief, with tests and evidence, in its own worktree. The brief may be a single ticket or one lane of a stream. |
-| Code reviewers (two) | One checks the change against its ticket and the standards. One hunts for bugs. |
-| Frontend verifier | Drives the real app through the journeys a change affects. |
+**Two or more tickets** are run as a stream, which you suggest when you are handed them. A stream is a parent ticket with the work's tickets beneath it, run by one session, the orchestrator. That is you. You split the tickets into lanes, and each lane goes through steps 2 to 6 with its own builder. A lane is one builder, one branch and one pull request, and may hold several tickets. You keep the parent ticket current, and the stream is finished when every review finding is fixed, dropped or settled by the human. It is how one session finishes many tickets without supervision.
 
 ### Tickets
 
