@@ -20,7 +20,7 @@ Chapters: 1 how the recipe runs · 2 look before you ask · 3 the context files 
 - The setup skill is renamed `set-up-sdlc`. It becomes the lifecycle recipe as well as the setup procedure, and any agent can read it as a reference at any time.
 - It is scripted like a skill. At each step the agent looks, reports what it found, and asks before acting.
 - It must not say "take what you need and leave the rest". That invites laziness.
-- Each chapter is marked rigid or flexible. Context files are rigid and followed strictly. Git workflow, CI/CD and environments are flexible. The tracker is a few lines.
+- Kasey marked the context files (chapters 3 and 4) rigid; git workflow and CI/CD flexible; the tracker a one-liner; the checks mandated or strongly urged (chapter 8). The rest carry no mark.
 - Each chapter says plainly what in it is not decided yet. There is no separate "not decided" chapter.
 - There is no "changing it later" chapter. Kasey changes the lifecycle himself, in his own session. The rules for updating context files live in chapter 3.
 - Not one big file in the end: one file per chapter behind a short front page. Kasey reviews each chapter as it is written.
@@ -31,7 +31,7 @@ Chapters: 1 how the recipe runs · 2 look before you ask · 3 the context files 
 - Six mechanisms: instruction files, skills, git checks, scheduled runs, harness hooks, Linear. Built in that order, as Kasey expects, instruction files and skills first. No checks, hooks or scheduled runs are built now (16:35).
 
 **Why**
-- The old setup skill wrote only a small block at the top of `AGENTS.md` and one rules file. Its only instruction for the rest was "write the repo's own sections".
+- The old setup skill wrote the `## Agent skills` block and the domain file, and seeded the template's shared half when `AGENTS.md` was missing. For the repo's own half, its only instruction was "write the repo's own sections".
 - Its upgrade notes told a re-run to copy three named pieces. Agents copied exactly those, so every repo's copy differs from the template in a different way.
 - A bulk run across repos skipped every step that needed the human.
 
@@ -58,7 +58,7 @@ A context file is a markdown file that agents and people read to understand a pr
 
 **Decided: the files and what each holds**
 - `AGENTS.md`: what every session needs before any task. Chapter 4.
-- `docs/agents/domain.md`, the domain file: the map of the context files, what each is for, and the tests for adding to each. It is the one place those rules are stated. `AGENTS.md` carries a short map and points at it.
+- `docs/agents/domain.md`, the domain file: the map of the context files, what each is for, and the tests for adding to each, in full. `AGENTS.md` carries a short map, the ask-first section (chapter 8) and a pointer here.
 - `CONTEXT.md`: the vocabulary. Each term of the product's domain and what it means. Nothing about how things are built.
 - `docs/adr/`: one ADR per ruling that is hard to reverse, surprising without context, and came from a real choice between options.
 - `docs/decisions.md`: rulings the human made that no ADR covers, one line each.
@@ -84,8 +84,8 @@ A context file is a markdown file that agents and people read to understand a pr
 - It does not describe the code, carry measurements or tell a ticket's story. Test for a sentence: would it still be true if the code were rewritten another way?
 - The ruling sits at the top and is rewritten when it changes, never added to. Whoever changes an ADR updates the top in the same edit.
 - The plan carries the exact new wording of a ruling. The builder lands it unchanged.
-- Builders may change an ADR. Forbidding it would mean more questions for the human.
-- A ruling lives in one place. `docs/decisions.md` is for rulings that have no ADR; it never extends one.
+- Builders may change an ADR. Forbidding it would mean more questions for the human. Kasey: it depends how much the human wants to be in the loop.
+- A ruling lives in one place. `docs/decisions.md` is for rulings that have no ADR; it may point at an ADR, but never extends one.
 - No ADR rule depends on sorting ADRs by type. The review's privacy and security carve-out is rejected.
 
 **Why**
@@ -105,7 +105,7 @@ A context file is a markdown file that agents and people read to understand a pr
 - Who writes decisions and pitfalls lines. Today only the session wrap-up proposes them.
 - The tightening proposed for pitfalls: a line must be still true, likely to recur, not already said anywhere an agent reads, and not cheaper to fix at its source; and "an agent's word" stops counting as a source. The numeric caps in that proposal are dropped.
 - The exact line shapes for decisions and pitfalls.
-- For ADRs: a short "ruling today" header (tested at 300 to 410 tokens against 13,000 to 21,000 for the whole file); a one-line index of all ADRs (about 1,240 tokens); writing honestly who decided; and whether a reversal gets a new ADR.
+- For ADRs: the form of the ruling at the top (the review tested a short header at 300 to 410 tokens against 13,000 to 21,000 for the whole file); a one-line index of all ADRs (about 1,240 tokens); writing honestly who decided; and whether a reversal gets a new ADR.
 - Whether every repo's domain file is identical.
 - A review to find every place the context-file rules are stated today.
 
@@ -157,6 +157,7 @@ A context file is a markdown file that agents and people read to understand a pr
 - Flexible. A halfway house before a full production workflow is acceptable.
 - Sensible starting points: a project that is not live does not need several environments.
 - The chapter covers how data flows between development and production, and what runs on a pull request, on merge and on a schedule.
+- Each of the three subjects is covered briefly. The patch below is material to draw on, not text to copy.
 - This content goes in the recipe, not the handbook.
 - The git checks in chapter 8 guard the context files. They are not general CI standards.
 
@@ -223,7 +224,7 @@ A context file is a markdown file that agents and people read to understand a pr
 - It is offered whenever the human says he is wrapping up, in any session.
 - Wrap-ups and reviews also run on a schedule, not only when a coding agent starts one: overnight, per pull request, per day's sessions, or since the last run. They take their time and produce a report. This is more impartial.
 - The scheduled wrap-up is the safety net for ADR changes. It checks that each change traces to a plan or to the human's own words.
-- The chapter says how to set the schedule up.
+- Once its design (Open) is settled, the chapter says how to set the schedule up.
 - Wrap-up needs one place holding the rules and definitions of every context file. That place is the domain file.
 - A wrap-up's changes may go in their own pull request or ride with code. Both are allowed.
 
@@ -237,10 +238,10 @@ A context file is a markdown file that agents and people read to understand a pr
 - The scheduled run's design. Kasey's working assumption is a scheduled run on a virtual machine. A review of a pull request needs only the repo. A wrap-up needs the session transcripts, which live on the machine where the session ran.
 - Skill changes are parked. Another session is reviewing all the skills.
 
-## 10. What every agent loads (rigid)
+## 10. What every agent loads
 
 **Decided**
-- `AGENTS.md` alone is not enough. Agents, subagents included, need the vocabulary, probably the ADRs, and the pitfalls.
+- `AGENTS.md` alone is not enough. Agents, subagents included, need the vocabulary, probably the ADRs, and the pitfalls. Kasey's lean: "probably all of it".
 - Everything cannot be loaded into every agent at today's sizes.
 - Each kind of subagent will be gone through and decided separately.
 - Hooks that force a file to load are possible. Kasey wants few of them, not a tangle.
