@@ -72,7 +72,7 @@ Product work always has a ticket. Changes to agent tooling (skills, this file, h
 A worktree is a second working folder on its own branch, sharing the repo's history. It is how several agents build at once without treading on each other.
 
 - All building happens in a worktree, never in the main folder. The main folder stays on `main`.
-- One branch, one worktree, one pull request.
+- One branch, one worktree, one pull request. Branches are cut from `origin/main` and named `<user>/<ticket-id>-<slug>`, main ticket first.
 - Worktrees live in `.claude/worktrees/`, named for the ticket: `.claude/worktrees/con-123`.
 - A worktree you did not start in belongs to another session. Leave it alone.
 - Run `pnpm install` in every new worktree, or the commit hook will not exist there.
@@ -105,35 +105,7 @@ A worktree is a second working folder on its own branch, sharing the repo's hist
 
 A stream is a parent ticket with the work's tickets beneath it. It gives one session, the orchestrator, a place to coordinate and record the work, and it is how one session finishes many tickets without supervision. As orchestrator you split the tickets into lanes, and each lane goes through steps 2 to 6 with its own builder. A lane is one builder, one branch and one pull request, and may hold several tickets. The stream is finished when every review finding is fixed, dropped or settled by the human.
 
-## Git
-
-**What will stop you.** These are checked by a machine.
-
-| Rule | What checks it |
-| --- | --- |
-| Every change reaches `main` through a pull request. | GitHub branch protection |
-| CI is green before a merge. | GitHub branch protection |
-| Formatting, lint and type checks pass on what you changed. | The commit hook, on every commit |
-| The full test suite passes. | CI, on every pull request |
-| Only a commit that CI has proved can be deployed. | The deploy workflow |
-
-**What nothing will stop.** These rest on you.
-
-| Rule | |
-| --- | --- |
-| Branches | Cut from `origin/main`. Named `<user>/<ticket-id>-<slug>`, main ticket first. |
-| Up to date | Bring the branch up to date with `main` before a merge, so `main` only ever holds changes that were tested together. GitHub allows a merge without it, and the deploy then refuses the result. Each merge puts every other open pull request out of date, so finish one before bringing the next up to date. |
-| Pushing | Only when the human asks. |
-| Merging | The human merges. Open the pull request and stop. |
-| Local tests | None are needed before a push. CI runs the full suite. |
-
-Never:
-- skip the commit hook with `--no-verify`;
-- force-push, or run `git reset --hard` or `git clean` on a shared branch;
-- commit with no branch checked out;
-- add a line crediting an AI to a commit.
-
-## CI/CD and environments
+## Git and CI/CD
 
 **Stage: live, with real customers.** A project starts with one environment and adds more as there is more to protect.
 
@@ -151,7 +123,31 @@ Never change infrastructure by hand in any environment.
 
 ![The route a change takes, from a change on your machine to production](example_pipeline.png)
 
-The rules along this route are in Git, above. The tests it names (T1 to T9) are in the next table. The picture is drawn from `example_pipeline.d2`.
+Each C is a check and each T is a test. Both are in the tables below. The picture is drawn from `example_pipeline.d2`.
+
+### The checks
+
+Every check a change passes on its way to production, in order.
+
+| # | Check | What enforces it |
+| --- | --- | --- |
+| C1 | Formatting, lint and type checks pass on what you changed. | The commit hook |
+| C2 | Nothing is pushed until the human asks. | You |
+| C3 | A change reaches `main` only through a pull request. | GitHub |
+| C4 | CI is green on the pull request. | GitHub |
+| C5 | The change is reviewed and every finding is settled. | You |
+| C6 | The branch is up to date with `main` before a merge. | You. GitHub allows a merge without it. |
+| C7 | The human merges. | You stop and wait |
+| C8 | Only code that passed CI is deployed. | The deploy workflow |
+| C9 | The human starts a deploy to production. | You stop and wait |
+
+C6 is worth the wait. `main` should only ever hold changes that were tested together, and each merge puts every other open pull request out of date. Finish one before bringing the next up to date.
+
+Never:
+- skip the commit hook with `--no-verify`;
+- force-push, or run `git reset --hard` or `git clean` on a shared branch;
+- commit with no branch checked out;
+- add a line crediting an AI to a commit.
 
 ### The tests
 
@@ -169,7 +165,7 @@ The rules along this route are in Git, above. The tests it names (T1 to T9) are 
 
 ### What runs when
 
-| | On a commit | On a pull request | On a deploy to UAT | After a deploy to UAT |
+| | On a commit (C1) | On a pull request (C4) | On a deploy to UAT | After a deploy to UAT |
 | --- | :---: | :---: | :---: | :---: |
 | T1 Format and lint | ● changed files | ● | | |
 | T2 Type check | ● changed packages | ● | | |
@@ -181,7 +177,7 @@ The rules along this route are in Git, above. The tests it names (T1 to T9) are 
 | T8 Deploy check | | | ● | |
 | T9 UAT journey | | | | ● feature work |
 
-Nothing runs on a merge or on a schedule. A deploy to production re-runs no tests: it checks that CI proved the code.
+Nothing runs on a merge or on a schedule, and no test run is needed before a push. A deploy to production re-runs no tests: it checks that CI proved the code.
 
 ### Test data and logins
 

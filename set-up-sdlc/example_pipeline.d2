@@ -30,34 +30,34 @@ classes: {
 
 local: On your machine {
   grid-rows: 1
-  horizontal-gap: 280
+  horizontal-gap: 300
   style.font-size: 24
   change: Change made {class: station}
   commit: Committed {class: station}
-  change -> commit: Commit hook\n(T1, T2) {class: gate}
+  change -> commit: C1 Commit hook\n(T1, T2) {class: gate}
 }
 
 github: On GitHub {
   grid-rows: 1
-  horizontal-gap: 280
+  horizontal-gap: 300
   style.font-size: 24
   pr: Pull request open {class: station}
   reviewed: Reviewed {class: station}
   merged: Merged to main {class: station}
-  pr -> reviewed: CI (T1 to T7)\nReview {class: gate}
-  reviewed -> merged: Up to date\nThe human merges {class: gate}
+  pr -> reviewed: C4 CI (T1 to T7)\nC5 Review {class: gate}
+  reviewed -> merged: C6 Up to date\nC7 The human merges {class: gate}
 }
 
 deployed: Deployed {
   grid-rows: 1
-  horizontal-gap: 280
+  horizontal-gap: 300
   style.font-size: 24
   uat: On UAT {class: station}
   proved: Proved on UAT {class: station}
   prod: In production {class: finish}
-  uat -> proved: Deploy check (T8)\nUAT journey (T9) {class: gate}
-  proved -> prod: The human deploys {class: gate}
+  uat -> proved: UAT journey (T9) {class: gate}
+  proved -> prod: C8 Passed CI\nC9 The human deploys {class: gate}
 }
 
-local -> github: Pushed when the human asks {class: gate}
-github -> deployed: Deploy, if CI proved this code {class: gate}
+local -> github: C2 Pushed when the human asks\nC3 Through a pull request {class: gate}
+github -> deployed: C8 Passed CI\nDeploy check (T8) {class: gate}

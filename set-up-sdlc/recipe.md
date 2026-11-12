@@ -183,7 +183,7 @@ A context file is a markdown file that agents and people read to understand a pr
 - Each of the three subjects is covered briefly. The patch below is material to draw on, not text to copy.
 - This content goes in the recipe, not the handbook.
 - The form of the CI/CD section in the agents file (12 Nov, from the worked example): a table of the environments, including what an agent may do in each; a picture of the route a change takes, drawn in D2 and stored as an image beside its source; a table of every test suite and what it proves; and a grid of which suite runs when. Kasey liked the tests table and the grid, which must flex to fit different setups. A list of gates was tried and dropped: it repeated the git section and mixed machine checks, human decisions and advice.
-- Rules are not repeated between the git section and the CI/CD section. The git section's two lists (what a machine checks, what rests on the agent) hold the rules for the whole route.
+- The git section is absorbed into the CI/CD section (12 Nov, later the same day). Every check a change passes on its way to production sits in one numbered table (C1, C2 and so on), whether a hook, GitHub, the pipeline or the agent enforces it, with a column saying which. The picture carries the same numbers, beside the test numbers. Kasey: read as a list, the rules were unreadable.
 - The git checks in chapter 8 guard the context files. They are not general CI standards.
 
 **Why**
