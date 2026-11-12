@@ -34,7 +34,7 @@ Thinking "skip TDD just this once"? Stop. That's rationalization.
 NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST
 ```
 
-Test first is the default. If code got written before its test, do not delete it: write the test now, then prove the test can fail with the break-it check below. A test nobody has seen fail proves nothing.
+Test first is the default, not an option. Code written before its test is a departure from that default: say so in your report. Do not delete it: write the test now, then prove the test can fail with the break-it check below. A test nobody has seen fail proves nothing.
 
 ## Before the First Test — Agree the Plan
 
@@ -209,13 +209,15 @@ Next failing test for next feature.
 
 ## The Break-It Check — Proving a Test Can Fail
 
-Use this whenever a test passed without you seeing it fail: the code was written first, or the behaviour already existed.
+Use this whenever a test passed without you seeing it fail: the behaviour already existed, or the code was written first.
 
-1. Make the smallest change to the production code that removes exactly the behaviour the test claims to check: drop the guard, flip the condition, remove the filter. Do not delete the whole function; that turns every test red and proves nothing.
-2. Run the test. It must fail on its assertion, with the message you expect. A compile error, an import error or a setup failure does not count.
-3. Put the code back exactly. Confirm the file shows no difference from before, then run the test again and see it pass.
-4. One break per behaviour. A test that stays green while its behaviour is broken is not testing it: fix the test.
-5. Say in your report what you broke and what the failing line said.
+1. Before you break anything, commit the file or copy it aside, so you can prove afterwards that it is back as it was.
+2. Make the smallest change to the production code that removes exactly the behaviour the test claims to check: drop the guard, flip the condition, remove the filter. Do not delete the whole function; that turns every test red and proves nothing. If no code provides the behaviour at all, the test is wrong: fix it until it fails.
+3. Run the test. It must fail on the assertion for that behaviour, with the message you expect. A compile error, an import error or a setup failure does not count.
+4. Put the code back exactly. `git diff` (or `diff` against your copy) must show nothing; then run the test again and see it pass. Never commit the broken state.
+5. Break one behaviour at a time, and give each behaviour its own break. A test that stays green while its behaviour is broken is not testing it: fix the test, then run this check again.
+6. If the behaviour depends on timing, concurrency or randomness, run the test several times each way: every broken run fails, every restored run passes.
+7. In your report, list each test proved this way: why it was not seen failing first (the behaviour already existed, or the code came first), what you broke, and the failure message.
 
 ## The Green Bar Is Sacred — Never Fake It
 
@@ -230,10 +232,10 @@ When a test is RED and you can't quickly get it green, there is exactly one hone
 - **Blind snapshot updates** — running `-u`/`--updateSnapshot` to bless whatever came out, without reading the diff.
 - **Forcing the compiler green** — `any`, `as`, or `@ts-expect-error` in the test just to make it build.
 - **Mocking the thing under test** so it hands back the expected answer.
-- **Special-casing the test** — production code that recognises the test's input, or checks whether it is running under test, and behaves differently.
+- **Special-casing the test** — production code that matches the test's particular values (a hard-coded id, say), or detects that it is running under test, so the test passes without the real rule being implemented.
 - **Narrowing the run** — changing which test files the runner picks up, or accepting a run that found no tests, so the failing test never executes.
-- **Buying time** — raising a timeout or adding a retry until the test goes green, without finding out why it was slow or flaky.
-- **Bending shared test data** — editing a shared fixture or helper so this test passes, when other tests rely on it.
+- **Buying time** — raising a test's timeout or turning on test retries until it goes green, without finding out why it was slow or flaky. A timeout that was genuinely too short may be raised; say why in your report.
+- **Bending shared test data** — editing a shared fixture or helper so this test passes, when other tests rely on it. A change the ticket needs is fine: re-run every test that uses it.
 
 **Changing the *test* is allowed only when the *specification* changed — and that is your human partner's call, said out loud, not a silent edit.** If you're stuck, say so and ask. Reporting "I made it pass" while any of the above is true is a false report.
 
@@ -282,7 +284,7 @@ Automated tests are systematic. They run the same way every time.
 
 You do not have to delete it. But tests added afterwards pass straight away, and a pass you have never seen fail proves nothing. Keep the code, write the tests, and prove each one with the break-it check before you rely on it.
 
-The "waste" is keeping code you can't trust. Working code without real tests is technical debt.
+The real waste is code you can't trust. Working code without real tests is technical debt.
 
 **"TDD is dogmatic, being pragmatic means adapting"**
 
@@ -314,7 +316,7 @@ Tests-first force edge case discovery before implementing. Tests-after verify yo
 | "Already manually tested" | Ad-hoc ≠ systematic. No record, can't re-run. |
 | "The code already works, the tests are a formality" | A test you have not seen fail proves nothing. Run the break-it check. |
 | "I'll keep the code and test it later" | Later rarely comes. Write the test now and run the break-it check. |
-| "Need to explore first" | Fine. Throw away exploration, start with TDD. |
+| "Need to explore first" | Fine. Then throw the exploration away, or keep it and treat it as code written before its test. |
 | "Test hard = design unclear" | Listen to test. Hard to test = hard to use. |
 | "TDD will slow me down" | TDD faster than debugging. Pragmatic = test-first. |
 | "Manual test faster" | Manual doesn't prove edge cases. You'll re-test every change. |
@@ -386,14 +388,14 @@ Extract validation for multiple fields if needed.
 Before marking work complete:
 
 - [ ] Every behaviour the ticket asks for has a test, through the code's public interface
-- [ ] Watched each test fail before implementing, or proved it with the break-it check
+- [ ] Watched each test fail before implementing; any that did not, proved with the break-it check and reported
 - [ ] Each test failed for expected reason (feature missing, not typo)
 - [ ] Wrote minimal code to pass each test
 - [ ] All tests pass
 - [ ] Output pristine (no errors, warnings)
 - [ ] Tests use real code (mocks only if unavoidable)
 - [ ] Edge cases and errors covered
-- [ ] No assertion was weakened, skipped, or swallowed to reach green
+- [ ] Nothing on the forbidden list was used to reach green
 - [ ] Expected values are hand-derived, not recomputed by the code under test
 
 Can't check all boxes? Go back and close the gap before you report done.
@@ -423,7 +425,9 @@ When adding mocks or test utilities, read @testing-anti-patterns.md to avoid com
 ## Final Rule
 
 ```
-Production code → test exists and failed first
+Production code → its test was seen failing:
+  before the code was written (the default), or
+  by the break-it check, reported, when the code came first
 Otherwise → not TDD
 ```
 

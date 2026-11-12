@@ -248,6 +248,8 @@ TDD cycle:
 4. THEN claim complete
 ```
 
+Already written the code? Keep it, write the tests, and prove each one with the break-it check in SKILL.md.
+
 ## When Mocks Become Too Complex
 
 **Warning signs:**
