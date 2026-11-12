@@ -141,7 +141,11 @@ A context file is a markdown file that agents and people read to understand a pr
 - One organisation's git, CI/CD and merge rules come out of the global files. Code behaviour does not live there (standing since 3 Nov).
 - What is in the global files is sorted three ways (12 Nov): a procedure goes in a skill, one copy; a repo's choices go in that repo's `AGENTS.md`, written by setup as short lines; what is about the person or their machine stays in their global file.
 - Setup never changes anyone's global file. Someone else using this setup gets their version of these rules from the recipe and the repo.
-- How the person runs subagents stays in Kasey's global file and is also written into the recipe as its default. The duplication is accepted. His defaults (12 Nov): never Fable for a subagent unless he asks; Opus by default; extra-high effort for code reviews; perhaps Sonnet for research.
+- How the person runs subagents stays in Kasey's global file and is also written into the recipe as its default. The duplication is accepted. His defaults (12 Nov): never Fable for a subagent unless he asks; Opus at extra-high effort by default; Sonnet for research and other work that is not about code.
+- Anything that is part of the software lifecycle does not stay global (12 Nov). The shared review workflow (routine reviews start without asking when work is ready for review) is lifecycle, so it leaves the global file.
+- Leaves the global file and becomes a question setup asks and writes into the repo: whether agents may merge their own pull requests; branch and worktree naming; file and code naming conventions.
+- Stays global and outside the recipe: communication style, approved acronyms, links to files, pane notes, notifications, visual previews, the test inbox, web search, browser driving, messaging between sessions, the shared docs folder and the machine file. Kasey considered adding some of these to the recipe and set it aside as scope creep.
+- The approving review done under a colleague's token stays global. Kasey: it is a hack and not part of any lifecycle.
 
 **Why**
 - The global instruction files state one way of working for every organisation. They give agents standing permission to merge their own pull requests and say this overrides a repo's "never merge yourself"; the template and the repos say the opposite.
@@ -149,7 +153,8 @@ A context file is a markdown file that agents and people read to understand a pr
 - The global files cost about 9,850 tokens in every Claude session and subagent. About 53% is lifecycle process, session bookkeeping or tool how-tos that could load only when needed.
 
 **Open**
-- Where each rule taken out of the global files goes (a skill, the handbook, the agents file or elsewhere), taken one by one with Kasey. One candidate home for one organisation's permissions, such as the merge grant, is a small per-profile file that loads only in that organisation's sessions. It would still sit above the repo, against the 3 Nov ruling that code behaviour does not live in higher-level files. Kasey's call.
+- The wording of each line setup writes into the repo for the rules that left the global files, and which skill holds each procedure.
+- Whether the fresh-fixer rule (a new agent for each round of review fixes) and "never attribute work to the agent" stay global or move with the review workflow. Asked 12 Nov, not answered yet.
 - The global-files review proposes that what stays global becomes a short shared file about Kasey plus a machine file.
 - Whether the handbook gets a git workflow chapter. A ten-point outline exists: branching, branch names, pull requests, who merges, protection rules, merge methods, local checks versus CI, parallel work, commits, and what to avoid.
 - Overlap with the skills-review session, which has moving team process out of the global file on its list.
