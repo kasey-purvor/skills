@@ -23,6 +23,7 @@ Load the skill when its moment comes. Each one holds its own procedure; nothing 
 | Any time | `linear` | Everything about tickets: statuses, labels, what a good ticket holds. | Anyone who touches a ticket |
 | | `session-wrap-up` | When the human is wrapping up: proposes what from the session is worth keeping. | You, with the human |
 | | `handoff` | When a session ends with work unfinished: writes the note for the next one. | You |
+| | `dev-standards-handbook` | The house engineering standards, by chapter. Read the chapters a change touches before planning or building it. | You, builders and the ticket reviewer |
 
 ## Subagents
 
