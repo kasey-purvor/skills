@@ -170,6 +170,7 @@ A context file is a markdown file that agents and people read to understand a pr
 **Open**
 - The wording of each line setup writes into the repo for the rules that left the global files, and which skill holds each procedure.
 - The global-files review proposes that what stays global becomes a short shared file about Kasey plus a machine file.
+- The actual content of the example's git section. Its format is agreed (12 Nov): rules a machine checks, then rules that rest on the agent. Kasey is planning a new git setup with another agent, and wants the two pieces of work brought together to record an ideal demo.
 - Whether the handbook gets a git workflow chapter. A ten-point outline exists: branching, branch names, pull requests, who merges, protection rules, merge methods, local checks versus CI, parallel work, commits, and what to avoid.
 - Overlap with the skills-review session, which has moving team process out of the global file on its list.
 
