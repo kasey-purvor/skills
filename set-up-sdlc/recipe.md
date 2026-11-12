@@ -118,6 +118,7 @@ A context file is a markdown file that agents and people read to understand a pr
 - First-draft test for its repo-specific part, to revisit: every session needs it; it is a short rule or fact; it will stay true; nothing else says it; the other homes were offered it first.
 - First draft, to revisit, agreed alongside that test: a ticket may add a never-do rule and a pointer, never a section.
 - No line or size budget for any part of the file. The reviews' 150-line, 12 KB budget is rejected.
+- The half copied identically into every repo goes away (12 Nov). The whole file belongs to the repo, in sections that setup fills by asking. General lifecycle procedure lives in skills, one copy. Kasey: the copied half no longer fits, because the point is a flexible git and CI/CD setup that opens a discussion.
 
 **Why**
 - The repo-specific part is the main dumping ground. In two repos, about 80% and 85% of it is not needed by every session: 741 lines against about 140 needed, and 484 against about 70.
@@ -128,7 +129,8 @@ A context file is a markdown file that agents and people read to understand a pr
 - The half meant to be identical in every repo is about three quarters git, pull request and CI rules that belong to one organisation. Every repo has drifted from the template, and one has 83 lines of its own text inside that half.
 
 **Open**
-- Its parts. Proposed: three, for what is true everywhere, true for one organisation, and true for one repo. Not decided. The existing section names may change.
+- Its sections. The earlier three-part proposal (true everywhere, one organisation, one repo) is overtaken by dropping the copied half. Being worked out in a grilling session started 12 Nov.
+- Where each piece of procedure in today's copied half goes once that half is dropped.
 - What is written out and what is pointed at. Kasey: pointing is fine, but the file may become a mapping document; look at past cases first.
 - Whether anything in the repos' own top halves is worth lifting into the template.
 
@@ -146,6 +148,8 @@ A context file is a markdown file that agents and people read to understand a pr
 - Leaves the global file and becomes a question setup asks and writes into the repo: whether agents may merge their own pull requests; branch and worktree naming; file and code naming conventions.
 - Stays global and outside the recipe: communication style, approved acronyms, links to files, pane notes, notifications, visual previews, the test inbox, web search, browser driving, messaging between sessions, the shared docs folder and the machine file. Kasey considered adding some of these to the recipe and set it aside as scope creep.
 - The approving review done under a colleague's token stays global. Kasey: it is a hack and not part of any lifecycle.
+- The fresh-fixer rule (a new agent for each round of review fixes) leaves the global file, with the review workflow.
+- "Never attribute work to the agent" stays global and is also written into the recipe as its default, like the subagent rules.
 
 **Why**
 - The global instruction files state one way of working for every organisation. They give agents standing permission to merge their own pull requests and say this overrides a repo's "never merge yourself"; the template and the repos say the opposite.
@@ -154,7 +158,6 @@ A context file is a markdown file that agents and people read to understand a pr
 
 **Open**
 - The wording of each line setup writes into the repo for the rules that left the global files, and which skill holds each procedure.
-- Whether the fresh-fixer rule (a new agent for each round of review fixes) and "never attribute work to the agent" stay global or move with the review workflow. Asked 12 Nov, not answered yet.
 - The global-files review proposes that what stays global becomes a short shared file about Kasey plus a machine file.
 - Whether the handbook gets a git workflow chapter. A ten-point outline exists: branching, branch names, pull requests, who merges, protection rules, merge methods, local checks versus CI, parallel work, commits, and what to avoid.
 - Overlap with the skills-review session, which has moving team process out of the global file on its list.
