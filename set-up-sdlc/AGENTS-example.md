@@ -106,19 +106,28 @@ A worktree is a second working folder on its own branch, sharing the repo's hist
 
 ## Git
 
-| | Rule |
+**What will stop you.** These are checked by a machine.
+
+| Rule | What checks it |
 | --- | --- |
-| Main branch | Protected. Every change arrives through a pull request. |
+| Every change reaches `main` through a pull request. | GitHub branch protection |
+| CI is green before a merge. | GitHub branch protection |
+| Formatting, lint and type checks pass on what you changed. | The commit hook, on every commit |
+| The full test suite passes. | CI, on every pull request |
+| Only a commit that CI has proved can be deployed. | The deploy workflow |
+
+**What nothing will stop.** These rest on you.
+
+| Rule | |
+| --- | --- |
 | Branches | Cut from `origin/main`. Named `<user>/<ticket-id>-<slug>`, main ticket first. |
-| Commits | The commit hook runs formatting, lint and type checks on what changed. |
-| Tests | No local test run is needed before a push. CI runs the full suite. |
+| Up to date | Bring the branch up to date with `main` before a merge. GitHub allows a merge without it, and the deploy then refuses the result. |
 | Pushing | Only when the human asks. |
-| Before a merge | CI is green and the branch is up to date with `main`. |
-| Who merges | The human. Open the pull request and stop. |
+| Merging | The human merges. Open the pull request and stop. |
+| Local tests | None are needed before a push. CI runs the full suite. |
 
 Never:
 - skip the commit hook with `--no-verify`;
-- commit, push or merge straight to `main`;
 - force-push, or run `git reset --hard` or `git clean` on a shared branch;
 - commit with no branch checked out;
 - add a line crediting an AI to a commit.
