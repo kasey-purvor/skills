@@ -205,6 +205,7 @@ A context file is a markdown file that agents and people read to understand a pr
 - Linear, in every organisation Kasey works with. One line says another tracker needs a discussion.
 - Ticketing is rigid (12 Nov). Linear, its labels, what makes a good ticket and how a ticket progresses are a carefully curated way of working that preserves hard lessons. Setup offers no options on them.
 - The `linear` skill stays as it is, holding the ticket rules alongside the tool how-to (12 Nov). Kasey: naming a label means saying what it is for, so the two are intrinsically linked. The aim is balance, and no repetition elsewhere.
+- A stream is optional (12 Nov). The agent offers one when the human plans several tickets as one piece of work or hands over several at once; its benefit is a place to coordinate and record the work. One ticket followed by another needs no stream. The rule lives in the `stream` skill, with a short version in the agents file's skills table.
 - Decisions and pitfalls live in repo files, not in Linear documents.
 - Routine progress comments on a stream ticket are fine. It is the tracking ticket.
 - The Linear team document is considered last. It is the intended flexible place and may cover whatever this iteration cannot settle. Agents should read it with a pinch of salt.
@@ -262,6 +263,7 @@ A context file is a markdown file that agents and people read to understand a pr
 - Rules that nobody checks get broken, including ones already written down.
 
 **Open**
+- A review of the `review-code-change` skill. Its split into two reviewers (one against the ticket, one hunting bugs) is new, and Kasey wants it verified as solid (12 Nov).
 - The router's levels. Proposed: skip; quick (this session only); tidy (one subagent checks the context files against the rules and recent code); full audit (several subagents, only when asked).
 - The scheduled run's design. Kasey's working assumption is a scheduled run on a virtual machine. A review of a pull request needs only the repo. A wrap-up needs the session transcripts, which live on the machine where the session ran.
 - Deciding which skill owns which rule is no longer parked (12 Nov). Kasey: skills hold instructions about how the work is done, so where that context lives cannot be deferred. The session that was reviewing all the skills finished on 12 Nov and handed its open questions (what builders and reviewers do, and how they load context) to this work. They are listed in `~/dev_wsl/projects/agent-context/skills-review/to-do.md` and not started.

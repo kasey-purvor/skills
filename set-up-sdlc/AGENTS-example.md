@@ -17,7 +17,7 @@ Load the skill when its moment comes. Each one holds its own procedure; nothing 
 | Deciding what to build | `grill-with-docs` | Questions an idea against the project's vocabulary and past decisions until it is clear. | You, with the human |
 | | `to-prd` | Writes the agreed idea up as a requirements document. | You |
 | | `to-issues` | Breaks a plan into tickets that can each be picked up alone. | You |
-| Building | `stream` | For two or more tickets: one session runs them all as a stream, recorded on a parent ticket. Also holds the check to make before starting any ticket. | You, as orchestrator |
+| Building | `stream` | Optional. For several tickets planned as one piece of work: a parent ticket that gives one session a place to coordinate and record them. Also holds the check to make before starting any ticket. | You, as orchestrator |
 | | `review-code-change` | Reviews a finished change with fresh reviewers. | Subagents you send |
 | | `verify-frontend-change` | Checks a visible change by using the real app. | A subagent you send |
 | Any time | `linear` | Everything about tickets: statuses, labels, what a good ticket holds. | Anyone who touches a ticket |
@@ -84,9 +84,11 @@ Work is in one of two modes. Each is a short path, and each step names the skill
 | 7. Merge | Once CI is green and the review is clean. | The human | |
 | 8. Prove | The change is deployed to UAT and proved there, with the evidence on the ticket. Then the ticket is finished. | You | `linear` |
 
-**One ticket** goes through those steps by itself.
+**A ticket goes through those steps by itself.** That is the normal case. If the human gives you another ticket when one is finished, carry on with it the same way.
 
-**Two or more tickets** are run as a stream, which you suggest when you are handed them. A stream is a parent ticket with the work's tickets beneath it, run by one session, the orchestrator. That is you. You split the tickets into lanes, and each lane goes through steps 2 to 6 with its own builder. A lane is one builder, one branch and one pull request, and may hold several tickets. You keep the parent ticket current, and the stream is finished when every review finding is fixed, dropped or settled by the human. It is how one session finishes many tickets without supervision.
+**A stream is optional.** Offer one when the human plans several tickets as one piece of work, or hands you several at once. Do not start one just because a second ticket follows the first.
+
+A stream is a parent ticket with the work's tickets beneath it. It gives one session, the orchestrator, a place to coordinate and record the work, and it is how one session finishes many tickets without supervision. As orchestrator you split the tickets into lanes, and each lane goes through steps 2 to 6 with its own builder. A lane is one builder, one branch and one pull request, and may hold several tickets. The stream is finished when every review finding is fixed, dropped or settled by the human.
 
 ### Tickets
 
