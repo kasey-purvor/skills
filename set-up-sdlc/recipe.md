@@ -128,7 +128,7 @@ A context file is a markdown file that agents and people read to understand a pr
 - Its groups, in order: the skills (a table, with what each is for); the context files (a table); how work is done; git; CI/CD and environments; about this repo (the stack and the like).
 - How work is done has two modes, deciding what to build and building. It says who does the work (the agent, or subagents, which it names), that product work always has a ticket and the `linear` skill holds the rest, and how worktrees are used to run work in parallel. It does not describe a ticket's stages.
 - References run one way: the agents file points at skills, and a skill does not point at a section of the agents file. Kasey: two-way references become spaghetti. The `linear` skill is re-reviewed against this at the end.
-- A worked example using one repo's current rules is at `set-up-sdlc/AGENTS-example.md`. Turning it into a flexible template comes later.
+- A worked example using one repo's current rules is at `set-up-sdlc/AGENTS-example.md`. It stays a demo of that one repo for now. Later the setup becomes a grilling-style skill that works from the demo (Kasey, 12 Nov).
 
 **Why**
 - The repo-specific part is the main dumping ground. In two repos, about 80% and 85% of it is not needed by every session: 741 lines against about 140 needed, and 484 against about 70.
@@ -241,7 +241,7 @@ A context file is a markdown file that agents and people read to understand a pr
 - How the human's yes is recorded so a check or a reviewer can see it. Today the agent that writes the lines also writes the list vouching for them, and that list is read only if a review happens.
 - Where the check lives: one shared script that setup installs, so copies do not drift. Kasey agreed in passing (16:35); not designed yet.
 - The wording of the `AGENTS.md` section that goes with the checks.
-- How Kasey reviews, or is made aware of, changes to the context files. He asked on 12 Nov for this to be kept on the list.
+- How Kasey reviews, or is made aware of, changes to the context files. He asked on 12 Nov for this to be kept on the list, then parked it the same day: it is a scheduled run of some kind (chapter 9) and comes after the skills, the context files and the build-to-deploy lifecycle are settled.
 - The builder file says a builder reports pitfalls and decisions instead of writing them. It needs widening to every context file except an ADR change carried in its brief.
 
 ## 9. Reviews and wrap-ups
