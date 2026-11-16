@@ -77,12 +77,13 @@ Agents drive the **forward flow** of statuses; the **human decisions** are sched
 
 ## A ticket and its pull request
 
-Four rules that hold in every repo:
+Five rules that hold in every repo:
 
 - **Re-audit a ticket before starting it, even one that looks ready.** Check it against *Ticket body*, fix the description in place, then mark it `quality/audited`.
 - **One branch, one pull request.** Several tickets may share it when they are small or land together.
 - **The pull request names every ticket it closes (`Closes <ID>`), and each ticket carries the pull request number.**
 - **Every ticket carries evidence that the work did what it claimed**, as a comment, with definitive proof also in the description; for example screenshots for a visible change, test output or a command's result for anything else. Upload files with the recipes below; never commit them to the repo.
+- **Record a decision, a change of scope or a blocker on the ticket when it happens, and before any handoff.** A change of scope amends the description (Convention #5). A decision or a blocker is a comment.
 
 ## Review findings
 

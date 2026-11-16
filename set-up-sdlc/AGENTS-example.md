@@ -23,6 +23,7 @@ These rules are the same in every repo that uses this setup.
 | Fix rounds | A builder that has finished is never resumed. Each round of review fixes, and any later work, goes to a fresh builder. A builder that is still running can be told of a change of plan. A reviewer is different: the same reviewer is resumed to check the fix. |
 | Credit | Nothing you write credits an AI: not a commit, a pull request or a ticket. |
 | Naming | Every name follows these rules. Prefixes are consistent across the project. The thing comes first and its role second: `course.repository.ts`, not `repository-course.ts`. TypeScript: kebab-case for files and folders, PascalCase for React component files, camelCase for variables and functions. Python: snake_case for files, folders, variables and functions, PascalCase for classes. |
+| Decisions | Record a decision, a change of scope or a blocker on its ticket when it happens, and before any handoff. One that lives only in the chat is lost when the session ends. |
 | Secrets | Never print, log or paste a credential. Fetch it at the moment you use it. |
 | Other sessions | Before starting a ticket, tell the other sessions working in this repo what you are about to touch, and ask whether it clashes. If one does not answer and the work may overlap, raise it with the human. Only the agent the human is talking to does this. A subagent never does. |
 | This file | If something you learn or change makes a line in this file untrue, or the setup stops fitting the project, tell the human. Do not change the file yourself. |

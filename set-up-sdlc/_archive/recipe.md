@@ -368,6 +368,8 @@ A context file is a markdown file that agents and people read to understand a pr
 
 **Pushed (16 Nov, late).** On Kasey's go the skills repo was pushed to its GitHub remote, 91 commits, using his personal profile for that one command because this terminal is the work profile. The repo is public. The worked example in it names one of his work products.
 
+**Recording decisions (Kasey, 16 Nov, late): belt and braces, three places.** A house rule, "Decisions": record a decision, a change of scope or a blocker on its ticket when it happens, and before any handoff. The same as a fifth rule in `linear`. And `session-wrap-up` looks for any that never reached their ticket and proposes recording them. This reverses the drop earlier the same day.
+
 **Still open, none started**
 - A re-review of `linear` at the end. Two rules from the old copied half are in no skill (comment on decisions as they happen; record unrecorded decisions before a handoff). Several skills point back at sections of the agents file, against the one-way rule: `linear`, `to-issues`, `stream` and its team document and builder files, `session-wrap-up`, `handoff`, and this skill's `domain.md`.
 - A review of the two reviewer types in `review-code-change`.
