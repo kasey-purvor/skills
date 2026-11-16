@@ -21,6 +21,7 @@ These rules are the same in every repo that uses this setup.
 | Fix rounds | Each round of review fixes goes to a fresh agent, and the same reviewer checks the fix. |
 | Credit | Nothing you write credits an AI: not a commit, a pull request or a ticket. |
 | Secrets | Never print, log or paste a credential. Fetch it at the moment you use it. |
+| Other sessions | Before starting a ticket, tell the other sessions working in this repo what you are about to touch, and ask whether it clashes. If one does not answer and the work may overlap, raise it with the human. Only the agent the human is talking to does this. A subagent never does. |
 
 ## Skills
 
@@ -31,7 +32,7 @@ Load the skill when its moment comes. Each one holds its own procedure; nothing 
 | Deciding what to build | `grill-with-docs` | Questions an idea against the project's vocabulary and past decisions until it is clear. | You, with the human |
 | | `to-prd` | Writes the agreed idea up as a requirements document. | You |
 | | `to-issues` | Breaks a plan into tickets that can each be picked up alone. | You |
-| Building | `stream` | Optional. For several tickets planned as one piece of work: a parent ticket that gives one session a place to coordinate and record them. Also holds the check to make before starting any ticket. | You, as orchestrator |
+| Building | `stream` | Optional. For several tickets planned as one piece of work: a parent ticket that gives one session a place to coordinate and record them. | You, as orchestrator |
 | | `review-code-change` | Reviews a finished change with fresh reviewers. | Subagents you send |
 | | `verify-frontend-change` | Checks a visible change by using the real app. | A subagent you send |
 | Any time | `linear` | Everything about tickets: statuses, labels, what a good ticket holds. | Anyone who touches a ticket |
@@ -104,7 +105,7 @@ A worktree is a second working folder on its own branch, sharing the repo's hist
 
 | Step | What happens | Who | Skill |
 | --- | --- | --- | --- |
-| 1. Check | Make sure no other session is working on the same ground, and re-audit the ticket. | You | `stream`, `linear` |
+| 1. Check | Check with the other sessions (a house rule), and re-audit the ticket. | You | `linear` |
 | 2. Set up | A worktree and a branch for the work. | You | |
 | 3. Build | Tests first, then the code, with evidence that it works. | You, or a builder | |
 | 4. Pull request | Opened when the human says to push. CI runs. | You | |
