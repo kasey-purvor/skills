@@ -380,13 +380,13 @@ A context file is a markdown file that agents and people read to understand a pr
 
 **Not added (Kasey, 16 Nov, late).** Two lines suggested by the review of builder runs were turned down or left unanswered, and neither was written. A rule for a builder that ends with no final report: "it's very rare builders or reviewers come back empty handed - I don't think we need to add instructions for that." His reason for never resuming a builder is a full context window after its first delivery, not unfinished runs. And a line saying a builder that stops to ask must not keep building: Kasey said yes on the fourth asking, and it is now in the builder's definition.
 
+**Closed by Kasey (16 Nov, late).** Where a repo's test data detail lives: no new home is designed. The agents file lists only where logins are kept and each standing fixture with its rebuild command; what a fixture is for goes in its script; anything beyond that needs the human's yes before a file is made, as for every context file. Kasey: "we have strict rules in place... we can just leave it with 'ask for permission if you want to save more files'". The review of the two reviewer types is dropped: "forget about the 2 reviewers". With that, the skills are finished until Kasey has tried setup on a repo.
+
 **Still open, none started**
 - A re-review of `linear` at the end. Two rules from the old copied half are in no skill (comment on decisions as they happen; record unrecorded decisions before a handoff). Several skills point back at sections of the agents file, against the one-way rule: `linear`, `to-issues`, `stream` and its team document and builder files, `session-wrap-up`, `handoff`, and this skill's `domain.md`.
-- A review of the two reviewer types in `review-code-change`.
 - The real content of the gates and the building flow, to be recorded as an ideal demo together with Kasey's newest git setup. Its design notes are in that repo at `docs/cicd-redesign/design-so-far.txt`. Two readers of the example raised questions about the flow (where the agent stops and waits, when a ticket is finished, who builds a lone ticket). Kasey set those reviews aside as picking at a demo; the questions belong to the ideal demo.
 - The rules file for the context files is drafted (`set-up-sdlc/domain.md`) and not yet read by Kasey.
 - The subagents: what builders and reviewers are told and what they load. The skills review's open questions are in `~/dev_wsl/projects/agent-context/skills-review/to-do.md`.
-- Where the detail about a repo's test fixtures lives.
 - Small and unanswered: whether `diagnose` and `prototype` join the skills table; Kasey's Codex file says Luna is used only when he picks it, where the house rules say Luna for research; the handbook's description line does not mention the new topic.
 - Parked: scheduled runs, the Linear team document, runbooks, taking on a live repo.
 

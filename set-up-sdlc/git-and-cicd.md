@@ -174,7 +174,7 @@ The section has these parts, in this order. `AGENTS-example.md` shows a finished
 5. **What each gate demands.** One grid. The gates run across the top, with a row saying what enforces each. Down the side come the tests, then the rules. A filled dot means a machine checks it; an open dot means it rests on a person.
 6. **The never list.**
 7. **The tests.** A table numbering them T1, T2 and so on, with what each proves. The grid uses the same numbers.
-8. **Test data and logins.** Where logins are kept, and the standing test data with the command that rebuilds each. Never a credential's value.
+8. **Test data and logins.** Where logins are kept, and the standing test data with the command that rebuilds each. Never a credential's value. Nothing more goes here: what a fixture is for and how it behaves is written in its script's header, help text and error messages. Ask the human before making any other file about it.
 
 Then, in "How work is done", word three of the building steps from the answers: when a pull request is pushed, who merges, and where a change is proved.
 
