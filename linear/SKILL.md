@@ -34,7 +34,7 @@ Day-to-day operational skill for the team's Linear workspace. Loaded on any Line
 | `kickback/*` | `for-ben`, `for-kasey` — **human-only; agents never set these** (attention hand-off between colleagues) |
 | `security` | free-floating; security-sensitive code or behaviour |
 | `ai-added` | free-floating; ticket was created by an AI agent |
-| `review` | free-floating; the ticket came from a code review, whatever its size (see the `stream` skill) |
+| `review` | free-floating; the ticket came from a code review, whatever its size (see the `review-code-change` skill) |
 | `stream` | free-floating; marks a stream ticket, the parent ticket that records a stream (see the `stream` skill) |
 
 Mutex = mutually exclusive within a group; picking a second value drops the first. All labels live at **workspace level** — never pass `teamId`.
@@ -86,7 +86,7 @@ Four rules that hold in every repo:
 
 ## Review findings
 
-What happens to a code-review finding (fix it, drop it, or suggest a ticket) is behaviour, and it lives in the **`stream` skill** (`review-findings.md`). Load that skill when a review produces findings. The only Linear mechanics are: a ticket that came from a review carries the `review` label, and a security finding's ticket carries `security`.
+What happens to a code-review finding (fix it, drop it, or suggest a ticket) is behaviour, and it lives in the **`review-code-change` skill** (`review-findings.md`). Load that skill when a review produces findings. The only Linear mechanics are: a ticket that came from a review carries the `review` label, and a security finding's ticket carries `security`.
 
 ## Projects
 

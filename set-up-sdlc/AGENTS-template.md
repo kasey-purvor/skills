@@ -53,7 +53,7 @@ A subagent is a separate agent you send to do one job and report back. You send 
 
 | Subagent | What it does | What it works from |
 | --- | --- | --- |
-| Builder | Builds the tickets in its brief, tests first, in its own worktree. The brief may be one ticket or one lane of a stream. | The builder file. Test-driven development. `diagnose` when something fails unexpectedly. The handbook chapters its tickets name. |
+| Builder | Builds the tickets in its brief, tests first, in its own worktree. The brief may be one ticket or one lane of a stream. | Its own definition. Test-driven development. `diagnose` when something fails unexpectedly. The handbook chapters its tickets name. |
 | Ticket reviewer | Checks a finished change against its ticket, its tests and the standards. | `review-code-change`. The handbook. |
 | Bug hunter | Reads only the code of a finished change, looking for bugs. | `review-code-change`. |
 | Frontend verifier | Drives the real app through the journeys a change affects. | `verify-frontend-change`. |
@@ -120,7 +120,7 @@ A worktree is a second working folder on its own branch, sharing the repo's hist
 | 3. Build | Tests first, then the code, with evidence that it works. | You, or a builder | |
 | 4. Pull request | [When the pull request is pushed and opened.] CI runs. | You | |
 | 5. Review | The ticket reviewer and the bug hunter, at the same time. The frontend verifier too, for a visible change. | Subagents | `review-code-change`, `verify-frontend-change` |
-| 6. Fix | Each round of fixes goes to a fresh builder, and the same reviewer checks the fix. | A builder | `stream` |
+| 6. Fix | Each round of fixes goes to a fresh builder, and the same reviewer checks the fix. | A builder | `review-code-change` |
 | 7. Merge | Once CI is green and the review is clean. | [Who merges] | |
 | 8. Prove | [Where the change is proved], with the evidence on the ticket. Then the ticket is finished. | You | `linear` |
 

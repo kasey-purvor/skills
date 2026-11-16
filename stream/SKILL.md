@@ -1,6 +1,6 @@
 ---
 name: stream
-description: How multi-ticket agent work is planned, run and recorded in Linear as streams - the stream ticket, what happens to code-review findings, and the close checklist. Use when planning, starting, resuming or closing a stream, or when a code review produces findings.
+description: How multi-ticket agent work is planned, run and recorded in Linear as streams - the stream ticket and the close checklist. Use when planning, starting, resuming or closing a stream.
 ---
 
 # Stream
@@ -39,7 +39,7 @@ Other sessions read a stream ticket's Touches section to see what the stream is 
 
 ## Who does what in a lane
 
-The orchestrator runs the stream: the stream ticket, the pane pins and the close. Builder and reviewer subagents leave those alone and report to the orchestrator. Nor do they run the check with other sessions, which the repo's agent instructions give to the agent the human is talking to. (A reply to a subagent's message goes to its parent session, so a subagent running the check would wait forever.) A subagent reporting findings gives a ranked list, as [review-findings.md](review-findings.md) describes. The shared builder procedure is [builder.md](builder.md); reviewer procedures are [review-code-change](../review-code-change/SKILL.md) and [verify-frontend-change](../verify-frontend-change/SKILL.md). Harness-specific lane agents load these procedures rather than maintaining their own review checklists.
+The orchestrator runs the stream: the stream ticket, the pane pins and the close. Builder and reviewer subagents leave those alone and report to the orchestrator. Nor do they run the check with other sessions, which the repo's agent instructions give to the agent the human is talking to. (A reply to a subagent's message goes to its parent session, so a subagent running the check would wait forever.) A subagent reporting findings gives a ranked list, as [review-findings.md](../review-code-change/review-findings.md) describes. The builder's procedure is in the builder subagent's own definition; reviewer procedures are [review-code-change](../review-code-change/SKILL.md) and [verify-frontend-change](../verify-frontend-change/SKILL.md). Harness-specific lane agents load these procedures rather than maintaining their own review checklists.
 
 ## Running a stream
 
@@ -54,7 +54,7 @@ The stream ticket's shape and the close checklist are in [stream-ticket.md](stre
 
 ## Review findings
 
-A stream cleans up after itself: it isn't finished until every review finding is fixed, dropped or settled by the human. The outcomes and the report format are in [review-findings.md](review-findings.md). They apply to lone tickets too.
+A stream cleans up after itself: it isn't finished until every review finding is fixed, dropped or settled by the human. The outcomes and the report format are in the `review-code-change` skill's [review-findings.md](../review-code-change/review-findings.md).
 
 ## Documents
 

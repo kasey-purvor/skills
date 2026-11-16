@@ -1,6 +1,6 @@
 ---
 name: review-code-change
-description: Review a completed code change with independent reviewers. One checks it against its ticket, its tests and the handbook standards; one hunts for bugs in the code. Use at a delivery boundary (a finished lane, pull request or standalone change), or when asked to review a change or hunt for bugs in one. Browser journeys belong to verify-frontend-change; a requested usability audit belongs to audit-frontend.
+description: Review a completed code change with independent reviewers. One checks it against its ticket, its tests and the handbook standards; one hunts for bugs in the code. Use at a delivery boundary (a finished lane, pull request or standalone change), or when asked to review a change or hunt for bugs in one. Also holds what happens to each finding: fixed, dropped or made a ticket. Browser journeys belong to verify-frontend-change; a requested usability audit belongs to audit-frontend.
 ---
 
 # Review a code change
@@ -40,6 +40,6 @@ Coordinate a stable review interval. If the target changes, identify what needs 
 
 ## When the reports come back
 
-Merge the reports into one ranked list. Where two reviewers report the same defect, keep one entry and note both saw it. Use [stream/review-findings.md](../stream/review-findings.md) for what happens to each finding and for the report the human gets. The coordinator owns fixes, records and decisions. A standalone local review need not invent a ticket or stream.
+Merge the reports into one ranked list. Where two reviewers report the same defect, keep one entry and note both saw it. Use [review-findings.md](review-findings.md) for what happens to each finding and for the report the human gets. The coordinator owns fixes, records and decisions. A standalone local review need not invent a ticket or stream.
 
 After fixes, the reviewer that raised a finding rechecks the changed code and the assumptions it affects; the coordinator obtains relevant checks and browser reruns. Record the new reviewed revision. Reopen a broader review only when a fix invalidates earlier coverage. Report blockers, material disagreements and unverifiable claims instead of claiming a clean pass or starting an unbounded loop. Review reports do not themselves trigger another automatic review.

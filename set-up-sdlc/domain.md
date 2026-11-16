@@ -40,7 +40,7 @@ A requirements document is written when the human asks for one with `to-prd`. Th
 
 ## The vocabulary (`CONTEXT.md`)
 
-One entry for each term: the term, and what it means in this product. No implementation, no plans, no decisions.
+One entry for each term: the term, what it means in this product, the words to avoid for it, and how it relates to other terms where that matters. No example dialogues, no implementation, no plans, no decisions.
 
 ## ADRs
 

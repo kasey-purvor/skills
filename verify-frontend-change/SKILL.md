@@ -44,6 +44,6 @@ Return:
 - Tested revision/build, environment, roles and viewports, including limits on matching them to the change.
 - Requirements/journeys checked with observed outcomes: passed, failed or not verified.
 - Screenshot/trace paths, meaningful browser errors, reproduction steps, data changes and records left behind. Exclude credentials, session files and raw action-link tokens.
-- Confirmed findings ranked by impact using [stream/review-findings.md](../stream/review-findings.md), plus coverage gaps and blockers. Report to the coordinator; do not create tracker work yourself.
+- Confirmed findings ranked by impact using [review-findings.md](../review-code-change/review-findings.md), plus coverage gaps and blockers. Report to the coordinator; do not create tracker work yourself.
 
 Claim completion only to the extent supported by the evidence. A material unverified prerequisite/state yields a partial or blocked result rather than a full pass. After fixes, rerun affected journeys against the new revision with fresh evidence. Recheck wider behaviour only when the fix invalidates earlier coverage.
