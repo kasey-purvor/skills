@@ -47,4 +47,9 @@ Nothing yet.
 
 ## Machines (hal, kasey-lt, spark, hal-mini, Tailscale)
 
-Nothing yet.
+2026-11-12 · `docker inspect` of the Spark's model container prints its launch arguments, which include the model's API key → never inspect it whole; ask for one field with `--format` · seen: 1 · source: measured
+2026-11-13 · `sudo` on the Spark asks for a password, so an agent cannot run it → put the root steps in a script and hand Kasey the one command (`sudo bash …`, or `! ssh -t spark "sudo bash …"` from the session) · seen: 1 · source: measured
+2026-11-13 · node_exporter on the Spark answers its first scrape, then every later one times out → its `cpufreq` collector hangs reading `cpuinfo_cur_freq` on this board; run it with `--no-collector.cpufreq` · seen: 1 · source: measured
+2026-11-13 · On the Spark `nvidia-smi` reports no GPU memory totals (the memory is shared with the CPU) and no fan speed, and NVIDIA's own monitor (DCGM) does not support the chip → read temperature, power and clock from `nvidia-smi` (about 10 ms a call) and memory per process from `--query-compute-apps` · seen: 1 · source: measured (nvidia-smi), an agent's word (DCGM, from an NVIDIA forum thread)
+2026-11-13 · `ssh spark` now and then fails with "Connection timed out during banner exchange" while the box is healthy → retry, with `-o ConnectTimeout=30` · seen: 1 · source: measured
+2026-11-13 · A file bind-mounted on its own into a container still shows the old contents after the file is replaced by a copy (`tar`, `scp`), so a reload reads nothing new → restart the container, or mount the folder · seen: 1 · source: measured
