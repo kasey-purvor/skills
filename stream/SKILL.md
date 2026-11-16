@@ -1,6 +1,6 @@
 ---
 name: stream
-description: How multi-ticket agent work is planned, run and recorded in Linear as streams - the stream ticket, the clash check with other running sessions, what happens to code-review findings, the team document, and the close checklist. Use before starting any ticket, when planning, starting, resuming or closing a stream, when a code review produces findings, or when reading or writing a team document.
+description: How multi-ticket agent work is planned, run and recorded in Linear as streams - the stream ticket, what happens to code-review findings, the team document, and the close checklist. Use when planning, starting, resuming or closing a stream, when a code review produces findings, or when reading or writing a team document.
 ---
 
 # Stream
@@ -31,17 +31,15 @@ On scope, plans, review findings and records, the human decides. You suggest, wi
 
 Building, pushing and merging follow `AGENTS.md` and the human's own instructions as before.
 
-## Before starting a ticket
+## Tickets in a stream
 
-Check with the other sessions working in this repo so you don't collide. List the live sessions and the team's In Progress stream tickets (label `stream`), and message each session one line: "Starting VAN-123, will touch `<areas>`. Any clash?" Carry on reading while they answer. If one doesn't answer, its stream ticket's Touches section says what it is working on; if that overlaps with your ticket, raise it with the human.
+A ticket whose parent is a stream ticket is part of that stream. Worth reading before starting one: the last few status updates on the ticket's project, and the team document.
 
-Also worth reading: the last few status updates on the ticket's project, and the team document.
-
-A ticket whose parent is a stream ticket is part of that stream. A lone ticket still gets this check and the review-findings rules.
+Other sessions read a stream ticket's Touches section to see what the stream is working on, so keep it current.
 
 ## Who does what in a lane
 
-The orchestrator runs the stream: the check above, the stream ticket, the pane pins and the close. Builder and reviewer subagents leave those alone and report to the orchestrator. (A reply to a subagent's message goes to its parent session, so a subagent running the check would wait forever.) A subagent reporting findings gives a ranked list, as [review-findings.md](review-findings.md) describes. The shared builder procedure is [builder.md](builder.md); reviewer procedures are [review-code-change](../review-code-change/SKILL.md) and [verify-frontend-change](../verify-frontend-change/SKILL.md). Harness-specific lane agents load these procedures rather than maintaining their own review checklists.
+The orchestrator runs the stream: the check with other sessions, the stream ticket, the pane pins and the close. Builder and reviewer subagents leave those alone and report to the orchestrator. (A reply to a subagent's message goes to its parent session, so a subagent running the check would wait forever.) A subagent reporting findings gives a ranked list, as [review-findings.md](review-findings.md) describes. The shared builder procedure is [builder.md](builder.md); reviewer procedures are [review-code-change](../review-code-change/SKILL.md) and [verify-frontend-change](../verify-frontend-change/SKILL.md). Harness-specific lane agents load these procedures rather than maintaining their own review checklists.
 
 ## Running a stream
 
