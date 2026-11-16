@@ -145,6 +145,7 @@ These are for setup, when it is run again on a repo: they say which part is due.
 - A test that needs more data than the demo customer has gets that data added to the demo customer.
 - A test that is out of date is listed for repair. A test nothing uses is proposed for deletion.
 - Proving one change by signing in and using the app is not one of these. An agent or a person does it on integration after the merge, or locally while there is no integration, and the evidence goes on the ticket.
+- Whoever builds a change runs the full local check before handing it on. CI is the proof, not the first time the tests are run.
 - Load and speed tests are not CI.
 
 ### Changing the setup

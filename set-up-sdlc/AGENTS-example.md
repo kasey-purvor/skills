@@ -56,7 +56,7 @@ A subagent is a separate agent you send to do one job and report back. You send 
 | Bug hunter | Reads only the code of a finished change, looking for bugs. | `review-code-change`. |
 | Frontend verifier | Drives the real app through the journeys a change affects. | `verify-frontend-change`. |
 
-None of them changes a ticket's status. None of them writes to a context file, except a builder landing an ADR change carried in its brief. They report to you, and you decide what happens next.
+A builder moves each of its tickets to In Progress when it starts, and records its decisions on them as it goes. Check both when it reports. No other subagent changes a ticket. None of them writes to a context file, except a builder landing an ADR change carried in its brief. They report to you, and you decide what happens next.
 
 ## Context files
 
@@ -113,7 +113,7 @@ A worktree is a second working folder on its own branch, sharing the repo's hist
 | --- | --- | --- | --- |
 | 1. Check | Check with the other sessions (a house rule), and re-audit the ticket. | You | `linear` |
 | 2. Set up | A worktree and a branch for the work. | You | |
-| 3. Build | Tests first, then the code, with evidence that it works. | You, or a builder | |
+| 3. Build | Tests first, then the code, with evidence that it works. The full local check passes before the work is handed on. | You, or a builder | |
 | 4. Pull request | Pushed and opened when the branch is ready. CI runs. | You | |
 | 5. Review | The ticket reviewer and the bug hunter, at the same time. The frontend verifier too, for a visible change. | Subagents | `review-code-change`, `verify-frontend-change` |
 | 6. Fix | Each round of fixes goes to a fresh builder, and the same reviewer checks the fix. | A builder | `review-code-change` |
