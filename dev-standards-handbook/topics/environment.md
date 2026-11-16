@@ -4,8 +4,7 @@ Traps in the tools and machines every repo shares: Claude Code and its harness, 
 Linear, the scraping and search services, git and GitHub, and the machines. Read it
 before the first command of a piece of work.
 
-A trap about one repo belongs in that repo's `docs/pitfalls.md` (or the place its
-`## Agent skills` block names), not here. The test: would it bite in a different repo
+A trap about one repo belongs in that repo's `docs/pitfalls.md`, not here. The test: would it bite in a different repo
 too? Then it lives here.
 
 **One line per trap,** in the same shape as a repo's `docs/pitfalls.md`

@@ -9,7 +9,7 @@ Produce evidence that the delivered interface satisfies the assigned change, usi
 
 ## Ownership and preparation
 
-The coordinator supplies requirements, checkout/revision, environment, affected journeys and roles, operational setup and permitted test actions. It dispatches a fresh browser verifier by default when the shared review policy calls for one. Assigned verifiers do only their portion and report to the coordinator; do not dispatch agents, fix code or manage tracker states. Disclose when independent delegation is unavailable.
+The coordinator supplies requirements, checkout/revision, environment, affected journeys and roles, operational setup and permitted test actions. It dispatches a fresh browser verifier by default when the repo's agent instructions call for one. Assigned verifiers do only their portion and report to the coordinator; do not dispatch agents, fix code or manage tracker states. Disclose when independent delegation is unavailable.
 
 Read applicable project instructions, frontend conventions and operational setup. Load [dev-standards-handbook](../dev-standards-handbook/SKILL.md) and use its router: frontend-development, the relevant groups of [Front-end Patterns](../dev-standards-handbook/topics/frontend-patterns.md) (the observable-fault catalogue, with its probe sizes) and relevant testing guidance are usual starting points; add identity, contracts or other chapters when the change concerns them. State the selection and reason within the authorised assignment. Do not recursively launch code review from the router. Source inspection can aid setup or diagnosis, but verification claims require the running interface.
 

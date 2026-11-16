@@ -4,7 +4,7 @@ You are the assigned reviewer for the change named in your brief. Your question:
 
 A separate reviewer hunts for bugs in the code ([bug-hunt.md](bug-hunt.md)); the coordinator sends both. Do not do its job: you need not trace every caller or read every line for defects. Report a defect you come across while reading.
 
-Complete only this assignment and report to the coordinator. Do not send another reviewer, edit product code or tracker records, or run the stream's clash check and pane bookkeeping.
+Complete only this assignment and report to the coordinator. Do not send another reviewer, edit product code or tracker records, or run the check with other sessions or any pane bookkeeping.
 
 ## The target
 

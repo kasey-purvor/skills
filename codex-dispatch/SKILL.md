@@ -36,7 +36,7 @@ thread id, token use and working-tree state when the run ends.
 K=~/.claude/skills/codex-dispatch
 $K/scripts/codex-run.sh --name con-123-build --dir /abs/path/.claude/worktrees/con-123 \
   --out "$SCRATCH" --prompt-file "$SCRATCH/con-123-brief.md" \
-  --schema $K/templates/build.schema.json --model gpt-6.1-sol --effort high
+  --schema $K/templates/build.schema.json --model gpt-6.1-sol --effort xhigh
 ```
 
 - **Run builds in the background** with your harness's background option, such as Claude

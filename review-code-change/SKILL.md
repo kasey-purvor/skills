@@ -5,7 +5,7 @@ description: Review a completed code change with independent reviewers. One chec
 
 # Review a code change
 
-A change is reviewed by separate reviewers, each with one question. The session the human talks to is the coordinator: it sends every reviewer and owns what comes back. The shared review policy in the current global instructions controls when to run this skill. Use this procedure in Claude Code and Codex; a native review command can help but must satisfy the same contract.
+A change is reviewed by separate reviewers, each with one question. The session the human talks to is the coordinator: it sends every reviewer and owns what comes back. The repo's agent instructions say when to run this skill. Use this procedure in Claude Code and Codex; a native review command can help but must satisfy the same contract.
 
 **Dispatched as a reviewer?** This file is for the coordinator. Load the procedure file your brief names and follow only that. If the brief names none, use [against-ticket.md](against-ticket.md).
 
@@ -22,9 +22,9 @@ The two code reviews read different things and do not repeat each other. The tic
 ## Sending the reviewers
 
 - Send one ticket reviewer and one bug hunter by default, each a fresh subagent, at the same time. Add the frontend check for a visible or interactive change.
-- Give each a focused brief with what the table lists, and the name of its procedure file. Do not pass the builder's conversation or a proposed verdict. Follow the user's model and effort policy.
-- A reviewer completes only its own assignment and reports to the coordinator. It does not send other reviewers, edit product code or tracker records, or run the stream's clash check and pane bookkeeping.
-- For a large change, suggest a second bug hunter or a specialist, with the reason, and follow the global policy for approval. More reviewers are not a quota.
+- Give each a focused brief with what the table lists, and the name of its procedure file. Do not pass the builder's conversation or a proposed verdict. Use the model and effort the repo's agent instructions give for review work.
+- A reviewer completes only its own assignment and reports to the coordinator. It does not send other reviewers, edit product code or tracker records, or run the check with other sessions or any pane bookkeeping.
+- For a large change, suggest a second bug hunter or a specialist, with the reason, and wait for the human's yes. More reviewers are not a quota.
 - If delegation is unavailable, work through both procedures yourself, one after the other, and say that the review was not independent. Do not claim an independent pass.
 
 ## Establish the target

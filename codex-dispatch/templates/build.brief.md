@@ -11,6 +11,8 @@ described below and report it.
 - Branch: `<branch name>` (already checked out; do not switch branches)
 - Before anything else: `git -C '<worktree>' fetch origin && git -C '<worktree>' merge origin/main`.
   The repo's hooks block investigation on a branch that is behind main.
+- Then install dependencies: `<the repo's install command>`. A new worktree has none, and no
+  working commit hook.
 
 ## The work
 
@@ -28,7 +30,9 @@ carries a decision. Codex cannot read the tracker or the conversation that led h
 
 ## How
 
-1. Read the repo's AGENTS.md (and CONTEXT.md / the ADRs it points to) before writing code.
+1. Read the repo's AGENTS.md, CONTEXT.md, `docs/decisions.md`, `docs/pitfalls.md` and the ADRs the work touches before writing code.
+   Do not add to, change or create any of those files, or any other context file. The one
+   exception is an ADR change whose exact wording is in this brief.
 2. Test-first: write the failing test, run it and see it fail for the intended reason,
    then the smallest implementation, then refactor.
 3. Run the full check before you call anything done: `<full check command>`.

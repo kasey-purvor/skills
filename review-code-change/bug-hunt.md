@@ -4,7 +4,7 @@ You are the assigned bug hunter for the change named in your brief. Your questio
 
 You do not need the ticket or the handbook. Your brief says in a sentence or two what the change is meant to do, so you can tell a deliberate change from a regression. A separate reviewer checks requirements, test quality and standards ([against-ticket.md](against-ticket.md)); leave style, naming and standards to it.
 
-Complete only this assignment and report to the coordinator. Do not send another reviewer, edit product code or tracker records, or run the stream's clash check and pane bookkeeping.
+Complete only this assignment and report to the coordinator. Do not send another reviewer, edit product code or tracker records, or run the check with other sessions or any pane bookkeeping.
 
 ## The target
 
