@@ -125,7 +125,7 @@ A context file is a markdown file that agents and people read to understand a pr
 - Two rigid sections are agreed: the session-level skills this workflow uses (such as `linear`, `stream`, `grill-with-docs`, `to-prd`, `to-issues`, `handoff`, `session-wrap-up`; not the background ones a builder uses, such as test-driven development), and the context files.
 - The flexible part covers how work is done (git, reviews, merging) and CI/CD. Whatever is left is reviewed after those and slotted into a section or given a new one.
 - The file reads for a human (12 Nov): similar things grouped together, tables where they help, plain sentences. A first draft ordered by the path of one change and written as slots to fill was rejected as unreadable.
-- Its groups, in order: the skills (a table, with what each is for); the context files (a table); how work is done; git; CI/CD and environments; about this repo (the stack and the like).
+- Its sections, in order, as they stand in the worked example (16 Nov): house rules; the skills, in a table that says what each is for and who uses it; the subagents, in a table that says what each does and what it works from; the context files, in a table, with the ask-first rule; how work is done (tickets, worktrees, then the two flows, with a stream as an optional way to run several tickets); git and CI/CD (the environments, the picture of the route and its gates, why each gate exists, the grid of what each gate demands, the tests, test data and logins); and about this repo.
 - How work is done has two modes, deciding what to build and building. It says who does the work (the agent, or subagents, which it names), that product work always has a ticket and the `linear` skill holds the rest, and how worktrees are used to run work in parallel. It does not describe a ticket's stages.
 - References run one way: the agents file points at skills, and a skill does not point at a section of the agents file. Kasey: two-way references become spaghetti. The `linear` skill is re-reviewed against this at the end.
 - A section of house rules is a compulsory part of the template, put into every repo's file unchanged (12 Nov). It opens with the old template's paragraph on quality ("This codebase will outlive you") and holds the rules for how agents are run: which model subagents use (Opus at extra-high effort for code work, or Sol at extra-high on Codex; Sonnet for research and non-code work, or Luna on Codex), that routine reviews start without asking, that each round of review fixes goes to a fresh agent, that nothing credits an AI, and that a credential is never printed. The ask-first rule stays in the context files section. Added 16 Nov: the check with other sessions before starting a ticket, moved out of the `stream` skill, where it had made every ticket load a skill that is otherwise about streams. The rules for review findings still live in `stream` and still apply to a lone ticket.
@@ -296,6 +296,34 @@ A context file is a markdown file that agents and people read to understand a pr
 - Kasey's idea: a short section in `AGENTS.md` naming the hooks (15:12).
 - What each kind of agent gets.
 - Whether stricter rules for context files shrink the problem enough in a new repo.
+
+---
+
+## Where things stand (16 Nov 2026)
+
+**Made so far**
+- `set-up-sdlc/AGENTS-example.md`, with its picture `example_pipeline.png` and the picture's source `example_pipeline.d2`: a worked example of the new agents file, using one repo's rules. Kasey agreed its structure section by section. Its facts are illustrative.
+- `dev-standards-handbook/topics/git-and-cicd.md`: a first draft, listed in the handbook's router, not reviewed. Kasey does not want to spend long reviewing it.
+- Skill changes made: `linear` (the four rules joining a ticket to its pull request, and three small fixes); `stream` (when to offer a stream; the check with other sessions moved out to house rules).
+- Kasey's global file: the subagent default is now Opus at extra-high effort, with Sonnet for research and non-code work.
+- This skill's `SKILL.md`, `domain.md` and `AGENTS-portable-template.md` are still the old setup skill's.
+
+**Next, in the order Kasey gave**
+1. Sort the example's sections into those that get a fixed recipe and those that need a discussion with whoever is creating the repo. He expects the second kind to be much harder.
+2. Design the grilling-style skill that creates a repo's agents file with the user, working from the example.
+3. Straight after that: how Kasey is made aware of changes to context files.
+
+**Still open, none started**
+- A re-review of `linear` at the end. Two rules from the old copied half are in no skill (comment on decisions as they happen; record unrecorded decisions before a handoff). Several skills point back at sections of the agents file, against the one-way rule: `linear`, `to-issues`, `stream` and its team document and builder files, `session-wrap-up`, `handoff`, and this skill's `domain.md`.
+- A review of the two reviewer types in `review-code-change`.
+- The rules for review findings still sit in `stream`, though they apply to a lone ticket too.
+- The review workflow, the fresh-agent rule and the merge permission are decided to leave Kasey's global file and have not been removed from it. Three skills still send the reader to the global file for when reviews start.
+- The real content of the gates and the building flow, to be recorded as an ideal demo together with Kasey's newest git setup. Its design notes are in that repo at `docs/cicd-redesign/design-so-far.txt`. Two readers of the example raised questions about the flow (where the agent stops and waits, when a ticket is finished, who builds a lone ticket). Kasey set those reviews aside as picking at a demo; the questions belong to the ideal demo.
+- The file that holds the rules for every context file, in its new form.
+- The subagents: what builders and reviewers are told and what they load. The skills review's open questions are in `~/dev_wsl/projects/agent-context/skills-review/to-do.md`.
+- Where the detail about a repo's test fixtures lives.
+- Small and unanswered: whether `diagnose` and `prototype` join the skills table; Kasey's Codex file says Luna is used only when he picks it, where the house rules say Luna for research; removing the `setup-pre-commit` skill once the topic is accepted; the handbook's description line does not mention the new topic.
+- Parked: scheduled runs, the Linear team document, runbooks, taking on a live repo.
 
 ---
 
