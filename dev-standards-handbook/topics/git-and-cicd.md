@@ -95,7 +95,7 @@ Protects `main` again: it should only ever hold changes that were reviewed and t
 | How the database changes | By hand. Or only through the repo, as migrations. | Only through the repo, with one emergency route that is logged. |
 | After a deploy | Nothing. Or a quick check that it is alive. | A quick check, every time. |
 
-How a deploy itself is built (rollback, migrations, health checks) is in the `dev-standards-handbook`, deployment chapter.
+How a deploy itself is built (rollback, migrations, health checks) is in the deployment chapter, `deployment.md`.
 
 ## Sorting tests
 
