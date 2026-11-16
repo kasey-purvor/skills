@@ -1,18 +1,17 @@
 <!--
-FIRST DRAFT, 16 Nov 2026. Revised the same day, after the setup skill's design was
-agreed with Kasey: one suggested setup, live or not live, integration, GitHub's own
-rules. Not reviewed by Kasey yet.
-Moved here from the handbook's topics on 16 Nov: its one reader is the setup agent.
-Drawn from two of his setups (the most recent one is the main target), the
-worked example in set-up-sdlc/AGENTS-example.md, and the old setup-pre-commit skill
-(now in the skills repo's _archive folder).
+The practice the setup agent proposes from. Rewritten 16 Nov 2026 as rules only:
+no step-by-step instructions, no lists of options. Agreed with Kasey in outline;
+not yet read by him in this form. Drawn from two of his setups (the most recent
+is the main target). It names no tool, company or product.
 -->
 
 # Git and CI/CD
 
-How a change gets from someone's machine to production, and how to choose a setup for a repo. Read this when a repo is being set up, or when its setup is being reviewed. Day to day, an agent works from the repo's own agent instructions, not from this.
+How a change gets from someone's machine to production. Read this when a repo is being set up, or when its setup is being looked at again. Day to day, an agent works from the repo's own agent instructions, not from this.
 
-This is the one part of the lifecycle that can be done many ways. So it gives one suggested setup, the options at each step and the usual choice, and the person setting up the repo decides. What they decide is written into the repo's agent instructions as its "Git and CI/CD" section: the environments, the picture of the route, the gates and the tests.
+It states one suggested setup, as rules. Propose it, and let the repo's owner change what does not fit. What they decide is written into the repo's agent instructions as its "Git and CI/CD" section: the stage and when to raise the next step, the environments, the picture of the route, the gates and the tests.
+
+Leave out whatever a repo has no use for. A library or a command-line tool has no environments beyond local, and a project with no database has no database rules.
 
 ## The principle
 
@@ -23,22 +22,20 @@ This is the one part of the lifecycle that can be done many ways. So it gives on
 
 ## The suggested setup
 
-Propose this unless the repo's owner has a reason to differ. It is one setup, and a project builds as much of it as it needs today (next section).
-
 | Part | What it says |
 | --- | --- |
 | Foundation | Everything the database needs can be recreated from the repo with one command. Made-up data loads cleanly with another. |
 | Local | Every person and agent has their own running copy and their own database. |
-| Commit | A hook checks format, lint and types on the files being committed, and scans for secrets. |
+| Commit | A hook checks the files being committed, in seconds. |
 | Pull request | CI runs the tests. Each check builds its own database, so nothing queues. |
 | Merge | A pull request for every change, with the checks green and the branch up to date with `main`. |
 | Integration | Every merge is deployed there automatically. |
-| Pre-production | A person promotes what is on integration. Code whose checks were not green is refused. |
+| Pre-production | A person promotes what is on integration. |
 | Production | A person deploys, and only what is already in pre-production. |
 
 This gives two separate flows:
 
-- **The work's flow ends at integration.** A change merges, is deployed within minutes, and is proved there. Nobody building waits for a person to press anything, which is what lets several agents merge in a day.
+- **The work's flow ends at integration.** A change merges, is deployed within minutes, and is proved there. Nobody building waits for a promotion or a deploy, which is what lets several agents merge in a day.
 - **The release's flow is the two steps a person starts.** Promoting and deploying move a batch of merged changes, when the person chooses. They gate a release, not a ticket.
 
 ## What to decide when
@@ -48,137 +45,87 @@ One stage matters: whether the product is live, meaning any real user's data exi
 | When | What is decided | Why then |
 | --- | --- | --- |
 | Day one, not live | The commit hook. CI on every pull request. The rules that protect `main`. What the GitHub account itself enforces. Whether an agent may push, and who merges. The database built from the repo, with made-up data. | All of it is cheap now. Building the database from the repo is very costly to add once months of changes have been made by hand. |
-| Before going live | Pre-production and production. What data each environment holds. Who promotes and who deploys. That a deploy takes only proved code. A check after each deploy. What an agent may do in each environment. Where test logins are kept. | None of it means anything until there is somewhere to deploy to. It has to be settled before the first real user, not after. |
-| Later, when it hurts | Running only the tests a change touches. Something that keeps pull requests up to date. Regular runs. An alert that reaches a person. A cap on open pull requests. | Each has its own trigger (below). Until the trigger shows, it is work for nothing. |
-
-**Integration is added at the first of two moments:** someone else needs to see the merged work (a second contributor, a client), or going live is near. Before either, one person on a project that is not live can skip it: local and CI are enough, and changes are proved locally. Once the project is live it is always there.
+| When someone else needs to see the merged work, or going live is near | Integration. | Before then, one person on a project that is not live skips it: local and CI are enough, and changes are proved locally. |
+| Before going live | Pre-production and production. What data each environment holds. Who promotes and who deploys. What an agent may do in each environment. Where test logins are kept. | None of it means anything until there is somewhere to deploy to. It has to be settled before the first real user, not after. |
+| Later, when it hurts | Running only the tests a change touches. Something that keeps pull requests up to date. A cap on open pull requests. Regular runs. An alert that reaches a person. | Each has its own trigger (below). Until the trigger shows, it is work for nothing. |
 
 ### When to raise the next step
 
-An agent working in a repo does not change the setup. It tells the human when one of these shows up.
+Setup copies the stage, and the triggers that fit it, into the repo's agent instructions. That is the only place a working agent will see them. The agent tells the human when one shows up. It never changes the setup itself.
 
-Not live:
-- a ticket would deploy the app somewhere for the first time;
-- someone else needs to see the merged work;
-- a real user is about to sign up, or real data is about to be loaded.
-
-Live:
-
-| What is happening | What to consider |
-| --- | --- |
-| CI takes long enough that people stop waiting for it | Running only the tests a change touches |
-| Pull requests wait on each other to be brought up to date | An automatic step that updates the next one. A paid queue only if that is still too slow. |
-| A failed run or an outage goes unnoticed | Regular runs, and an alert that reaches a named person |
-| Customers meet slowness before anyone else does | A regular performance run on pre-production |
+| Stage | What is happening | What is due |
+| --- | --- | --- |
+| Not live | A ticket would deploy the app somewhere for the first time, or someone else needs to see the merged work. | Integration |
+| Not live | A real user is about to sign up, or real data is about to be loaded. | The going-live decisions |
+| Any | CI takes long enough that people stop waiting for it. | Running only the tests a change touches |
+| Any | Pull requests wait on each other to be brought up to date. | A step that updates the next one automatically. A paid queue only if that is still too slow. |
+| Any | The line of open pull requests keeps growing. | A cap on how many each person may have open |
+| Live | A failed run or an outage goes unnoticed. | Regular runs, and an alert that reaches a named person. No tickets filed automatically. |
+| Live | Customers meet slowness before anyone else does. | A regular performance run on pre-production |
 
 ## The environments
 
-| Environment | The question it answers | What data it holds | How code gets there | Needed |
-| --- | --- | --- | --- | --- |
-| Local | Does my branch work? | Its own database, built from the repo, with made-up data. | You run it. | From day one |
-| Pull-request checks | Is this change safe to merge? | Each check builds its own empty database. Nothing is shared, so nothing queues. | Opening a pull request. | From day one |
-| Integration | Does everything merged work once it is deployed? | No real data: the structure plus a made-up demo customer. Rebuilt from the repo when it breaks, never repaired by hand. | Every merge, automatically. Merges only, never a branch. | See above. Always, once live. |
-| Pre-production | Is this release ready for customers? | Standing test data. No customer data. | A person promotes it. | Before going live |
-| Production | | Customers' data. | A person deploys it. | Before going live |
+| Environment | The question it answers | What data it holds | How code gets there |
+| --- | --- | --- | --- |
+| Local | Does my branch work? | Its own database, built from the repo, with made-up data. | You run it. |
+| Pull-request checks | Is this change safe to merge? | Each check builds its own empty database. | Opening a pull request. |
+| Integration | Does everything merged work once it is deployed? | No real data: the structure plus a made-up demo customer. | Every merge, automatically. Merges only, never a branch. |
+| Pre-production | Is this exact release ready for customers? | Standing test data. No customer data. | A person promotes it. |
+| Production | | Customers' data. | A person deploys it. |
 
-Rules that sit under all of them:
 - **Build the database from the repo,** never by copying another environment and never by hand. For a database with no fixed structure, that means its indexes and validation rules.
-- **Keep a demo customer that loads cleanly.** Most tests and every non-production environment depend on it.
-- **A check never queues for a shared environment.** If it does, give it its own database.
-- **No real customer data outside production.** A setup that already keeps a copy of production in pre-production locks it down: a short access list, and all of its preparation in the repo. Do not start one.
-- **Integration is a real deployment or it is nothing.** A local container by that name only repeats what CI did. What integration adds is proof that the app works as deployed, a place someone else can open, and a rehearsal of the deploy before there is anything to lose.
+- **Keep a demo customer that loads cleanly.** Most tests and every environment except production depend on it.
+- **No real customer data outside production.** An environment that holds a copy of it is production in all but name, and is locked down like production. Do not start one.
+- **Integration is a real deployment or it is nothing.** A local container by that name only repeats what CI did. It adds proof that the app works as deployed, a place someone else can open, and a rehearsal of the deploy before there is anything to lose. When it breaks it is rebuilt from the repo, never repaired by hand.
+- **Pre-production holds a release still.** Integration changes with every merge. Pre-production is the one batch a person chose, unchanged while it is checked, and production takes exactly that.
 
 ## GitHub's own rules
 
-Before choosing the merge rules, read what the repo's GitHub account already enforces. These are facts, not choices, and they limit the choices.
+Read what the repo's GitHub account already enforces before proposing the merge rules. These are facts, not choices, and they limit the choices. Look at the rules on the repo and any its organisation applies.
 
-| What to find out | Why it matters |
-| --- | --- |
-| Is an approving review required? | It is a demand of the merge gate that a machine enforces. |
-| Who may merge? | It decides who merges, and whether merging automatically is possible at all. |
-| Do the rules bind administrators too? | If not, the gate rests on people. |
-| Does the account's plan allow such rules on this repo? | Some plans do not allow them on private repos. Then every merge rule rests on people. |
+- Is an approving review required? GitHub never lets a pull request's author approve it, so if an agent opens pull requests under a person's account, that person cannot be the approver.
+- Who may merge? This decides whether merging automatically is possible at all.
+- Do the rules bind administrators too? If not, the gate rests on people.
+- Are the rules enforced, not only present? On some plans they can be created for a private repo and are not enforced. Then every merge rule rests on people.
 
-Then ask the repo's owner whether their organisation has rules that the repo's settings do not show.
+Then ask the owner whether their organisation has rules that the settings do not show.
 
-GitHub never lets the author of a pull request approve it. If an agent opens pull requests under a person's account and a review is required, that person cannot be the approver.
+## The rules at each gate
 
-## The gates
+**Commit.** Catches careless mistakes in seconds, before anyone else sees them.
+- The hook checks format, lint and types on the files being committed, and scans them for secrets. It runs no tests, because a slow hook gets skipped.
+- The type check uses the project's own settings.
+- One hook tool per repo.
+- A fresh clone or worktree gets a working hook without anyone remembering to install it. Where that cannot be automatic, the repo's agent instructions say what to run.
+- The hook is proved once, by committing a mistake it must refuse.
 
-A change passes a gate at each step: commit, pull request, merge, then one for each environment it is deployed to. For each gate, choose what it demands.
+**Pull request.** Nothing reaches `main` until the checks have passed on that change.
+- CI runs the whole suite on every pull request.
+- A change to the database's structure runs every test that depends on the database, never a chosen few.
+- A pull-request job holds no login that reaches production.
+- Ask the owner: may an agent push whenever its branch is ready, or only when asked?
 
-### Commit
+**Merge.** `main` only ever holds changes that were reviewed and tested together.
+- Every change arrives as a pull request, and the rule binds administrators too.
+- The checks are green and the branch is up to date with `main`. Branches are updated by hand while pull requests are few.
+- A review is attached to the pull request, with every finding settled.
+- Ask the owner: does a person merge, or does it merge automatically once the checks are green and the review is attached?
 
-Protects against careless mistakes, in seconds, before anyone else sees them.
+**Each deploy.** Only proved code moves on, and a person decides where a mistake would reach customers.
+- Integration takes every merge automatically. A person promotes to pre-production, and a person deploys to production.
+- A deploy takes only code that passed the pull-request checks. It checks that this code passed, not this commit: a merge makes a new commit, but with branches kept up to date its code is exactly what the pull request's last run tested. For the same reason there is no second full run on `main` after a merge.
+- Production takes only what is already in pre-production.
+- After every deploy, a quick check that the app starts and a test user can sign in.
+- A database changes only through the repo. If an emergency route is wanted, it is a workflow in the repo that a person starts and that leaves a record.
 
-| Option | Trade-off |
-| --- | --- |
-| No hook | Nothing slows a commit. Every mistake waits for CI. |
-| Format, lint and type checks on the files being committed | Fast enough that nobody skips it. **The usual choice.** |
-| The same, plus the tests | Catches more, but a slow hook gets bypassed. |
+## Where tests run
 
-A scan for secrets belongs here too. The steps to install the hook are at the end of this file.
-
-### Pull request
-
-Protects `main`: nothing reaches it until the checks have passed on that change.
-
-| Decision | Options | The usual choice |
-| --- | --- | --- |
-| What runs | Everything, every time. Or only what the change touches. | Everything, until the suite is big enough to hurt. |
-| Which tests belong here | See "Sorting tests" below. | Every test that needs only the code, or an empty database. |
-| A change to the database's structure | A subset of the permission tests, or all of them. | All of them. Never a subset. |
-| When an agent may push | Only when asked. Or whenever the branch is ready. | Decided per repo. |
-
-### Merge
-
-Protects `main` again: it should only ever hold changes that were reviewed and tested together.
-
-| Decision | Options | The usual choice |
-| --- | --- | --- |
-| How a change reaches `main` | Direct pushes allowed. Or a pull request for every change. | A pull request for every change, with the rule binding administrators too. |
-| Keeping `main` tested | Merge freely and test `main` afterwards. Or require each branch to be up to date with `main` first. | Up to date first. |
-| Who does the updating | Each person, by hand. An automatic step that updates the next pull request. A merge queue service. | By hand while pull requests are few. Automatic when the waiting starts to cost. A paid queue only if that is still too slow. |
-| Who merges | The human. Or automatically once the checks are green and a review is attached. | Decided per repo. This is the choice that differs most between setups. |
-| Review | Who reviews, and whether the review must come from a different account than the author. | A review attached to the pull request. |
-| Open pull requests | No limit. Or a cap per person. | No limit at first. A small cap once the line gets long. |
-| A second full run on `main` after the merge | Run it. Or skip it. | Skip it, but only if branches must be up to date, because then the pull request's last run already tested the same code. |
-
-### Each environment after the merge
-
-| Decision | Options | The usual choice |
-| --- | --- | --- |
-| What starts a deploy | Every merge. A person. A schedule. | Every merge for integration. A person for pre-production and production. |
-| What a deploy refuses | Nothing. Or any commit whose checks were not green. | Refuse it. |
-| What production accepts | Any proved commit. Or only the exact commit already in pre-production. | Only the exact commit. |
-| How the database changes | By hand. Or only through the repo, as migrations. | Only through the repo, with one emergency route that is logged. |
-| After a deploy | Nothing. Or a quick check that it is alive. | A quick check, every time. |
-| What a pull-request job can reach | Any login it is given. Or nothing that reaches production. | Nothing that reaches production. |
-
-How a deploy itself is built (rollback, migrations, health checks) is in the deployment chapter, `deployment.md`.
-
-## Sorting tests
-
-Put each group of tests in the cheapest place where it actually passes. Do not decide in advance.
-
-| Slot | What the tests need | Where it runs |
-| --- | --- | --- |
-| 1 | Only the code | Every pull request |
-| 2 | An empty database built from the repo | Every pull request that could affect it |
-| 3 | That, plus the demo customer | Integration, or a pull request if it is quick |
-| 4 | Real data | Pre-production, after a promotion. Only in a setup that already keeps a locked-down copy of production there. |
-
-To place a group: run it in the lowest slot that might work. If it passes, it lives there. If it fails for missing data, try the next slot up. If the test itself is out of date, list it for repair. If nothing uses it, propose deleting it.
-
-Proving one change in a deployed environment, by signing in and using it, is not one of these slots. An agent or a person does it on integration after the merge, and the evidence goes on the ticket.
-
-Load and speed tests are not CI. Run them regularly against pre-production.
-
-## What runs regularly
-
-Not everything belongs on a pull request. Decide what runs nightly or weekly, such as the full permission set, checks specific to one customer, and a performance run.
-
-A regular run is not a gate, so nobody is waiting on it. When one fails, or does not run, that has to reach a named person. Do not file tickets automatically.
+- Put each group of tests in the cheapest place where it actually passes. Find out by running it, not by reading it.
+- The places, cheapest first: tests that need only the code, on every pull request; tests that need an empty database built from the repo, on every pull request; tests that also need the demo customer, on integration, or on a pull request while there is no integration or where they are quick.
+- A test that needs more data than the demo customer has gets that data added to the demo customer.
+- A test that is out of date is listed for repair. A test nothing uses is proposed for deletion.
+- Proving one change by signing in and using the app is not one of these. An agent or a person does it on integration after the merge, or locally while there is no integration, and the evidence goes on the ticket.
+- Load and speed tests are not CI.
 
 ## Changing the setup
 
@@ -190,50 +137,7 @@ A regular run is not a gate, so nobody is waiting on it. When one fails, or does
 ## What never to do
 
 The default list for a repo's agent instructions:
-- skip the commit hook with `--no-verify`;
-- force-push, or run `git reset --hard` or `git clean` on a shared branch;
+- skip the commit hook;
+- force-push, or reset or clean a shared branch;
 - commit with no branch checked out;
 - change a database or an environment by hand.
-
-## Installing the commit hook
-
-### A JavaScript or TypeScript repo
-
-Using Husky (which runs the hook) and lint-staged (which runs commands on only the files being committed).
-
-1. Find the package manager from the lock file: `pnpm-lock.yaml`, `package-lock.json`, `yarn.lock` or `bun.lockb`.
-2. Install `husky` and `lint-staged` as development dependencies, with the repo's formatter and linter if it has none.
-3. Run `npx husky init`. It creates `.husky/` and adds a `prepare` script, so the hook is installed whenever dependencies are.
-4. Write `.husky/pre-commit` with one line that runs lint-staged.
-5. Configure lint-staged to format and lint the staged files, and to run the type check for a package when one of its TypeScript files is staged.
-6. Check that it works: stage a file with a formatting mistake and commit it.
-7. Commit the hook itself, which runs it for the first time.
-
-A new clone or worktree has no working hook until its dependencies are installed there.
-
-### A Python repo
-
-Using the `pre-commit` tool (which runs the hook on only the files being committed) and Ruff (which formats and lints).
-
-1. Add `pre-commit` and `ruff` as development dependencies with the repo's package manager, and a type checker if the repo has none.
-2. Write `.pre-commit-config.yaml` with Ruff's two hooks, one that lints and one that formats, and a hook that runs the type checker.
-3. Run the type checker as a local hook, through the package manager, so that it sees the project's own dependencies. A type checker run in the tool's separate environment cannot see them and reports imports it cannot find.
-4. Run `pre-commit install` once in the clone. It writes the hook into the repo's `.git` folder, which the repo's worktrees share.
-5. Check that it works: stage a file with a formatting mistake and commit it.
-6. Commit the configuration file.
-
-`pre-commit install` has to be run in every new clone: unlike the JavaScript set-up, installing dependencies does not do it. A worktree shares the clone's hook, but the type check needs the dependencies installed in that worktree.
-
-## Previous setups, and why they differ
-
-A record of setups already made with this approach, so the next one starts from experience and not from a blank list. Reasons only, no history. Setup B is the nearer of the two to the suggested setup.
-
-| | Setup A | Setup B |
-| --- | --- | --- |
-| What it is | A product with two contributors, live with customers | A larger product with several contributors, live with customers |
-| Environments | Local, one test environment, production | Local, integration, pre-production, production |
-| Test environment data | Standing test data. No customer data. | A locked-down copy of production in pre-production, which it had before this approach. A demo customer everywhere else. |
-| Pull-request checks | The whole suite, every time | Sorted into slots, and only what the change touches |
-| Up to date with `main` | Required, updated by hand | Required, with an automatic step being added |
-| Who merges | The human | Automatically, once the checks are green and a review is attached |
-| Deploys | Both started by hand | Integration on every merge. Pre-production and production by a person. |
