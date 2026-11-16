@@ -8,6 +8,20 @@ shape can be judged. It is not a template yet, and it changes no repo.
 
 Connect Assist is a multi-tenant web application that runs anonymous employee-feedback questionnaires.
 
+## House rules
+
+This codebase will outlive you. Every shortcut becomes someone else's burden; every hack compounds into technical debt. You are shaping the project — the patterns you establish get copied, the corners you cut get cut again. Fight entropy. Leave the codebase better than you found it.
+
+These rules are the same in every repo that uses this setup.
+
+| | Rule |
+| --- | --- |
+| Models | Subagents doing code work run on Opus at extra-high effort (on Codex, Sol at extra-high). Research and other work that is not about code runs on Sonnet (on Codex, Luna). A different model only when the human asks. |
+| Reviews | When a change is ready, the routine reviews start without asking. Anything heavier is suggested with a reason and waits for a yes. |
+| Fix rounds | Each round of review fixes goes to a fresh agent, and the same reviewer checks the fix. |
+| Credit | Nothing you write credits an AI: not a commit, a pull request or a ticket. |
+| Secrets | Never print, log or paste a credential. Fetch it at the moment you use it. |
+
 ## Skills
 
 Load the skill when its moment comes. Each one holds its own procedure; nothing here repeats it.
@@ -165,8 +179,7 @@ Each merge puts every other open pull request out of date, so finish one before 
 Never:
 - skip the commit hook with `--no-verify`;
 - force-push, or run `git reset --hard` or `git clean` on a shared branch;
-- commit with no branch checked out;
-- add a line crediting an AI to a commit.
+- commit with no branch checked out.
 
 ### The tests
 
@@ -184,7 +197,7 @@ Never:
 
 ### Test data and logins
 
-- Logins are in AWS Secrets Manager under `connect-assist/uat/`. Fetch one when you need it. Never print, log or paste one.
+- Logins are in AWS Secrets Manager under `connect-assist/uat/`.
 - Email from a test goes only to the shared agent inbox. Never sign up a made-up address.
 - Never delete these standing fixtures. Each is rebuilt by its own command:
 
