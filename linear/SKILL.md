@@ -86,7 +86,7 @@ Four rules that hold in every repo:
 
 ## Review findings
 
-What happens to a code-review finding (fix it, drop it, or suggest a ticket or a tally line) is behaviour, and it lives in the **`stream` skill** (`review-findings.md`). Load that skill when a review produces findings. The only Linear mechanics are: a ticket that came from a review carries the `review` label, and a security finding's ticket carries `security`.
+What happens to a code-review finding (fix it, drop it, or suggest a ticket) is behaviour, and it lives in the **`stream` skill** (`review-findings.md`). Load that skill when a review produces findings. The only Linear mechanics are: a ticket that came from a review carries the `review` label, and a security finding's ticket carries `security`.
 
 ## Projects
 
@@ -207,7 +207,7 @@ save_document({ title: "Team notes", team: "Team Name", content: "..." })
 save_document({ id: docId, content: "Updated..." })   // update: replaces the whole page
 save_document({ id: docId, patch: [{ op: "append", text: "\n- new line" }] })   // update: partial edit
 ```
-Exactly one parent: `project`, `issue`, `initiative`, `cycle`, or `team`. `content` is rewritten on save — bare issue refs (`CLO-123`) become issue-mention markup. Prefer `patch` (`replace`, `insert_before`, `insert_after`, `prepend`, `append`, `replace_range`) on a page other agents also write, such as a team document. Find a team's documents with `list_documents({ teamId })`. Whether to create a document at all is the `stream` skill's rule, not this one's.
+Exactly one parent: `project`, `issue`, `initiative`, `cycle`, or `team`. `content` is rewritten on save — bare issue refs (`CLO-123`) become issue-mention markup. Prefer `patch` (`replace`, `insert_before`, `insert_after`, `prepend`, `append`, `replace_range`) on a page other agents also write. Find a team's documents with `list_documents({ teamId })`. Whether to create a document at all is the `stream` skill's rule, not this one's.
 
 ### Project status updates
 ```

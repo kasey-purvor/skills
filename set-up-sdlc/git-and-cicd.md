@@ -129,7 +129,7 @@ These are for setup, when it is run again on a repo: they say which part is due.
 - Every change arrives as a pull request, and the rule binds administrators too.
 - The checks are green and the branch is up to date with `main`. GitHub's setting that requires this is switched on. Branches are updated by hand while pull requests are few.
 - The change has been reviewed by the repo's review subagents, with every finding settled. This is not GitHub's approving review, which is a separate rule where the account requires one.
-- Ask the owner: does a person merge, or does it merge automatically once the checks are green and that review is done?
+- Ask the owner who merges. Recommend that the agent merges its own pull request once the checks are green and that review is done with nothing blocking, and that the human saying "merge it" is enough by itself. The other choice is that only a person merges.
 
 **Each deploy.** Only proved code moves on, and a person decides where a mistake would reach customers.
 - Integration takes every merge automatically. A person promotes to pre-production, and a person deploys to production.

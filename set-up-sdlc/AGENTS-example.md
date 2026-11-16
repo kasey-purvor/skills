@@ -114,7 +114,7 @@ A worktree is a second working folder on its own branch, sharing the repo's hist
 | 4. Pull request | Pushed and opened when the branch is ready. CI runs. | You | |
 | 5. Review | The ticket reviewer and the bug hunter, at the same time. The frontend verifier too, for a visible change. | Subagents | `review-code-change`, `verify-frontend-change` |
 | 6. Fix | Each round of fixes goes to a fresh builder, and the same reviewer checks the fix. | A builder | `stream` |
-| 7. Merge | Once CI is green and the review is clean. | The human | |
+| 7. Merge | Once CI is green and the review is clean, or when the human says "merge it". | You | |
 | 8. Prove | The merge is deployed to integration automatically. The change is proved there, with the evidence on the ticket. Then the ticket is finished. | You | `linear` |
 
 **A ticket goes through those steps by itself.** That is the normal case. If the human gives you another ticket when one is finished, carry on with it the same way.
@@ -148,7 +148,7 @@ A change passes six gates on its way to production. The cheap checks come first 
 | --- | --- |
 | G1 Commit | Catches careless mistakes in seconds, before anyone else sees them. |
 | G2 Pull request | Nothing reaches `main` until the checks have passed on it. |
-| G3 Merge | `main` only ever holds changes that were reviewed and tested together. |
+| G3 Merge | `main` only ever holds changes that were reviewed and tested together. You merge your own pull request once both are true. |
 | G4 To integration | Every merged change is proved in a real deployment, on made-up data, with nobody waiting on a person. |
 | G5 To UAT | A release is held still and checked before a customer meets it, and a person decides. |
 | G6 To production | Only the release that was checked goes to customers, and only on a person's say. |
@@ -161,7 +161,7 @@ Read down a column to see everything a gate demands. Read along a row to see whe
 
 | | G1 Commit | G2 Pull request | G3 Merge | G4 To integration | G5 To UAT | G6 To production |
 | --- | :---: | :---: | :---: | :---: | :---: | :---: |
-| *Enforced by* | *the commit hook* | *CI and GitHub* | *GitHub and the human* | *the deploy workflow* | *the deploy workflow and the human* | *the deploy workflow and the human* |
+| *Enforced by* | *the commit hook* | *CI and GitHub* | *GitHub and you* | *the deploy workflow* | *the deploy workflow and the human* | *the deploy workflow and the human* |
 | **Tests** | | | | | | |
 | T1 Format and lint | ● changed files | ● all | | | | |
 | T2 Type check | ● changed packages | ● all | | | | |
@@ -178,7 +178,7 @@ Read down a column to see everything a gate demands. Read along a row to see whe
 | Up to date with `main` | | | ● | | | |
 | Passed CI | | | ● | ● | ● | ● |
 | Only what is already in UAT | | | | | | ● |
-| A person decides | | | ○ | | ○ | ○ |
+| A person decides | | | | | ○ | ○ |
 
 Each merge puts every other open pull request out of date, so finish one before bringing the next up to date.
 

@@ -62,8 +62,7 @@ $K/scripts/codex-run.sh --name con-123-build --dir /abs/path/.claude/worktrees/c
 1. **Trust git, not the report.** Read `git log` and the diff in the worktree, and
    check the report's claims against them.
 2. **A fix round gets a fresh run** with the findings, the ticket and "read the code as it
-   stands". Use `--resume <thread id>` only for a mid-flight pivot where the run's own
-   context is the asset.
+   stands". Do not resume the earlier run for it.
 3. **Relay what matters** to the person you work for: what shipped, what is unverified,
    and any `blocked_reason` or `open_questions`.
 

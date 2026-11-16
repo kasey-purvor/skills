@@ -53,5 +53,4 @@ Run this when the stream's work is finished or the human ends it.
 2. **Write the Findings section** on the stream ticket.
 3. **Run the session wrap-up.** Run the `session-wrap-up` skill for the stream. It proposes the decision and trap lines, the human says yes or no per line, and the lines land where `session-wrap-up` says.
 4. **Post a status update on each project the stream touched:** what it shipped there, anything a later agent should know beyond the lines step 3 added, and the stream ticket's id.
-5. **Update the team document:** add or bump the recurring findings the human agreed, and tidy it. See [team-document.md](team-document.md).
-6. **Mark the stream ticket Done.** Leave it, and its tickets, on the pane: pins come off only when the human asks.
+5. **Mark the stream ticket Done.** Leave it, and its tickets, on the pane: pins come off only when the human asks.

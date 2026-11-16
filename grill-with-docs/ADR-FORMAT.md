@@ -9,18 +9,20 @@ Setup creates the `docs/adr/` directory. If it is missing, tell the human; do no
 ```md
 # {Short title of the decision}
 
-{1-3 sentences: what's the context, what did we decide, and why.}
+{The ruling: what was decided, in one to three sentences.}
+
+**Why:** {the reason.}
+
+**Turned down:** {the options rejected, and why each was.}
 ```
 
-That's it. An ADR can be a single paragraph. The value is in recording *that* a decision was made and *why* — not in filling out sections.
+That's it: the ruling, the reason, and the options turned down. An ADR can be three short paragraphs.
 
-## Optional sections
+- **The ruling sits at the top.** When the decision changes, rewrite the top in the same edit. Never add an amendment underneath.
+- **Nothing about the code.** No description of how it was built, no measurements, no story of a ticket. A test for any sentence: would it still be true if the code were rewritten another way?
+- **A ruling lives in one place.** Do not repeat it in another ADR or in `docs/decisions.md`.
 
-Only include these when they add genuine value. Most ADRs won't need them.
-
-- **Status** frontmatter (`proposed | accepted | deprecated | superseded by ADR-NNNN`) — useful when decisions are revisited
-- **Considered Options** — only when the rejected alternatives are worth remembering
-- **Consequences** — only when non-obvious downstream effects need to be called out
+The one optional part is a **Status** line (`superseded by ADR-NNNN`), for an ADR that another has replaced.
 
 ## Numbering
 

@@ -1,6 +1,6 @@
 ---
 name: stream
-description: How multi-ticket agent work is planned, run and recorded in Linear as streams - the stream ticket, what happens to code-review findings, the team document, and the close checklist. Use when planning, starting, resuming or closing a stream, when a code review produces findings, or when reading or writing a team document.
+description: How multi-ticket agent work is planned, run and recorded in Linear as streams - the stream ticket, what happens to code-review findings, and the close checklist. Use when planning, starting, resuming or closing a stream, or when a code review produces findings.
 ---
 
 # Stream
@@ -33,7 +33,7 @@ Building, pushing and merging follow the repo's agent instructions and the human
 
 ## Tickets in a stream
 
-A ticket whose parent is a stream ticket is part of that stream. Worth reading before starting one: the last few status updates on the ticket's project, and the team document.
+A ticket whose parent is a stream ticket is part of that stream. Worth reading before starting one: the last few status updates on the ticket's project.
 
 Other sessions read a stream ticket's Touches section to see what the stream is working on, so keep it current.
 
@@ -56,10 +56,6 @@ The stream ticket's shape and the close checklist are in [stream-ticket.md](stre
 
 A stream cleans up after itself: it isn't finished until every review finding is fixed, dropped or settled by the human. The outcomes and the report format are in [review-findings.md](review-findings.md). They apply to lone tickets too.
 
-## Team document
-
-Each team has one team document, a jotting area for app-wide notes. See [team-document.md](team-document.md).
-
 ## Documents
 
-Don't create other Linear documents unless the human asks for one. The stream ticket, the project status updates and the team document are the record.
+Don't create other Linear documents unless the human asks for one. The stream ticket and the project status updates are the record.
