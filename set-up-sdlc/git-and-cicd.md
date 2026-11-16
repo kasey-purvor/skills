@@ -24,6 +24,10 @@ Propose a whole setup and let the owner change what does not fit. Do not ask the
 7. **Write the section** (part 3) and show it. The owner corrects the tables, not a list of their earlier answers.
 8. **On their yes, build what was decided** (part 4).
 
+### A repo that already has a setup
+
+Do not replace it. Write the section to describe what exists, in the forms of part 3. For each environment it has, name the question that environment answers, which shows which of the suggested ones it is. Then go through the suggested setup with the owner, and for each difference agree one of three things: leave it as it is, change it now, or file a ticket for it.
+
 ### GitHub's own rules
 
 Read these before proposing the merge rules. They are facts, not choices, and they limit the choices. Look at the rules on the repo and any its organisation applies.
@@ -163,7 +167,7 @@ The default list for a repo's agent instructions:
 The section has these parts, in this order. `AGENTS-example.md` shows a finished one. Take its form, never its facts. Write only what exists or is being built now.
 
 1. **The stage.** One line saying whether the product is live. Under it, the rows of "When to raise the next step" for that stage and for "Any", so a working agent knows when to tell the human.
-2. **The environments.** A table with a row for each environment the repo has: what it is for, what data it holds, how a change gets there, and what an agent may do there.
+2. **The environments.** A table with a row for each environment the repo has: what it is for, what data it holds, how a change gets there, and what an agent may do there. Under it, where the project has or plans a database, the rule in full: the database is built from the repo and never changed by hand, with the commands that build it and load made-up data once they exist. The never list says it a second time, on purpose.
 3. **The picture.** The route from a change on someone's machine to the last environment. One band for each place (the machine, GitHub, deployed) and one arrow for each gate. Number the gates G1, G2 and so on, in order. Adapt `example_pipeline.d2`, render it, and keep the source beside the picture.
 4. **Why each gate exists.** A table with one line for each gate.
 5. **What each gate demands.** One grid. The gates run across the top, with a row saying what enforces each. Down the side come the tests, then the rules. A filled dot means a machine checks it; an open dot means it rests on a person.
@@ -177,7 +181,7 @@ Then, in "How work is done", word three of the building steps from the answers: 
 
 Setup is one flow. It does not end with a file that describes checks nobody has made.
 
-- On the owner's yes, build what was decided for this stage, one piece at a time: the commit hook, the CI workflow, the rules on `main`, and for a later stage the deploys and their checks.
+- On the owner's yes, build what was decided for this stage, one piece at a time: the commit hook, the CI workflow, the rules on `main`, the commands that build the database and load made-up data where there is a database, and for a later stage the deploys and their checks.
 - Prove each piece before the next. The hook refuses a commit with a mistake in it. CI runs on a pull request. The rules on `main` refuse what they should.
-- The section describes only what exists. Anything decided that cannot be built yet becomes a ticket, all of them under one parent ticket for infrastructure, and is not written as though it were there.
+- The section describes only what exists. Anything decided that cannot be built yet is offered to the owner as a ticket and filed on their yes, all of them under one parent ticket for infrastructure. It is not written as though it were there.
 - If a proof fails, or something could not be built, correct the section to match before you finish.

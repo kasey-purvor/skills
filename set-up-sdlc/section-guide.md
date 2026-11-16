@@ -37,3 +37,13 @@ Setup covers Node and Python projects.
 ## Git and CI/CD
 
 Too big for an entry here. Follow [git-and-cicd.md](./git-and-cicd.md) for the whole section, and for building what it describes.
+
+## A repo that is already built
+
+The context files can be built backwards from the app. Work through them with the user, one file at a time, and write nothing without their yes. How far to go is theirs to say.
+
+- **The vocabulary.** Draft the terms from the code, the screens and the names in the database. The user corrects what each one means.
+- **ADRs.** Do not write up the project's past wholesale. Ask the user which choices were hard to reverse and would still surprise a newcomer, and write an ADR only for those, with the reason in their words.
+- **About this repo.** Draft the stack and the rules that hold across the code from what the code actually does. Have the user confirm that each rule is a rule and not an accident.
+- **Notes and instruction files already there.** Show the user what exists. Agree what moves where under the context file rules, and what is dropped.
+- **Git and CI/CD.** See "A repo that already has a setup" in [git-and-cicd.md](./git-and-cicd.md).
