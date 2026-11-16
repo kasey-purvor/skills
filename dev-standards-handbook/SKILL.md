@@ -138,7 +138,6 @@ If your task matches no row, pick chapters by keyword from the **Topic index** b
 | `topics/error-handling.md` | Error hierarchies, global handlers, RFC 9457, error chaining |
 | `topics/frontend-development.md` | Component boundaries, state ownership, data changes, forms, navigation, accessibility, layout, React/framework decisions |
 | `topics/frontend-patterns.md` | Observable interface faults by review lens (fit, first screen, controls, tasks, consistency, wording, states, accessibility), with browser checks and probe sizes; read the relevant group for a browser review |
-| `topics/git-and-cicd.md` | Setting up or changing how a change reaches production: environments and the question each answers, the gates (commit, pull request, merge, each deploy) with their options and the usual choice, sorting tests by what they need, regular runs, the commit hook, and previous setups |
 | `topics/logging.md` | Structured logging, correlation IDs echoed to clients, redaction and personal data in telemetry, retention, frontend logging |
 | `topics/module-design.md` | Deep vs shallow modules, interfaces, seams, adapters, design-it-twice, dependency categories |
 | `topics/monitoring.md` | Metric types, RED/USE, job and queue monitoring, SLOs and burn-rate alerts, distributed tracing, OTel |

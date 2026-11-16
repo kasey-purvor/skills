@@ -2,6 +2,7 @@
 FIRST DRAFT, 16 Nov 2026. Revised the same day, after the setup skill's design was
 agreed with Kasey: one suggested setup, live or not live, integration, GitHub's own
 rules. Not reviewed by Kasey yet.
+Moved here from the handbook's topics on 16 Nov: its one reader is the setup agent.
 Drawn from two of his setups (the most recent one is the main target), the
 worked example in set-up-sdlc/AGENTS-example.md, and the old setup-pre-commit skill
 (now in the skills repo's _archive folder).
