@@ -23,7 +23,7 @@ These rules are the same in every repo that uses this setup.
 | --- | --- |
 | Models | Subagents doing code work run on Opus at extra-high effort (on Codex, Sol at extra-high). Research and other work that is not about code runs on Sonnet (on Codex, Luna). A different model only when the human asks. |
 | Reviews | When a change is ready, the routine reviews start without asking. Anything heavier is suggested with a reason and waits for a yes. |
-| Fix rounds | Each round of review fixes goes to a fresh agent, and the same reviewer checks the fix. |
+| Fix rounds | A builder that has finished is never resumed. Each round of review fixes, and any later work, goes to a fresh builder. A builder that is still running can be told of a change of plan. A reviewer is different: the same reviewer is resumed to check the fix. |
 | Credit | Nothing you write credits an AI: not a commit, a pull request or a ticket. |
 | Secrets | Never print, log or paste a credential. Fetch it at the moment you use it. |
 | Other sessions | Before starting a ticket, tell the other sessions working in this repo what you are about to touch, and ask whether it clashes. If one does not answer and the work may overlap, raise it with the human. Only the agent the human is talking to does this. A subagent never does. |

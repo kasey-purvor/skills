@@ -358,6 +358,8 @@ A context file is a markdown file that agents and people read to understand a pr
 - The ADR format file in `grill-with-docs` now matches the context file rules: the ruling, why, and what was turned down; no "Consequences".
 - A consequence to know: a repo that does not yet have the new agents file no longer gets the review workflow or the merge permission from the global file. Its own file governs.
 
+**Builders and reviewers (Kasey, 16 Nov, late).** A builder that is still running can be told of a change of plan. Once a builder has stopped at the end of its work it is never resumed: later work goes to a new builder. Reviewers are different: the same reviewer is resumed to check the fix. The house rule "Fix rounds" now says this.
+
 **Still open, none started**
 - A re-review of `linear` at the end. Two rules from the old copied half are in no skill (comment on decisions as they happen; record unrecorded decisions before a handoff). Several skills point back at sections of the agents file, against the one-way rule: `linear`, `to-issues`, `stream` and its team document and builder files, `session-wrap-up`, `handoff`, and this skill's `domain.md`.
 - A review of the two reviewer types in `review-code-change`.
