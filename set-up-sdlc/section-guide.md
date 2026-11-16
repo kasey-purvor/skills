@@ -23,3 +23,13 @@ The blank is the Linear team that holds this repo's tickets, and that team's tic
 - List the Linear teams. If one matches the repo's name, ask the user to confirm the team and its prefix.
 - If none matches, show the list and ask which it is. If the user says the team does not exist yet, offer to create it, and create it only on a yes.
 - If you cannot reach Linear, ask the user for the team's name and prefix.
+
+## Worktrees
+
+The folder for worktrees and the pattern for branch names are fixed. The example worktree name uses the ticket prefix found for Tickets. The one blank is what must be run in a new worktree before work can start there. A worktree is a fresh folder: the installed packages, the commit hook and, in Python, the virtual environment do not come with it. It needs the same environment as the main folder.
+
+Setup covers Node and Python projects.
+
+- **Nothing is built yet.** Ask the user which of the two the project will use, and with which package manager. Write that manager's install command into the line.
+- **Something is built.** Do not assume. Tell the user what you found (the lock file, the package manager, any commit hook, any virtual environment) and explain that every worktree needs the same environment as the main folder. Then ask them to confirm what has to be run in a new one.
+- If they confirm that nothing needs running, leave the line out.
