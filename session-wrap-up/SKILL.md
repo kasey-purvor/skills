@@ -64,7 +64,7 @@ Read `docs/decisions.md`, `docs/pitfalls.md`, the ADRs in `docs/adr/` and the ha
 - A decision an ADR already holds: skip it.
 - The same qualifying trap again: propose bumping its `seen` count, not a new line.
 - A decision that reverses an earlier line: propose filling in `superseded by:` on the old line, as well as the new line.
-- An existing trap line whose trap this session shows is now fixed at the source (a hook, a script, a preflight step) or moved into a how-to: propose deleting it. The human says yes or no to each deletion, as to any line. List any others that look ready for one of those endings, so the files shrink.
+- An existing trap line whose trap this session shows is now fixed at the source (a hook, a script, a preflight step): propose deleting it. The human says yes or no to each deletion, as to any line. List any others that look ready for the same ending, so the files shrink.
 
 ## Route
 
@@ -77,7 +77,7 @@ Read `docs/decisions.md`, `docs/pitfalls.md`, the ADRs in `docs/adr/` and the ha
 | A wrong instruction | a proposed edit to that file |
 | A line in the repo's agent instructions that is now untrue or out of date | a proposed edit to that line. Where the setup itself no longer fits the project, propose running the `set-up-sdlc` skill again |
 
-Where the repo's `## Agent skills` block names another place for decisions and pitfalls, use that place. Prefer correcting the owning procedure over copying the same lesson into several destinations. Routing does not rescue a candidate that failed selection.
+Prefer correcting the owning procedure over copying the same lesson into several destinations. Routing does not rescue a candidate that failed selection.
 
 ## Ask, line by line
 
@@ -86,7 +86,6 @@ Only if proposals survive selection, send one short message, grouped by destinat
 ## Write
 
 - **Repo changes** (decisions, pitfalls, instruction fixes including repo-local skills, and deletions) land in one pull request: the stream's last pull request if there is one and it has not merged, otherwise a small docs pull request. Its body lists each approved change under "Approved in a session wrap-up on <date>", so a reviewer can see the human said yes.
-- **A place outside the repo:** where the repo's `## Agent skills` block names one, write the approved lines there, with no pull request.
 - **Shared-skill edits and handbook lines** land as one change in the skills repo (`~/.agents/skills`). Leave it uncommitted: the human commits and pushes it from their own profile.
 
 ## Never copy a secret

@@ -7,7 +7,7 @@ description: Operational conventions for the Linear workspace — label scheme, 
 
 Day-to-day operational skill for the team's Linear workspace. Loaded on any Linear MCP operation.
 
-**The workspace is organized `team = product`, `project = epic`.** Each repo maps to exactly one product **team** (`repo = team` — a fixed, one-time binding); a **project** is a delivery epic within that team. Team name + issue prefix are per-repo — read them from `AGENTS.md` (`## Agent skills` → `### Issue tracker`). Examples below use `CLO-123` illustratively.
+**The workspace is organized `team = product`, `project = epic`.** Each repo maps to exactly one product **team** (`repo = team` — a fixed, one-time binding); a **project** is a delivery epic within that team. Team name + issue prefix are per-repo — read them from the repo's agent instructions. Examples below use `CLO-123` illustratively.
 
 ## Cheat sheet
 
@@ -330,4 +330,4 @@ Verified end-to-end against a live workspace on **2026-05-27**. This table is ca
 
 ## Pointers
 
-- **Per-repo binding:** `AGENTS.md` → `## Agent skills` → `### Issue tracker` (team name + issue prefix; `repo = team`, so this is fixed)
+- **Per-repo binding:** the repo's agent instructions name the team and issue prefix (`repo = team`, so this is fixed)

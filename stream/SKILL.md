@@ -29,7 +29,7 @@ On scope, plans, review findings and records, the human decides. You suggest, wi
 - **Fixing review findings inside the stream,** and dropping trivial non-security ones with a line saying why.
 - **Close bookkeeping,** once the human has settled the leftovers.
 
-Building, pushing and merging follow `AGENTS.md` and the human's own instructions as before.
+Building, pushing and merging follow the repo's agent instructions and the human's own instructions as before.
 
 ## Tickets in a stream
 
@@ -39,7 +39,7 @@ Other sessions read a stream ticket's Touches section to see what the stream is 
 
 ## Who does what in a lane
 
-The orchestrator runs the stream: the check with other sessions, the stream ticket, the pane pins and the close. Builder and reviewer subagents leave those alone and report to the orchestrator. (A reply to a subagent's message goes to its parent session, so a subagent running the check would wait forever.) A subagent reporting findings gives a ranked list, as [review-findings.md](review-findings.md) describes. The shared builder procedure is [builder.md](builder.md); reviewer procedures are [review-code-change](../review-code-change/SKILL.md) and [verify-frontend-change](../verify-frontend-change/SKILL.md). Harness-specific lane agents load these procedures rather than maintaining their own review checklists.
+The orchestrator runs the stream: the stream ticket, the pane pins and the close. Builder and reviewer subagents leave those alone and report to the orchestrator. Nor do they run the check with other sessions, which the repo's agent instructions give to the agent the human is talking to. (A reply to a subagent's message goes to its parent session, so a subagent running the check would wait forever.) A subagent reporting findings gives a ranked list, as [review-findings.md](review-findings.md) describes. The shared builder procedure is [builder.md](builder.md); reviewer procedures are [review-code-change](../review-code-change/SKILL.md) and [verify-frontend-change](../verify-frontend-change/SKILL.md). Harness-specific lane agents load these procedures rather than maintaining their own review checklists.
 
 ## Running a stream
 
@@ -47,7 +47,7 @@ The orchestrator runs the stream: the check with other sessions, the stream tick
 - **Keep the Session line current.** It names the session running the stream, so other agents know who to message. A session picking up an existing stream sets it to its own name.
 - **The description is the plan.** Update it when the plan changes, Touches included.
 - **Comments are the log.** One short comment per event: a decision the human made, a pull request opened or merged, a change to the plan, a review's findings and what happened to them, a blocker. Routine progress gets no comment.
-- **Reviews:** at a completed lane or pull request, follow the shared global review policy: dispatch `review-code-change` automatically and add `verify-frontend-change` for visible or interactive changes. Give each worker an exact target and scoped brief. The orchestrator owns findings and records; workers do not restart orchestration. The human can defer or narrow the routine reviews. Recommend extra specialists with a reason and obtain approval before dispatching them. After fixes, obtain verification against the new revision before treating the findings as resolved.
+- **Reviews:** at a completed lane or pull request, the routine reviews start without asking: dispatch `review-code-change` and add `verify-frontend-change` for visible or interactive changes. Give each worker an exact target and scoped brief. The orchestrator owns findings and records; workers do not restart orchestration. The human can defer or narrow the routine reviews. Recommend extra specialists with a reason and obtain approval before dispatching them. After fixes, obtain verification against the new revision before treating the findings as resolved.
 - **Ending a session mid-stream:** record anything unrecorded as a comment, then use the `handoff` skill as usual. The handoff file names the stream ticket and does not restate the plan.
 
 The stream ticket's shape and the close checklist are in [stream-ticket.md](stream-ticket.md).

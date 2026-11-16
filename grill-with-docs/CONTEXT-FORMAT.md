@@ -58,6 +58,6 @@ The skill infers which structure applies:
 
 - If `CONTEXT-MAP.md` exists, read it to find contexts
 - If only a root `CONTEXT.md` exists, single context
-- If neither exists, create a root `CONTEXT.md` lazily when the first term is resolved
+- If neither exists, tell the human: setup should have created a root `CONTEXT.md`
 
 When multiple contexts exist, infer which one the current topic relates to. If unclear, ask.

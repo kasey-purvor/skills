@@ -7,7 +7,7 @@ description: Break a plan, spec, or PRD into independently-grabbable issues on t
 
 Break a plan into independently-grabbable issues using vertical slices (tracer bullets).
 
-The team + issue prefix come from the repo's `AGENTS.md` (`## Agent skills`); label vocabulary and ticket conventions from the `linear` skill — run `/set-up-sdlc` first if the repo isn't configured yet.
+The team + issue prefix come from the repo's agent instructions; label vocabulary and ticket conventions from the `linear` skill — run `/set-up-sdlc` first if the repo isn't configured yet.
 
 ## Process
 
@@ -54,7 +54,7 @@ For each approved slice, publish a Linear issue:
 - **Body:** the **Ticket body** template from the `linear` skill (TL;DR / Goal / Scope / Acceptance criteria / Verification). Don't redefine it here.
 - **Standards line:** directly after the ticket body (where the universal frame below places it), add `Standards: <chapters>` naming the `dev-standards-handbook` chapters relevant to *this slice* — taken from the PRD's **Applicable Standards** section if the source is a PRD, otherwise chosen via the handbook's router. Only the chapters this slice actually touches, not the whole feature's list. Implementing agents reload the named chapters before starting.
 - **Labels:** `type/*`, `quality/scoped`, and `ai-added` (these tickets are agent-created).
-- **Project (epic):** home each slice in the epic it advances — these are `quality/scoped`, so `linear` Convention #9's strong default applies. Ask if the epic isn't obvious. (The team comes from the repo's `AGENTS.md` binding.)
+- **Project (epic):** home each slice in the epic it advances — these are `quality/scoped`, so `linear` Convention #9's strong default applies. Ask if the epic isn't obvious. (The team comes from the repo's agent instructions.)
 - **Parent:** if the source was an existing issue, link each slice to it natively via `parentId` (`linear` skill, *Sub-issues*) — not a body section; Linear renders the link itself.
 - **State: Backlog** — well-defined but not yet scheduled. Promotion to Todo (scheduling) and `quality/audited` (the pre-work re-audit) are separate, later steps — `/to-issues` does not do them.
 

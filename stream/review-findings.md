@@ -4,7 +4,7 @@ These apply to any code review, in a stream or on a lone ticket.
 
 ## What happens to a finding
 
-1. **Fixed.** In the same pull request, or in a sweep before the stream closes. A finding outside the diff but inside the stream's area is still the stream's to fix. A real defect in code the pull request introduces is normally fixed before it merges.
+1. **Fixed.** In the same pull request, or in a sweep before the stream closes. A finding outside the diff but inside the stream's area is still the stream's to fix. A real defect in code the pull request introduces is normally fixed before it merges. Each round of fixes goes to a fresh builder, and the same reviewer checks the fix.
 2. **Dropped by you.** A non-security finding that is trivial, or that proves wrong when checked against the code, can be dropped without asking. Record one line saying what it was and why.
 3. **Settled by the human.** For anything else left unfixed, suggest a ticket, a tally line or dropping it, with your reason. They decide.
 
