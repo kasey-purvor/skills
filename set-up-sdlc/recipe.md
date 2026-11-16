@@ -132,6 +132,10 @@ A context file is a markdown file that agents and people read to understand a pr
 - The old template's check for resuming a worktree is dropped. Kasey: it is old, and that does not really happen.
 - The last section, about the repo itself, holds the tech stack and the key facts every session needs that the repo does not show for itself. It is not forced into a fixed form to stop dumping: the ask-first rule, and later the checks on context file changes, are the protection (Kasey, 12 Nov). A map of the folders is left out.
 - A worked example using one repo's current rules is at `set-up-sdlc/AGENTS-example.md`. It stays a demo of that one repo for now. Later the setup becomes a grilling-style skill that works from the demo (Kasey, 12 Nov).
+- Each section is one of two kinds (16 Nov). **Fixed**: the same words in every repo, a few with one blank the repo fills (the product's one-line description; the Linear team and prefix; the worktree folder, branch pattern and install command; the stack table; where test logins and fixtures are). **Discussed**: a real decision made with the repo's creator, which changes as the project grows (the environments; the gates and what each demands; the tests and which gate runs each; the rules that hold across the code). Tickets is fixed: the team and prefix are its only blank, and the `linear` skill holds the rest. The building steps are fixed in shape, and the wording of three of them (when to push, who merges, where the change is proved) follows from the gate decisions, so they are written last and nothing new is asked.
+- The template itself records which kind a section is, by how it is written: a fixed section is written out in full; a discussed section is only its heading and a line pointing at its guide. There is no separate list of kinds.
+- The setup skill's files (16 Nov): `SKILL.md`, the steps the agent follows with the user; `AGENTS-template.md`, as above; `discussed-sections.md`, which says for each discussed section what must be decided and the shape of the answer, taking options from the handbook's git and CI/CD topic; `AGENTS-example.md`, the finished demo, for shape only. This record is not loaded by the skill. The old `AGENTS-portable-template.md` goes.
+- The skill's steps, agreed in outline: look at the repo before asking; draft the fixed part and fill its blanks, asking only for one it could not find; discuss the discussed sections one at a time, each question with a recommendation; write the building steps last; show the whole file and wait for a yes before writing it.
 
 **Why**
 - The repo-specific part is the main dumping ground. In two repos, about 80% and 85% of it is not needed by every session: 741 lines against about 140 needed, and 484 against about 70.
@@ -310,8 +314,8 @@ A context file is a markdown file that agents and people read to understand a pr
 - This skill's `SKILL.md`, `domain.md` and `AGENTS-portable-template.md` are still the old setup skill's.
 
 **Next, in the order Kasey gave**
-1. Sort the example's sections into those that get a fixed recipe and those that need a discussion with whoever is creating the repo. He expects the second kind to be much harder.
-2. Design the grilling-style skill that creates a repo's agents file with the user, working from the example.
+1. Done 16 Nov: the sections are sorted into fixed and discussed (chapter 4).
+2. In progress: the grilling-style skill that creates a repo's agents file with the user. Kasey wants it in small chunks: the template and `SKILL.md` first, starting with how `SKILL.md` directs the agent; then the guide for the discussed sections.
 3. Straight after that: how Kasey is made aware of changes to context files.
 
 **Still open, none started**
