@@ -304,6 +304,7 @@ A context file is a markdown file that agents and people read to understand a pr
 **Made so far**
 - `set-up-sdlc/AGENTS-example.md`, with its picture `example_pipeline.png` and the picture's source `example_pipeline.d2`: a worked example of the new agents file, using one repo's rules. Kasey agreed its structure section by section. Its facts are illustrative.
 - `dev-standards-handbook/topics/git-and-cicd.md`: a first draft, listed in the handbook's router, not reviewed. Kasey does not want to spend long reviewing it.
+- The `setup-pre-commit` skill is archived (moved to the skills repo's `_archive` folder, 16 Nov). Its steps live on in the handbook topic.
 - Skill changes made: `linear` (the four rules joining a ticket to its pull request, and three small fixes); `stream` (when to offer a stream; the check with other sessions moved out to house rules).
 - Kasey's global file: the subagent default is now Opus at extra-high effort, with Sonnet for research and non-code work.
 - This skill's `SKILL.md`, `domain.md` and `AGENTS-portable-template.md` are still the old setup skill's.
@@ -322,7 +323,7 @@ A context file is a markdown file that agents and people read to understand a pr
 - The file that holds the rules for every context file, in its new form.
 - The subagents: what builders and reviewers are told and what they load. The skills review's open questions are in `~/dev_wsl/projects/agent-context/skills-review/to-do.md`.
 - Where the detail about a repo's test fixtures lives.
-- Small and unanswered: whether `diagnose` and `prototype` join the skills table; Kasey's Codex file says Luna is used only when he picks it, where the house rules say Luna for research; removing the `setup-pre-commit` skill once the topic is accepted; the handbook's description line does not mention the new topic.
+- Small and unanswered: whether `diagnose` and `prototype` join the skills table; Kasey's Codex file says Luna is used only when he picks it, where the house rules say Luna for research; the handbook's description line does not mention the new topic.
 - Parked: scheduled runs, the Linear team document, runbooks, taking on a live repo.
 
 ---

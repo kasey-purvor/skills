@@ -1,7 +1,8 @@
 <!--
 FIRST DRAFT, 16 Nov 2026. Not reviewed by Kasey yet.
 Drawn from two of his setups (the most recent one is the main target), the
-worked example in AGENTS-example.md, and the old setup-pre-commit skill.
+worked example in set-up-sdlc/AGENTS-example.md, and the old setup-pre-commit skill
+(now in the skills repo's _archive folder).
 -->
 
 # Git and CI/CD
