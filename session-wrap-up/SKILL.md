@@ -43,6 +43,7 @@ For each one, say what happened in plain words and which moment in the session i
 2. **Traps that cost time in this repo:** a hook that bit, a flaky test, a command that must run from a certain place.
 3. **Traps in a tool or a machine:** Claude Code, Codex, Linear, a scraping or search service, git and GitHub, the machines.
 4. **Instruction gaps or errors:** instructions in the repo or an existing workflow skill that this session demonstrated were missing, ambiguous or wrong.
+5. **Lines in the repo's agent instructions that this session made untrue or out of date:** a command, an environment, a rule or a part of the stack changed, or the setup has stopped fitting the project (it is about to go live, for example).
 
 Builders report their traps at the end of their final reports (what bit, the fix, roughly how long it cost). Those reports are kept whole: as `AGENT-MSG` in the main session, and as each subagent's last message.
 
@@ -74,6 +75,7 @@ Read `docs/decisions.md`, `docs/pitfalls.md`, the ADRs in `docs/adr/` and the ha
 | A demonstrated gap or error in an existing workflow skill | A targeted correction to the owning `SKILL.md` or referenced procedure |
 | A qualifying trap in a shared tool or machine | the handbook's `topics/environment.md`, under its heading |
 | A wrong instruction | a proposed edit to that file |
+| A line in the repo's agent instructions that is now untrue or out of date | a proposed edit to that line. Where the setup itself no longer fits the project, propose running the `set-up-sdlc` skill again |
 
 Where the repo's `## Agent skills` block names another place for decisions and pitfalls, use that place. Prefer correcting the owning procedure over copying the same lesson into several destinations. Routing does not rescue a candidate that failed selection.
 

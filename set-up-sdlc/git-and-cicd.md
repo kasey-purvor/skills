@@ -81,7 +81,7 @@ One stage matters: whether the product is live, meaning any real user's data exi
 
 #### When to raise the next step
 
-A working agent tells the human when one of these shows up. It never changes the setup itself. The human then runs setup again for that part.
+These are for setup, when it is run again on a repo: they say which part is due. They are not copied into the repo's agent instructions. A working agent has one general rule there instead (the house rule "This file"): tell the human when the setup stops fitting the project, and never change it yourself.
 
 | Stage | What is happening | What is due |
 | --- | --- | --- |
@@ -166,7 +166,7 @@ The default list for a repo's agent instructions:
 
 The section has these parts, in this order. `AGENTS-example.md` shows a finished one. Take its form, never its facts. Write only what exists or is being built now.
 
-1. **The stage.** One line saying whether the product is live. Under it, the rows of "When to raise the next step" for that stage and for "Any", so a working agent knows when to tell the human.
+1. **The stage.** One line saying whether the product is live. Nothing more: no list of what might come next.
 2. **The environments.** A table with a row for each environment the repo has: what it is for, what data it holds, how a change gets there, and what an agent may do there. Under it, where the project has or plans a database, the rule in full: the database is built from the repo and never changed by hand, with the commands that build it and load made-up data once they exist. The never list says it a second time, on purpose.
 3. **The picture.** The route from a change on someone's machine to the last environment. One band for each place (the machine, GitHub, deployed) and one arrow for each gate. Number the gates G1, G2 and so on, in order. Adapt `example_pipeline.d2`, render it, and keep the source beside the picture.
 4. **Why each gate exists.** A table with one line for each gate.

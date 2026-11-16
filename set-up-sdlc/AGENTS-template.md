@@ -27,6 +27,7 @@ These rules are the same in every repo that uses this setup.
 | Credit | Nothing you write credits an AI: not a commit, a pull request or a ticket. |
 | Secrets | Never print, log or paste a credential. Fetch it at the moment you use it. |
 | Other sessions | Before starting a ticket, tell the other sessions working in this repo what you are about to touch, and ask whether it clashes. If one does not answer and the work may overlap, raise it with the human. Only the agent the human is talking to does this. A subagent never does. |
+| This file | If something you learn or change makes a line in this file untrue, or the setup stops fitting the project, tell the human. Do not change the file yourself. |
 
 ## Skills
 

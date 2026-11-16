@@ -24,6 +24,7 @@ These rules are the same in every repo that uses this setup.
 | Credit | Nothing you write credits an AI: not a commit, a pull request or a ticket. |
 | Secrets | Never print, log or paste a credential. Fetch it at the moment you use it. |
 | Other sessions | Before starting a ticket, tell the other sessions working in this repo what you are about to touch, and ask whether it clashes. If one does not answer and the work may overlap, raise it with the human. Only the agent the human is talking to does this. A subagent never does. |
+| This file | If something you learn or change makes a line in this file untrue, or the setup stops fitting the project, tell the human. Do not change the file yourself. |
 
 ## Skills
 
@@ -125,16 +126,6 @@ A stream is a parent ticket with the work's tickets beneath it. It gives one ses
 ## Git and CI/CD
 
 **Stage: live.** Real customers' data exists.
-
-Tell the human when one of these shows up. Do not change the setup yourself.
-
-| What is happening | What is due |
-| --- | --- |
-| CI takes long enough that people stop waiting for it. | Running only the tests a change touches |
-| Pull requests wait on each other to be brought up to date. | A step that updates the next one automatically |
-| The line of open pull requests keeps growing. | A cap on how many each person may have open |
-| A failed run or an outage goes unnoticed. | Regular runs, and an alert that reaches a named person |
-| Customers meet slowness before anyone else does. | A regular performance run on UAT |
 
 ### The environments
 

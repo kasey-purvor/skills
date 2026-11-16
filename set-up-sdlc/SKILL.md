@@ -45,4 +45,4 @@ You are setting up a repo with its owner. By the end the repo has its agent inst
 
 ## Running it again
 
-A repo's stage block says when the next set of decisions is due. When the owner runs this again for that reason, do only the part that is due: steps 5 and 7 to 10, changing the sections it touches and nothing else.
+The owner runs this again when the setup has stopped fitting the project: it is about to go live, say, or CI has become slow. "When to raise the next step" in `git-and-cicd.md` says which part is due. Do only that part: steps 5 and 7 to 10, changing the sections it touches and nothing else.
