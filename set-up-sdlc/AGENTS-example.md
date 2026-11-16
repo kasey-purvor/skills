@@ -1,7 +1,9 @@
 <!--
 WORKED EXAMPLE, 12 Nov 2026. What a repo's AGENTS.md could look like under the
 new layout, filled in with Connect Assist's rules as they stand today so the
-shape can be judged. It is not a template yet, and it changes no repo.
+shape can be judged. It changes no repo. The template is AGENTS-template.md.
+Its git and CI/CD section was rewritten on 16 Nov to follow git-and-cicd.md; that
+section's facts are illustrative, not the repo's real setup.
 -->
 
 # Agent instructions
@@ -108,11 +110,11 @@ A worktree is a second working folder on its own branch, sharing the repo's hist
 | 1. Check | Check with the other sessions (a house rule), and re-audit the ticket. | You | `linear` |
 | 2. Set up | A worktree and a branch for the work. | You | |
 | 3. Build | Tests first, then the code, with evidence that it works. | You, or a builder | |
-| 4. Pull request | Opened when the human says to push. CI runs. | You | |
+| 4. Pull request | Pushed and opened when the branch is ready. CI runs. | You | |
 | 5. Review | The ticket reviewer and the bug hunter, at the same time. The frontend verifier too, for a visible change. | Subagents | `review-code-change`, `verify-frontend-change` |
 | 6. Fix | Each round of fixes goes to a fresh builder, and the same reviewer checks the fix. | A builder | `stream` |
 | 7. Merge | Once CI is green and the review is clean. | The human | |
-| 8. Prove | The change is deployed to UAT and proved there, with the evidence on the ticket. Then the ticket is finished. | You | `linear` |
+| 8. Prove | The merge is deployed to integration automatically. The change is proved there, with the evidence on the ticket. Then the ticket is finished. | You | `linear` |
 
 **A ticket goes through those steps by itself.** That is the normal case. If the human gives you another ticket when one is finished, carry on with it the same way.
 
@@ -122,65 +124,78 @@ A stream is a parent ticket with the work's tickets beneath it. It gives one ses
 
 ## Git and CI/CD
 
-**Stage: live, with real customers.** A project starts with one environment and adds more as there is more to protect.
+**Stage: live.** Real customers' data exists.
+
+Tell the human when one of these shows up. Do not change the setup yourself.
+
+| What is happening | What is due |
+| --- | --- |
+| CI takes long enough that people stop waiting for it. | Running only the tests a change touches |
+| Pull requests wait on each other to be brought up to date. | A step that updates the next one automatically |
+| The line of open pull requests keeps growing. | A cap on how many each person may have open |
+| A failed run or an outage goes unnoticed. | Regular runs, and an alert that reaches a named person |
+| Customers meet slowness before anyone else does. | A regular performance run on UAT |
 
 ### The environments
 
 | Environment | What it is for | What data it holds | How a change gets there | What you may do there |
 | --- | --- | --- | --- | --- |
 | Local | Development and the test suites. | Made-up data from a seed script. Nothing leaves the machine. | You run it. | Anything. |
-| UAT | Proving a change in the deployed app before customers get it. | Standing test organisations and logins. No customer data. | A deploy, started by hand. | Sign in with the test logins and use the app. Start a deploy. Never delete a standing fixture. |
-| Production | Customers. | Customer data. No test accounts. | A deploy the human starts, after UAT. | Nothing, unless the human asks. |
+| Integration | Proving each merged change in the deployed app. | Made-up data only: a demo organisation, rebuilt from the repo. | Every merge, automatically. | Sign in with the test logins and use the app. Rebuild it from the repo. Never repair it by hand. |
+| UAT | Checking a release before customers get it. | Standing test organisations and logins. No customer data. | A person promotes what is on integration. | Sign in with the test logins and use the app. Never delete a standing fixture. |
+| Production | Customers. | Customer data. No test accounts. | A person deploys what is in UAT. | Nothing, unless the human asks. |
 
-Never change infrastructure by hand in any environment.
+The database is built from the repo and never changed by hand. `pnpm db:migrate` builds it, and `pnpm db:seed:dev` loads the made-up data.
 
 ### The route and its gates
 
-![The route a change takes, from a change on your machine to production, through five gates](example_pipeline.png)
+![The route a change takes, from a change on your machine to production, through six gates](example_pipeline.png)
 
-A change passes five gates on its way to production. The cheap checks come first and the costly ones later. A machine checks wherever a machine can, and a person decides at the steps that cannot be undone.
+A change passes six gates on its way to production. The cheap checks come first and the costly ones later. A machine checks wherever a machine can, and a person decides at the steps that cannot be undone. Your work ends at integration: promoting and deploying move a release, not a ticket.
 
 | Gate | Why it exists |
 | --- | --- |
 | G1 Commit | Catches careless mistakes in seconds, before anyone else sees them. |
-| G2 Pull request | Nothing reaches `main` until the full suite has passed on it. |
-| G3 Merge | `main` only ever holds changes that were reviewed and tested together, and a person decides. |
-| G4 To UAT | The change is proved in a real deployment, on safe data, before a customer meets it. |
-| G5 To production | Only proved code goes to customers, and only on a person's say. |
+| G2 Pull request | Nothing reaches `main` until the checks have passed on it. |
+| G3 Merge | `main` only ever holds changes that were reviewed and tested together. |
+| G4 To integration | Every merged change is proved in a real deployment, on made-up data, with nobody waiting on a person. |
+| G5 To UAT | A release is held still and checked before a customer meets it, and a person decides. |
+| G6 To production | Only the release that was checked goes to customers, and only on a person's say. |
 
 The picture is drawn from `example_pipeline.d2`.
 
 ### What each gate demands
 
-Read down a column to see everything a gate demands. Read along a row to see where a test or a rule applies. ● means a machine checks it. ○ means it rests on you.
+Read down a column to see everything a gate demands. Read along a row to see where a test or a rule applies. ● means a machine checks it. ○ means it rests on a person.
 
-| | G1 Commit | G2 Pull request | G3 Merge | G4 To UAT | G5 To production |
-| --- | :---: | :---: | :---: | :---: | :---: |
-| *Enforced by* | *the commit hook* | *CI and GitHub* | *GitHub and the human* | *the deploy workflow* | *the deploy workflow and the human* |
-| **Tests** | | | | | |
-| T1 Format and lint | ● changed files | ● all | | | |
-| T2 Type check | ● changed packages | ● all | | | |
-| T3 Unit tests | | ● | | | |
-| T4 Integration tests | | ● | | | |
-| T5 Web tests | | ● | | | |
-| T6 Browser tests | | ● | | | |
-| T7 Dependency audit | | ● | | | |
-| T8 Deploy check | | | | ● | |
-| T9 UAT journey | | | | | ○ feature work, proved first |
-| **Rules** | | | | | |
-| Pushed only when the human asks | | ○ | | | |
-| Reaches `main` only through a pull request | | ● | | | |
-| Reviewed, and every finding settled | | | ○ | | |
-| Up to date with `main` | | | ○ | | |
-| Passed CI | | | ● | ● | ● |
-| The human decides | | | ○ | | ○ |
+| | G1 Commit | G2 Pull request | G3 Merge | G4 To integration | G5 To UAT | G6 To production |
+| --- | :---: | :---: | :---: | :---: | :---: | :---: |
+| *Enforced by* | *the commit hook* | *CI and GitHub* | *GitHub and the human* | *the deploy workflow* | *the deploy workflow and the human* | *the deploy workflow and the human* |
+| **Tests** | | | | | | |
+| T1 Format and lint | ● changed files | ● all | | | | |
+| T2 Type check | ● changed packages | ● all | | | | |
+| T3 Unit tests | | ● | | | | |
+| T4 Database tests | | ● | | | | |
+| T5 Web tests | | ● | | | | |
+| T6 Browser tests | | ● | | | | |
+| T7 Dependency audit | | ● | | | | |
+| T8 Deploy check | | | | ● | ● | ● |
+| T9 Journey on integration | | | | | ○ proved first | |
+| **Rules** | | | | | | |
+| Reaches `main` only through a pull request | | ● | | | | |
+| Reviewed by the review subagents, and every finding settled | | | ○ | | | |
+| Up to date with `main` | | | ● | | | |
+| Passed CI | | | ● | ● | ● | ● |
+| Only what is already in UAT | | | | | | ● |
+| A person decides | | | ○ | | ○ | ○ |
 
 Each merge puts every other open pull request out of date, so finish one before bringing the next up to date.
 
 Never:
 - skip the commit hook with `--no-verify`;
 - force-push, or run `git reset --hard` or `git clean` on a shared branch;
-- commit with no branch checked out.
+- commit with no branch checked out;
+- change a database or an environment by hand.
 
 ### The tests
 
@@ -189,12 +204,12 @@ Never:
 | T1 | Format and lint | The code follows the house style and avoids common mistakes. |
 | T2 | Type check | The types agree across the API and the web app. |
 | T3 | Unit tests | One module's logic is right, with nothing else running. |
-| T4 | Integration tests | Features work against a real database, including that one organisation cannot see another's rows. |
+| T4 | Database tests | Features work against a real database, including that one organisation cannot see another's rows. |
 | T5 | Web tests | The web app's components and client logic work. |
 | T6 | Browser tests | Whole journeys work in the built app, driven through a real browser. |
 | T7 | Dependency audit | No dependency has a known security hole. |
-| T8 | Deploy check | After a deploy to UAT, the app starts and a test user can sign in. |
-| T9 | UAT journey | The change itself works in the deployed app. An agent does this by hand and puts screenshots on the ticket. |
+| T8 | Deploy check | After a deploy, the app starts and, outside production, a test user can sign in. |
+| T9 | Journey on integration | The change itself works in the deployed app. An agent signs in, uses it, and puts screenshots on the ticket. |
 
 ### Test data and logins
 

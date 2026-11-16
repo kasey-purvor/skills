@@ -1,4 +1,4 @@
-# The route a change takes and its five gates, for AGENTS-example.md.
+# The route a change takes and its six gates, for AGENTS-example.md.
 # Render to example_pipeline.png (layout elk, pad 40) whenever this changes.
 direction: down
 
@@ -51,10 +51,12 @@ deployed: Deployed {
   grid-rows: 1
   horizontal-gap: 260
   style.font-size: 24
+  integ: On integration {class: station}
   uat: On UAT {class: station}
   prod: In production {class: finish}
-  uat -> prod: G5 To production {class: gate}
+  integ -> uat: G5 Promote {class: gate}
+  uat -> prod: G6 Deploy {class: gate}
 }
 
 local -> github: G2 Pull request {class: gate}
-github -> deployed: G4 To UAT {class: gate}
+github -> deployed: G4 Automatic {class: gate}
