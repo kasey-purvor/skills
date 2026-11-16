@@ -330,23 +330,22 @@ A context file is a markdown file that agents and people read to understand a pr
 
 ## Where things stand (16 Nov 2026)
 
+**Read this first: the state at the end of 16 Nov.** The dated paragraphs further down are the day's log, in order. Where an earlier one disagrees with a later one, or with this block, the later one wins. The "Open" lists inside chapters 1 to 10 were not all brought up to date; this section wins over them too.
+
+- **Next step, and the only one:** Kasey tries `/set-up-sdlc` on a throwaway repo and guides it by hand, then says what it got wrong. The skill is complete on paper and has never been run. Nothing else is in progress.
+- **The working skill** (`set-up-sdlc/`): `SKILL.md` (rules and steps), `AGENTS-template.md` (the fixed text, blanks in square brackets, "setup:" comments for worked-out sections), `section-guide.md` (the small sections, and repos that are already built), `git-and-cicd.md` (the whole git and CI/CD part: conversation, what to propose, what to write, what to build), `domain.md` (the rules for context files, copied into the repo), `AGENTS-example.md` with `example_pipeline.d2` and `.png` (a finished file, for form only), `scripts/create-context-files.sh`. In `_archive/`: this record, the old `SKILL-old.md`, the old portable template.
+- **Changed outside the skills repo, each with a backup dated 2026-11-16 beside it:** `~/.claude/CLAUDE.md` (five sections out, naming conventions put back), `~/.codex/AGENTS.md` (three references reworded), `~/.claude/agents/builder.md` (now holds the whole builder procedure, loads three skills at the start), `~/.claude/agents/code-reviewer.md`.
+- **Pushed.** The skills repo was level with GitHub after the last push on 16 Nov; this block was committed after it. The repo is public. Pushing needs Kasey's go each time. From this work-profile terminal the push that worked was `GH_CONFIG_DIR=~/.config/gh-personal git push origin main`.
+- **Tickets** (Linear, Dev Team space, SDLC project): DEV-8, bring Codex into line with all of this; DEV-7 beneath it, a home for the builder's procedure that Codex can load.
+- **Raised with Kasey and not answered:** the worked example names one of his work products and sits in a public repo; whether to swap it for a made-up product.
+- **Known and accepted:** a repo that has not been set up the new way no longer gets the review and merge rules from the global file. Do not raise how older repos differ.
+- **Parked on purpose:** checks that guard the context files (a GitHub check or a scheduled run); runbooks.
+- **Closed or dropped, do not reopen:** the Linear team document and tally lines; a publish gate for installed tools; the review of the two reviewer types; a separate home for test data detail; `diagnose` and `prototype` in the skills table; a hook to make reviewers read chapters (the brief names them instead).
+
+
 **Where the files are (16 Nov, late):** Kasey had everything that is not part of the working skill moved into `set-up-sdlc/_archive/`: this record, the old `SKILL.md` (now `SKILL-old.md`) and the old `AGENTS-portable-template.md`. The skill folder has no `SKILL.md` until the new one is written, so the setup skill cannot be run until then. The working files are `section-guide.md`, `domain.md`, `git-and-cicd.md`, `AGENTS-example.md` with its picture, and `scripts/create-context-files.sh`. Still to write: the new `SKILL.md`, and the guide's entry for "About this repo" (the stack table and the rules across the code), which the template points at. Written since: `AGENTS-template.md`, built from the example's fixed sections with blanks in square brackets and "setup:" comments for the worked-out sections; and the example's git and CI/CD section, rewritten with integration, six gates, the stage line and the triggers, with its picture redrawn. Kasey: leave `SKILL.md` till last.
 
 **All of the skill's files are now written (16 Nov, late):** the new `SKILL.md` (eight rules, ten steps, and what to do when it is run again) and the guide's "About this repo" entry (the stack table; the rules across the code, taken only if breaking one would do real harm and nothing in the code already stops it). None of it has been used on a real repo. Kasey's plan is to guide it by hand the first time and fix what that shows. Still unsettled inside it: the recommendation on who merges.
-
-**Made so far**
-- `set-up-sdlc/AGENTS-example.md`, with its picture `example_pipeline.png` and the picture's source `example_pipeline.d2`: a worked example of the new agents file, using one repo's rules. Kasey agreed its structure section by section. Its facts are illustrative.
-- `set-up-sdlc/git-and-cicd.md`: the practice the setup agent proposes from. A first draft, revised and moved out of the handbook on 16 Nov, reviewed by a subagent, not reviewed by Kasey. He does not want to spend long reviewing it.
-- The `setup-pre-commit` skill is archived (moved to the skills repo's `_archive` folder, 16 Nov). Its steps live on in the handbook topic.
-- Skill changes made: `linear` (the four rules joining a ticket to its pull request, and three small fixes); `stream` (when to offer a stream; the check with other sessions moved out to house rules).
-- Kasey's global file: the subagent default is now Opus at extra-high effort, with Sonnet for research and non-code work.
-- This skill's `SKILL.md`, `domain.md` and `AGENTS-portable-template.md` are still the old setup skill's.
-
-**Next, in the order Kasey gave**
-1. Done 16 Nov: the sections are sorted into fixed and discussed (chapter 4).
-2. In progress: the grilling-style skill that creates a repo's agents file with the user. Kasey wants it in small chunks: the template and `SKILL.md` first, starting with how `SKILL.md` directs the agent; then the guide for the discussed sections.
-   Changed the same day: Kasey wants to be in the loop on how the agent handles each section that is not a plain copy, one at a time, and the agreed wording goes into `section-guide.md` as it is agreed. Agreed so far: the opening line. Worktrees needs no discussion (Kasey).
-3. Straight after that: how Kasey is made aware of changes to context files.
 
 **Skills brought into line (16 Nov, late).** On Kasey's instruction three subagents searched for places that had fallen out of step with the new agents file, and the mechanical fixes were made: 21 edits in `linear`, `to-issues`, `handoff`, `grill-with-docs`, `session-wrap-up` and `stream`, and about a dozen in `review-code-change`, `verify-frontend-change`, `improve-codebase-architecture`, `codex-dispatch`, the handbook's `environment.md`, and the two agent definitions in `~/.claude/agents/` (backups beside them). No skill now points at a section of the old agents file, creates a context file lazily, or sends the reader to the global file for when reviews start. Reports: `skill-pointers-workflow-2026-11-16.md`, `skill-pointers-subagents-2026-11-16.md` and `global-files-vs-new-agents-file-2026-11-16.md` in `~/.local/state/memory-study/reviews-2026-11/`. Not done, waiting on Kasey: the global files (nothing in them was changed), the team document, the two format files in `grill-with-docs` that are looser than `domain.md`, and the Codex model for research.
 
@@ -382,13 +381,7 @@ A context file is a markdown file that agents and people read to understand a pr
 
 **Closed by Kasey (16 Nov, late).** Where a repo's test data detail lives: no new home is designed. The agents file lists only where logins are kept and each standing fixture with its rebuild command; what a fixture is for goes in its script; anything beyond that needs the human's yes before a file is made, as for every context file. Kasey: "we have strict rules in place... we can just leave it with 'ask for permission if you want to save more files'". The review of the two reviewer types is dropped: "forget about the 2 reviewers". With that, the skills are finished until Kasey has tried setup on a repo.
 
-**Still open, none started**
-- A re-review of `linear` at the end. Two rules from the old copied half are in no skill (comment on decisions as they happen; record unrecorded decisions before a handoff). Several skills point back at sections of the agents file, against the one-way rule: `linear`, `to-issues`, `stream` and its team document and builder files, `session-wrap-up`, `handoff`, and this skill's `domain.md`.
-- The real content of the gates and the building flow, to be recorded as an ideal demo together with Kasey's newest git setup. Its design notes are in that repo at `docs/cicd-redesign/design-so-far.txt`. Two readers of the example raised questions about the flow (where the agent stops and waits, when a ticket is finished, who builds a lone ticket). Kasey set those reviews aside as picking at a demo; the questions belong to the ideal demo.
-- The rules file for the context files is drafted (`set-up-sdlc/domain.md`) and not yet read by Kasey.
-- The subagents: what builders and reviewers are told and what they load. The skills review's open questions are in `~/dev_wsl/projects/agent-context/skills-review/to-do.md`.
-- Small and unanswered: whether `diagnose` and `prototype` join the skills table; Kasey's Codex file says Luna is used only when he picks it, where the house rules say Luna for research; the handbook's description line does not mention the new topic.
-- Parked: scheduled runs, the Linear team document, runbooks, taking on a live repo.
+**Still open:** only what the "Read this first" block at the top of this section lists.
 
 ---
 
