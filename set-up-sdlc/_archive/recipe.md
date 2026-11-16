@@ -329,6 +329,8 @@ A context file is a markdown file that agents and people read to understand a pr
 
 ## Where things stand (16 Nov 2026)
 
+**Where the files are (16 Nov, late):** Kasey had everything that is not part of the working skill moved into `set-up-sdlc/_archive/`: this record, the old `SKILL.md` (now `SKILL-old.md`) and the old `AGENTS-portable-template.md`. The skill folder has no `SKILL.md` until the new one is written, so the setup skill cannot be run until then. The working files are `section-guide.md`, `domain.md`, `git-and-cicd.md`, `AGENTS-example.md` with its picture, and `scripts/create-context-files.sh`. Still to write: the new `SKILL.md` and `AGENTS-template.md`.
+
 **Made so far**
 - `set-up-sdlc/AGENTS-example.md`, with its picture `example_pipeline.png` and the picture's source `example_pipeline.d2`: a worked example of the new agents file, using one repo's rules. Kasey agreed its structure section by section. Its facts are illustrative.
 - `set-up-sdlc/git-and-cicd.md`: the practice the setup agent proposes from. A first draft, revised and moved out of the handbook on 16 Nov, reviewed by a subagent, not reviewed by Kasey. He does not want to spend long reviewing it.
