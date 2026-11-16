@@ -16,7 +16,7 @@ Use the originating ticket, approved plan or supplied task as the specification.
 
 Read applicable repository instructions and domain decisions: the ADRs and `docs/decisions.md` when present, so a deliberate choice is not reported as a defect; name the decision when you set a concern aside for that reason. A new line in `docs/decisions.md` or `docs/pitfalls.md` (or in the handbook's `topics/environment.md`) inside the change is reviewed like code: it must fit the shape `docs/agents/domain.md` gives (for a handbook line, the shape in `topics/environment.md`) and be one the human approved in a session wrap-up: a repo line appears in the pull request body's list of approved lines; a handbook line is one the human commits themselves.
 
-Load [dev-standards-handbook](../dev-standards-handbook/SKILL.md), use its router and the ticket's Standards line, and read the relevant chapters before reviewing. State the chapter selection and reason to the coordinator; add concerns revealed by the actual change. Routine chapter selection is inside the authorised review, not a fresh approval request. The router's reference back to the review skill does not start another review.
+Your brief names the handbook chapters to read, each by file. Read every one in full before you read the change. If the change turns out to touch a subject the brief did not name, use the router in [dev-standards-handbook](../dev-standards-handbook/SKILL.md) to find that chapter and read it too. If your brief names no chapters, say so in your report and choose them with the router and the ticket's Standards line.
 
 Calibrate rigor to the project and risk. The handbook owns topic guidance: use its frontend, identity/isolation, schema, network and deployment modifiers when applicable instead of copying permanent topic checklists here. Cite the relevant rule for a standards finding. A recommendation is not automatically a defect or permission to expand scope.
 
@@ -30,6 +30,6 @@ Verify findings against current source and, where useful and authorised, a focus
 
 ## Report
 
-Return the reviewed target, selected handbook chapters, checks actually performed and coverage gaps, followed by one ranked findings list. Each finding needs severity, a precise file/line or evidence anchor, the affected requirement/standard, what is wrong, why it matters, supporting evidence and the suggested outcome with its reason. A finding about wrong behaviour also states a concrete failure scenario: the input or state that gives the wrong result.
+Return the reviewed target; each handbook chapter you read, with a line on what you checked the change against in it; the checks actually performed and coverage gaps; then one ranked findings list. Each finding needs severity, a precise file/line or evidence anchor, the affected requirement/standard, what is wrong, why it matters, supporting evidence and the suggested outcome with its reason. A finding about wrong behaviour also states a concrete failure scenario: the input or state that gives the wrong result.
 
 The coordinator decides what happens to each finding. Do not file tickets or drop a security finding yourself.

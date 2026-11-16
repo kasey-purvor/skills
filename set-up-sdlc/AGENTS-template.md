@@ -54,10 +54,12 @@ A subagent is a separate agent you send to do one job and report back. You send 
 
 | Subagent | What it does | What it works from |
 | --- | --- | --- |
-| Builder | Builds the tickets in its brief, tests first, in its own worktree. The brief may be one ticket or one lane of a stream. | Its own definition. Test-driven development. `diagnose` when something fails unexpectedly. The handbook chapters its tickets name. |
-| Ticket reviewer | Checks a finished change against its ticket, its tests and the standards. | `review-code-change`. The handbook. |
+| Builder | Builds the tickets in its brief, tests first, in its own worktree. The brief may be one ticket or one lane of a stream. | Its own definition. Test-driven development. `diagnose` when something fails unexpectedly. The handbook chapters you name in its brief. |
+| Ticket reviewer | Checks a finished change against its ticket, its tests and the standards. | `review-code-change`. The handbook chapters you name in its brief. |
 | Bug hunter | Reads only the code of a finished change, looking for bugs. | `review-code-change`. |
 | Frontend verifier | Drives the real app through the journeys a change affects. | `verify-frontend-change`. |
+
+In every brief to a builder or a ticket reviewer, name the handbook chapters it must read, each by file. Take them from the ticket's Standards line and add any the work plainly touches. Its report says which it read.
 
 A builder moves each of its tickets to In Progress when it starts, and records its decisions on them as it goes. Check both when it reports. No other subagent changes a ticket. None of them writes to a context file, except a builder landing an ADR change carried in its brief. They report to you, and you decide what happens next.
 

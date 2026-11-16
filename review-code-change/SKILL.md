@@ -13,7 +13,7 @@ A change is reviewed by separate reviewers, each with one question. The session 
 
 | Review | Its question | Procedure | The brief gives it |
 |---|---|---|---|
-| Against the ticket | Did the change build what was asked, to the repo's standards, with tests that pin it? | [against-ticket.md](against-ticket.md) | The requirements (ticket or task brief), the target, applicable instructions, existing verification evidence, access limits |
+| Against the ticket | Did the change build what was asked, to the repo's standards, with tests that pin it? | [against-ticket.md](against-ticket.md) | The requirements (ticket or task brief), the target, the handbook chapters to read (each by file), applicable instructions, existing verification evidence, access limits |
 | Bug hunt | Does the code that was written break? | [bug-hunt.md](bug-hunt.md) | The target, and one or two sentences on what the change is meant to do |
 | Frontend check | Does it work in the running app? | the [verify-frontend-change](../verify-frontend-change/SKILL.md) skill | See that skill. Visible or interactive changes only |
 
@@ -23,6 +23,7 @@ The two code reviews read different things and do not repeat each other. The tic
 
 - Send one ticket reviewer and one bug hunter by default, each a fresh subagent, at the same time. Add the frontend check for a visible or interactive change.
 - Give each a focused brief with what the table lists, and the name of its procedure file. Do not pass the builder's conversation or a proposed verdict. Use the model and effort the repo's agent instructions give for review work.
+- **Name the handbook chapters in the ticket reviewer's brief, each by file.** Take them from the ticket's `Standards:` line and add any the change plainly touches. Do not leave the choice to the reviewer: a reviewer told to pick its own chapters often opens none.
 - A reviewer completes only its own assignment and reports to the coordinator. It does not send other reviewers, edit product code or tracker records, or run the check with other sessions or any pane bookkeeping.
 - For a large change, suggest a second bug hunter or a specialist, with the reason, and wait for the human's yes. More reviewers are not a quota.
 - If delegation is unavailable, work through both procedures yourself, one after the other, and say that the review was not independent. Do not claim an independent pass.
@@ -40,6 +41,6 @@ Coordinate a stable review interval. If the target changes, identify what needs 
 
 ## When the reports come back
 
-Merge the reports into one ranked list. Where two reviewers report the same defect, keep one entry and note both saw it. Use [review-findings.md](review-findings.md) for what happens to each finding and for the report the human gets. The coordinator owns fixes, records and decisions. A standalone local review need not invent a ticket or stream.
+Check that the ticket reviewer's report covers every chapter you named. If one is missing, send the report back to the same reviewer. Then merge the reports into one ranked list. Where two reviewers report the same defect, keep one entry and note both saw it. Use [review-findings.md](review-findings.md) for what happens to each finding and for the report the human gets. The coordinator owns fixes, records and decisions. A standalone local review need not invent a ticket or stream.
 
 After fixes, the reviewer that raised a finding rechecks the changed code and the assumptions it affects; the coordinator obtains relevant checks and browser reruns. Record the new reviewed revision. Reopen a broader review only when a fix invalidates earlier coverage. Report blockers, material disagreements and unverifiable claims instead of claiming a clean pass or starting an unbounded loop. Review reports do not themselves trigger another automatic review.
