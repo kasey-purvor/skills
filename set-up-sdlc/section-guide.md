@@ -30,6 +30,6 @@ The folder for worktrees and the pattern for branch names are fixed. The example
 
 Setup covers Node and Python projects.
 
-- **Nothing is built yet.** Ask the user which of the two the project will use, and with which package manager. Write that manager's install command into the line.
+- **Nothing is built yet.** Ask the user which of the two the project will use. Recommend pnpm as the package manager for Node and uv for Python, and write the chosen manager's install command into the line.
 - **Something is built.** Do not assume. Tell the user what you found (the lock file, the package manager, any commit hook, any virtual environment) and explain that every worktree needs the same environment as the main folder. Then ask them to confirm what has to be run in a new one.
 - If they confirm that nothing needs running, leave the line out.
