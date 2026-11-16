@@ -360,7 +360,7 @@ A context file is a markdown file that agents and people read to understand a pr
 
 **Builders and reviewers (Kasey, 16 Nov, late).** A builder that is still running can be told of a change of plan. Once a builder has stopped at the end of its work it is never resumed: later work goes to a new builder. Reviewers are different: the same reviewer is resumed to check the fix. The house rule "Fix rounds" now says this.
 
-**Naming conventions (Kasey, 16 Nov, late).** The code naming conventions went back into the global file, and are also a house rule, "Naming", in the template. The duplication is accepted, as with models and credit. Branch and worktree naming stays out of the global file.
+**Naming conventions (Kasey, 16 Nov, late).** The code naming conventions went back into the global file, and are also a house rule, "Naming", in the template. The duplication is accepted, as with models and credit. Branch and worktree naming stays out of the global file. The house rule states the conventions as rules. A first wording that opened with "agree a naming convention before naming things" was rejected by Kasey: "it's not for discussion, that's the rules".
 
 **Still open, none started**
 - A re-review of `linear` at the end. Two rules from the old copied half are in no skill (comment on decisions as they happen; record unrecorded decisions before a handoff). Several skills point back at sections of the agents file, against the one-way rule: `linear`, `to-issues`, `stream` and its team document and builder files, `session-wrap-up`, `handoff`, and this skill's `domain.md`.
