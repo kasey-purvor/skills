@@ -89,6 +89,11 @@ A context file is a markdown file that agents and people read to understand a pr
 - A ruling lives in one place. `docs/decisions.md` is for rulings that have no ADR; it may point at an ADR, but never extends one.
 - No ADR rule depends on sorting ADRs by type. The review's privacy and security carve-out is rejected.
 
+
+**Decided: made at setup (16 Nov)**
+- Setup creates every context file and folder up front, in one shot, with a script (`set-up-sdlc/scripts/create-context-files.sh`): `CONTEXT.md`, `docs/adr/`, `docs/decisions.md`, `docs/pitfalls.md` and `docs/agents/domain.md`. It creates only what is missing and never overwrites. This replaces creating each file later, when an agent first has something to write, so that no agent needs to create a context file again.
+- The rules file is rewritten in its new form at `set-up-sdlc/domain.md`, and the script copies it into the repo. It was drafted from this chapter. Where this chapter is still open it keeps the old rule: the line shapes for decisions and pitfalls, and `session-wrap-up` as the only route for those lines. Two old rules are gone: a pitfall no longer graduates into `AGENTS.md`, and the fifteen-minute threshold for a pitfall is dropped as a hard number. Kasey has not read it yet.
+- Still pointing the old way: `grill-with-docs` says to create these files lazily.
 **Why**
 - In every place examined, the rule for creating something was fine and the rule for changing it was missing. So files only grew.
 - ADRs in one repo: 34 files, about 154,000 tokens, the largest about 21,600 with 23 dated amendments. 167 commits changed an existing ADR, 113 of them alongside code. About half the added text describes how things were built.
@@ -340,7 +345,7 @@ A context file is a markdown file that agents and people read to understand a pr
 - The rules for review findings still sit in `stream`, though they apply to a lone ticket too.
 - The review workflow, the fresh-agent rule and the merge permission are decided to leave Kasey's global file and have not been removed from it. Three skills still send the reader to the global file for when reviews start.
 - The real content of the gates and the building flow, to be recorded as an ideal demo together with Kasey's newest git setup. Its design notes are in that repo at `docs/cicd-redesign/design-so-far.txt`. Two readers of the example raised questions about the flow (where the agent stops and waits, when a ticket is finished, who builds a lone ticket). Kasey set those reviews aside as picking at a demo; the questions belong to the ideal demo.
-- The file that holds the rules for every context file, in its new form.
+- The rules file for the context files is drafted (`set-up-sdlc/domain.md`) and not yet read by Kasey.
 - The subagents: what builders and reviewers are told and what they load. The skills review's open questions are in `~/dev_wsl/projects/agent-context/skills-review/to-do.md`.
 - Where the detail about a repo's test fixtures lives.
 - The handbook topic recommends nothing on two decisions, and the setup agent needs a recommendation for each: whether an agent may push without being asked, and whether a person merges or it merges automatically once green and reviewed. To be put to Kasey one at a time.

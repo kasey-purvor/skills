@@ -1,88 +1,72 @@
-# Domain Docs
+# The context files
 
-How the engineering skills should consume this repo's domain documentation when exploring the codebase.
+A context file is a markdown file that agents and people read to understand this project. It is not code and it is not a ticket. This file holds the rules for all of them: what each is for, what goes in it, and how it is changed.
 
-## Before exploring, read these
+## The files
 
-- **`CONTEXT.md`** at the repo root, or
-- **`CONTEXT-MAP.md`** at the repo root if it exists — it points at one `CONTEXT.md` per context. Read each one relevant to the topic.
-- **`docs/adr/`** — read ADRs that touch the area you're about to work in. In multi-context repos, also check `src/<context>/docs/adr/` for context-scoped decisions.
-- **`docs/decisions.md`** — settled decisions that didn't earn an ADR. Read it before proposing anything it covers, and before reporting a deliberate choice as a defect.
-- **`docs/pitfalls.md`** — traps that have cost agents time in this repo. Read it before the first command of a piece of work.
-- **The handbook's `topics/environment.md`** (in the `dev-standards-handbook` skill) — traps in the tools and machines, not this repo. Read it before the first command of a piece of work too.
+| File | Holds | Does not hold |
+| --- | --- | --- |
+| `AGENTS.md` | What every session needs before any task. | How-tos for one task. How the code is built. |
+| `CONTEXT.md` | The vocabulary: each term of the product and what it means. | Anything about how things are built. |
+| `docs/adr/` | One file for each ruling that is hard to reverse, surprising without its reason, and came from a real choice between options. | Descriptions of the code, measurements, a ticket's story. |
+| `docs/decisions.md` | Rulings the human made that no ADR covers, one line each. | Anything an ADR already says. It may point at an ADR, never add to one. |
+| `docs/pitfalls.md` | Traps in this repo that cost an agent time and will recur, one line each. | Traps in shared tools and machines: those go in the handbook's `topics/environment.md`. |
+| `README.md` | What the project is and how to get it running. | Text moved out of the other files. |
 
-If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The producer skills (`/grill-with-docs` for the glossary and ADRs, `session-wrap-up` for decision and pitfall lines) create them lazily when terms, decisions or traps actually turn up.
+A repo with several separate parts may have a `CONTEXT-MAP.md` at the root, pointing at one `CONTEXT.md` for each part.
 
-## File structure
+## Before you change anything
 
-Single-context repo (most repos):
+**Ask the human first, every time,** before you add to, change or remove anything in any of these files, create a new context file, ADR, planning document or folder for them, or start any new way of keeping context.
 
-```
-/
-├── CONTEXT.md
-├── docs/adr/
-│   ├── 0001-event-sourced-orders.md
-│   └── 0002-postgres-for-write-model.md
-├── docs/decisions.md
-├── docs/pitfalls.md
-└── src/
-```
+The one exception is an ADR: when a ticket or plan the human approved carries the exact new wording, land it unchanged without asking again.
 
-Multi-context repo (presence of `CONTEXT-MAP.md` at the root):
+## Where a thing goes
 
-```
-/
-├── CONTEXT-MAP.md
-├── docs/adr/                          ← system-wide decisions
-├── docs/decisions.md                  ← one pair at the repo root, never per context
-├── docs/pitfalls.md
-└── src/
-    ├── ordering/
-    │   ├── CONTEXT.md
-    │   └── docs/adr/                  ← context-specific decisions
-    └── billing/
-        ├── CONTEXT.md
-        └── docs/adr/
-```
+- Try the specific files first: the vocabulary, an ADR, decisions, pitfalls, a handbook chapter. Nothing goes in `AGENTS.md` that one of those would take.
+- A script's manual lives in the script: its header, its help text and its error messages.
+- One-time work stays on its ticket.
+- If a thing fits none of these files, it stays as a comment on the ticket. Do not make another file for it.
 
-## Use the glossary's vocabulary
+## Reading them
 
-When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `CONTEXT.md`. Don't drift to synonyms the glossary explicitly avoids.
+- Read `docs/decisions.md` and `docs/pitfalls.md` before the first command of a piece of work, and the handbook's `topics/environment.md` with them.
+- Read `CONTEXT.md` and the ADRs that touch the area you are about to work in.
+- Use the vocabulary's terms when you name a concept in a ticket, a test or a proposal. If the term you need is not there, either you are inventing language the project does not use, or there is a gap to raise with the human.
+- If your work goes against an ADR or a decisions line, say so plainly. Do not quietly go against it.
 
-If the concept you need isn't in the glossary yet, that's a signal — either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/grill-with-docs`).
+## The vocabulary (`CONTEXT.md`)
 
-## Flag ADR conflicts
+One entry for each term: the term, and what it means in this product. No implementation, no plans, no decisions.
 
-If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
+## ADRs
 
-> _Contradicts ADR-0007 (event-sourced orders) — but worth reopening because…_
+- An ADR holds three things: the ruling, the reason, and the options turned down.
+- The ruling sits at the top. When it changes, the top is rewritten in the same edit. It is never added to underneath.
+- A test for any sentence: would it still be true if the code were rewritten another way? If not, it does not belong.
+- A ruling lives in one place.
 
-The same applies to a line in `docs/decisions.md`: name it, don't quietly go against it.
+## Decisions (`docs/decisions.md`)
 
-## Decisions and pitfalls
-
-Two plain lists for what the glossary and the ADRs don't hold. One line per entry, newest last, created on the first entry. They live at `docs/decisions.md` and `docs/pitfalls.md` unless the `## Agent skills` block in `AGENTS.md` names another place.
-
-**`docs/decisions.md`** — a decision the human made that is settled but fails the ADR test (easy to reverse, or unsurprising, or no real alternative). Product rules and taste live here: what is in scope, what is never built, thresholds, how a feature should feel.
+A ruling the human made that is settled but does not earn an ADR: what is in scope, what is never built, how a feature should feel. One line each, newest last:
 
 ```
 YYYY-MM-DD · <decision> · why: <reason> · from: <ticket, ADR or "chat"> · superseded by: <date or —>
 ```
 
-A reversed decision is not deleted: fill in `superseded by:` on the old line and add the new line at the end.
+A reversed decision is not deleted. Fill in `superseded by:` on the old line and add the new line at the end.
 
-**`docs/pitfalls.md`** — a trap in this repo (its code, hooks, scripts, tests) that cost an agent more than about fifteen minutes: a hook that bites, a flaky test, a command that must run from a certain place.
+## Pitfalls (`docs/pitfalls.md`)
 
-Each trap has one home. A trap about this repo goes here. Any other trap (a tool, the harness, Codex, Linear, a scraping service, git and GitHub, the machines) goes in the `dev-standards-handbook` skill's `topics/environment.md`, in the same line shape.
+A trap in this repo's code, hooks, scripts or tests that cost an agent time and will recur. One line each:
 
 ```
 YYYY-MM-DD · <symptom, plainly> → <fix or rule> · seen: N · source: <measured | read in code | an agent's word | the human said>
 ```
 
-The date is the date the trap was first seen. Before adding a line, search the file for the same symptom; if it is there, bump `seen` instead of adding.
+- The date is when the trap was first seen. Before adding a line, look for the same symptom. If it is there, raise `seen` instead.
+- This file is an inbox, not an archive. A line stays until the trap is fixed at its source (a hook, a script or a check now stops it), and then it is deleted.
 
-**`docs/pitfalls.md` is an inbox, not an archive.** Every line ends one of three ways: fixed at the source (a hook, a script or a preflight step now stops it), then deleted; moved into `AGENTS.md` as a how-to, then deleted; or kept, with its `seen` count, until one of those happens.
+## Who writes decisions and pitfalls lines
 
-**Who writes them.** One route: the `session-wrap-up` skill, run at a stream's close, at the end of a grill session, before a handoff, or when the human wraps up a session and says yes to the offer. It proposes each line, and each deletion the inbox rule calls for; the human says yes or no to each, and the lines land where `session-wrap-up` says. Builders report traps in their final report rather than writing them. Nothing is written to or deleted from either file outside that route. Nothing goes in that the human didn't decide or an agent didn't actually hit.
-
-**If a thing fits none of these files** (glossary, ADR, decisions, pitfalls), it stays in the ticket comment. Don't create another file for it.
+One route: the `session-wrap-up` skill. It proposes each line, and each deletion, and the human says yes or no to each. A builder reports a trap in its final report and does not write it. Nothing goes in that the human did not decide or an agent did not actually hit.
