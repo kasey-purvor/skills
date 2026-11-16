@@ -77,7 +77,7 @@ One stage matters: whether the product is live, meaning any real user's data exi
 
 #### When to raise the next step
 
-A working agent tells the human when one of these shows up. It never changes the setup itself.
+A working agent tells the human when one of these shows up. It never changes the setup itself. The human then runs setup again for that part.
 
 | Stage | What is happening | What is due |
 | --- | --- | --- |
@@ -103,34 +103,35 @@ A working agent tells the human when one of these shows up. It never changes the
 - **Keep a demo customer that loads cleanly.** Most tests and every environment except production depend on it.
 - **No real customer data outside production.** An environment that holds a copy of it is production in all but name, and is locked down like production. Do not start one.
 - **Integration is a real deployment or it is nothing.** A local container by that name only repeats what CI did. It adds proof that the app works as deployed, a place someone else can open, and a rehearsal of the deploy before there is anything to lose. When it breaks it is rebuilt from the repo, never repaired by hand.
+- **What an agent may do.** Anything locally. In integration and pre-production, use the app and never delete standing test data. In production, nothing unless the human asks.
 - **Pre-production holds a release still.** Integration changes with every merge. Pre-production is the one batch a person chose, unchanged while it is checked, and production takes exactly that.
 
 ### The rules at each gate
 
 **Commit.** Catches careless mistakes in seconds, before anyone else sees them.
-- The hook checks format, lint and types on the files being committed, and scans them for secrets. It runs no tests, because a slow hook gets skipped.
+- The hook checks format and lint on the files being committed, checks types for the packages they belong to, and scans for secrets. It runs no tests, because a slow hook gets skipped.
 - The type check uses the project's own settings.
 - One hook tool per repo.
 - A fresh clone or worktree gets a working hook without anyone remembering to install it. Where that cannot be automatic, the repo's agent instructions say what to run.
 - The hook is proved once, by committing a mistake it must refuse.
 
 **Pull request.** Nothing reaches `main` until the checks have passed on that change.
-- CI runs the whole suite on every pull request.
+- CI runs, on every pull request, every test that can run there ("Where tests run", below).
 - A change to the database's structure runs every test that depends on the database, never a chosen few.
 - A pull-request job holds no login that reaches production.
 - Ask the owner: may an agent push whenever its branch is ready, or only when asked?
 
 **Merge.** `main` only ever holds changes that were reviewed and tested together.
 - Every change arrives as a pull request, and the rule binds administrators too.
-- The checks are green and the branch is up to date with `main`. Branches are updated by hand while pull requests are few.
-- A review is attached to the pull request, with every finding settled.
-- Ask the owner: does a person merge, or does it merge automatically once the checks are green and the review is attached?
+- The checks are green and the branch is up to date with `main`. GitHub's setting that requires this is switched on. Branches are updated by hand while pull requests are few.
+- The change has been reviewed by the repo's review subagents, with every finding settled. This is not GitHub's approving review, which is a separate rule where the account requires one.
+- Ask the owner: does a person merge, or does it merge automatically once the checks are green and that review is done?
 
 **Each deploy.** Only proved code moves on, and a person decides where a mistake would reach customers.
 - Integration takes every merge automatically. A person promotes to pre-production, and a person deploys to production.
 - A deploy takes only code that passed the pull-request checks. It checks that this code passed, not this commit: a merge makes a new commit, but with branches kept up to date its code is exactly what the pull request's last run tested. For the same reason there is no second full run on `main` after a merge.
 - Production takes only what is already in pre-production.
-- After every deploy, a quick check that the app starts and a test user can sign in.
+- After every deploy, a quick check that the app starts and, outside production, that a test user can sign in.
 - A database changes only through the repo. If an emergency route is wanted, it is a workflow in the repo that a person starts and that leaves a record.
 
 ### Where tests run
@@ -178,4 +179,5 @@ Setup is one flow. It does not end with a file that describes checks nobody has 
 
 - On the owner's yes, build what was decided for this stage, one piece at a time: the commit hook, the CI workflow, the rules on `main`, and for a later stage the deploys and their checks.
 - Prove each piece before the next. The hook refuses a commit with a mistake in it. CI runs on a pull request. The rules on `main` refuse what they should.
-- The section describes only what exists. Anything decided that cannot be built yet is told to the owner, and is not written as though it were there.
+- The section describes only what exists. Anything decided that cannot be built yet becomes a ticket, all of them under one parent ticket for infrastructure, and is not written as though it were there.
+- If a proof fails, or something could not be built, correct the section to match before you finish.
