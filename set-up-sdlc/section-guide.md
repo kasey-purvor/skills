@@ -33,3 +33,7 @@ Setup covers Node and Python projects.
 - **Nothing is built yet.** Ask the user which of the two the project will use. Recommend pnpm as the package manager for Node and uv for Python, and write the chosen manager's install command into the line.
 - **Something is built.** Do not assume. Tell the user what you found (the lock file, the package manager, any commit hook, any virtual environment) and explain that every worktree needs the same environment as the main folder. Then ask them to confirm what has to be run in a new one.
 - If they confirm that nothing needs running, leave the line out.
+
+## Git and CI/CD
+
+Too big for an entry here. Follow [git-and-cicd.md](./git-and-cicd.md) for the whole section, and for building what it describes.
