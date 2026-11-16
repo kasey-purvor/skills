@@ -11,6 +11,7 @@ A context file is a markdown file that agents and people read to understand this
 | `docs/adr/` | One file for each ruling that is hard to reverse, surprising without its reason, and came from a real choice between options. | Descriptions of the code, measurements, a ticket's story. |
 | `docs/decisions.md` | Rulings the human made that no ADR covers, one line each. | Anything an ADR already says. It may point at an ADR, never add to one. |
 | `docs/pitfalls.md` | Traps in this repo that cost an agent time and will recur, one line each. | Traps in shared tools and machines: those go in the handbook's `topics/environment.md`. |
+| `docs/PRD/` | Requirements documents, one file for each agreed idea, written with the `to-prd` skill. | Decisions made after the document was written: those go on the tickets. |
 | `README.md` | What the project is and how to get it running. | Text moved out of the other files. |
 
 A repo with several separate parts may have a `CONTEXT-MAP.md` at the root, pointing at one `CONTEXT.md` for each part.
@@ -20,6 +21,8 @@ A repo with several separate parts may have a `CONTEXT-MAP.md` at the root, poin
 **Ask the human first, every time,** before you add to, change or remove anything in any of these files, create a new context file, ADR, planning document or folder for them, or start any new way of keeping context.
 
 The one exception is an ADR: when a ticket or plan the human approved carries the exact new wording, land it unchanged without asking again.
+
+A requirements document is written when the human asks for one with `to-prd`. That request is the yes for that one file.
 
 ## Where a thing goes
 

@@ -115,3 +115,4 @@ After drafting, verify:
 - [ ] Consistent terminology
 - [ ] Concrete examples included
 - [ ] References one level deep
+- [ ] Does not point at a named section of a repo's agent instructions file. References run one way: that file points at skills

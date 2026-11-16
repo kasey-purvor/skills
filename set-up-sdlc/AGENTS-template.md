@@ -71,6 +71,7 @@ These are the files that explain the project. Read the ones your task touches.
 | `docs/adr/` | Architecture decision records (ADRs): one file per decision that is hard to reverse, with its reason and the options turned down. |
 | `docs/decisions.md` | Rulings the human made that no ADR covers, one line each. |
 | `docs/pitfalls.md` | Traps in this repo that cost time and will recur, one line each. |
+| `docs/PRD/` | Requirements documents, one for each agreed idea, written with `to-prd`. |
 | `docs/agents/domain.md` | The rules for all of the above: what belongs in each file and what does not. |
 | `README.md` | What the project is and how to get it running. |
 

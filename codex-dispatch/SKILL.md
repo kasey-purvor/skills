@@ -15,7 +15,7 @@ config to change one run. See the current defaults with `sed -n '1,8p' ~/.codex/
 | Need | Shape |
 |---|---|
 | A quick answer or inspection | One-off: foreground, `-s read-only`, `--ephemeral` |
-| A plan or a review | Sub-agent: read-only, frontier model, `plan` or `review` schema |
+| A plan or a review | Sub-agent: read-only, `gpt-6.1-sol` at `xhigh`, `plan` or `review` schema |
 | Code written and committed | Sub-agent: background, dedicated worktree, `build` schema |
 
 ## One-off command
@@ -70,9 +70,9 @@ $K/scripts/codex-run.sh --name con-123-build --dir /abs/path/.claude/worktrees/c
 
 List what the account offers with
 `jq -r '.models[] | "\(.slug)\t\(.description)"' ~/.codex/models_cache.json`.
-When this was written: `gpt-6-astra` was the frontier model, best for planning and review;
-`gpt-6.1-sol` was the cheaper workhorse, best for building; `gpt-6-luna` suited trivial
-one-offs. Effort runs from `low` to `max`. Low effort on an easy task often skips reasoning,
+Use `gpt-6.1-sol` at `xhigh` effort for planning, building and review. `gpt-6-astra` was
+the frontier model when this was written: use it only when the human asks for it.
+`gpt-6-luna` suits research and one-offs. Effort runs from `low` to `max`. Low effort on an easy task often skips reasoning,
 so expect no reasoning summaries there.
 
 ## Rules

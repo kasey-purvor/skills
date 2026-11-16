@@ -17,14 +17,9 @@ YYYY-MM-DD · <symptom, plainly> → <fix or rule> · seen: N · source: <measur
 The date is the date the trap was first seen. The same trap again bumps `seen`; it
 never gets a second line.
 
-**An inbox, not an archive.** Every line ends one of three ways:
-
-1. **Fixed at the source.** A hook, a script or a preflight step now stops the trap.
-   Delete the line.
-2. **Moved into a how-to.** The skill or instructions that cover the tool now say it.
-   Delete the line.
-3. **Kept,** with its `seen` count, until one of those happens. A high count is the
-   sign it is worth fixing at the source.
+**An inbox, not an archive.** A line stays, with its `seen` count, until the trap is
+fixed at its source: a hook, a script, a preflight step or the skill that covers the
+tool now stops it. Then the line is deleted. A high count is the sign it is worth fixing.
 
 **Who writes it.** Only the `session-wrap-up` skill, and only lines (and deletions) the
 human says yes to. They land as one commit in the skills repo, which the human makes and pushes from

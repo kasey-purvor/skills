@@ -49,6 +49,14 @@ else
   made+=("docs/adr/")
 fi
 
+if [ -d "docs/PRD" ]; then
+  kept+=("docs/PRD/")
+else
+  mkdir -p docs/PRD
+  : > docs/PRD/.gitkeep
+  made+=("docs/PRD/")
+fi
+
 if [ -e "docs/agents/domain.md" ]; then
   kept+=("docs/agents/domain.md")
 else
