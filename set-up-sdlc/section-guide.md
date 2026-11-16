@@ -38,6 +38,23 @@ Setup covers Node and Python projects.
 
 Too big for an entry here. Follow [git-and-cicd.md](./git-and-cicd.md) for the whole section, and for building what it describes.
 
+## About this repo
+
+Two parts. Both hold only what every session needs and the repo does not show for itself. No map of the folders.
+
+**The stack table.** A table of plain facts, two columns: the language, the frameworks, the database, the hosting, the package manager, and the command that runs the full local check.
+
+- Read them from the repo and ask the user to confirm.
+- If nothing is built, ask what they plan to use.
+- Leave out a row the project does not have. A row may carry one short fact a session would otherwise get wrong.
+
+**The rules that hold across the code.** A short list, one line each.
+
+- Ask the user which rules every agent must follow in every part of the code.
+- Take a rule only if breaking it would do real harm and nothing in the code already stops it. If a lint rule, a type or a test enforces it, it is not needed here.
+- Where an ADR holds the reason, name the ADR and do not repeat it.
+- A new repo may have none. Then leave the list out. Do not invent rules to fill it.
+
 ## A repo that is already built
 
 The context files can be built backwards from the app. Work through them with the user, one file at a time, and write nothing without their yes. How far to go is theirs to say.
