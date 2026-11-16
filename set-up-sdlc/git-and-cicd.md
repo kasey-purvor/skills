@@ -123,7 +123,7 @@ A working agent tells the human when one of these shows up. It never changes the
 - CI runs, on every pull request, every test that can run there ("Where tests run", below).
 - A change to the database's structure runs every test that depends on the database, never a chosen few.
 - A pull-request job holds no login that reaches production.
-- Ask the owner: may an agent push whenever its branch is ready, or only when asked?
+- Ask the owner: may an agent push whenever its branch is ready, or only when asked? Recommend whenever it is ready: a push to a branch can harm nothing, and the merge gate is what protects `main`.
 
 **Merge.** `main` only ever holds changes that were reviewed and tested together.
 - Every change arrives as a pull request, and the rule binds administrators too.
