@@ -7,7 +7,7 @@ It names no tool, company or product.
 
 # Git and CI/CD
 
-The setup agent follows this file to fill in the "Git and CI/CD" section of a repo's agent instructions, and then to build what that section describes. It has four parts: how to run the conversation, what to propose, what to write, and what to build.
+The setup agent follows this file to fill in the "Git and CI/CD" section of a repo's agent instructions, and then to build what that section describes. Part 4 also builds the scheduled runs agreed in the repo's "Scheduled runs" section. It has four parts: how to run the conversation, what to propose, what to write, and what to build.
 
 Day to day, an agent works from the repo's own agent instructions, not from this.
 
@@ -22,7 +22,7 @@ Propose a whole setup and let the owner change what does not fit. Do not ask the
 5. **Ask the two decisions that part 2 marks "ask the owner",** one at a time, each with your recommendation.
 6. **Ask what does not fit,** and change it.
 7. **Write the section** (part 3) and show it. The owner corrects the tables, not a list of their earlier answers.
-8. **On their yes, build what was decided** (part 4).
+8. **What was decided is built in step 10 of `SKILL.md`** (part 4), once the whole file has the owner's yes.
 
 ### A repo that already has a setup
 
@@ -36,6 +36,7 @@ Read these before proposing the merge rules. They are facts, not choices, and th
 - Who may merge? This decides whether merging automatically is possible at all.
 - Do the rules bind administrators too? If not, the gate rests on people.
 - Are the rules enforced, not only present? On some plans they can be created for a private repo and are not enforced. Then every merge rule rests on people.
+- Which branches do the rules cover, and can a branch be pushed to again once it exists? Most accounts protect only `main`, and a branch is updated freely. Some apply their rules to every branch, and GitHub then refuses any push to a branch that already exists. Read every rule on a working branch to find out, and never assume either case. It decides how a pull request is changed and brought up to date (the Merge gate, below).
 
 Then ask the owner whether their organisation has rules that the settings do not show.
 
@@ -74,10 +75,10 @@ One stage matters: whether the product is live, meaning any real user's data exi
 
 | When | What is decided | Why then |
 | --- | --- | --- |
-| Day one, not live | The commit hook. CI on every pull request. The rules that protect `main`. What the GitHub account itself enforces. Whether an agent may push, and who merges. The database built from the repo, with made-up data. | All of it is cheap now. Building the database from the repo is very costly to add once months of changes have been made by hand. |
+| Day one, not live | The commit hook. CI on every pull request. The rules that protect `main`. What the GitHub account itself enforces. Whether an agent may push, and who merges. The check on the layout's boundaries. The pull request sweep. The database built from the repo, with made-up data. | All of it is cheap now. Building the database from the repo is very costly to add once months of changes have been made by hand. |
 | When someone else needs to see the merged work, or going live is near | Integration. | Before then, one person on a project that is not live skips it: local and CI are enough, and changes are proved locally. |
 | Before going live | Pre-production and production. What data each environment holds. Who promotes and who deploys. What an agent may do in each environment. Where test logins are kept. | None of it means anything until there is somewhere to deploy to. It has to be settled before the first real user, not after. |
-| Later, when it hurts | Running only the tests a change touches. Something that keeps pull requests up to date. A cap on open pull requests. Regular runs. An alert that reaches a person. | Each has its own trigger (below). Until the trigger shows, it is work for nothing. |
+| Later, when it hurts | Running only the tests a change touches. Something that keeps pull requests up to date. A cap on open pull requests. Scheduled full test runs. An alert that reaches a person. | Each has its own trigger (below). Until the trigger shows, it is work for nothing. |
 
 #### When to raise the next step
 
@@ -90,8 +91,10 @@ These are for setup, when it is run again on a repo: they say which part is due.
 | Any | CI takes long enough that people stop waiting for it. | Running only the tests a change touches |
 | Any | Pull requests wait on each other to be brought up to date. | A step that updates the next one automatically. A paid queue only if that is still too slow. |
 | Any | The line of open pull requests keeps growing. | A cap on how many each person may have open |
-| Live | A failed run or an outage goes unnoticed. | Regular runs, and an alert that reaches a named person. No tickets filed automatically. |
-| Live | Customers meet slowness before anyone else does. | A regular performance run on pre-production |
+| Live | A failed run or an outage goes unnoticed. | Scheduled full test runs, and an alert that reaches a named person. No tickets filed automatically. |
+| Live | Customers meet slowness before anyone else does. | A scheduled performance run on pre-production |
+
+A scheduled run, once it is agreed, is listed in the repo's "Scheduled runs" section. The section guide says how.
 
 ### The environments
 
@@ -122,12 +125,18 @@ These are for setup, when it is run again on a repo: they say which part is due.
 **Pull request.** Nothing reaches `main` until the checks have passed on that change.
 - CI runs, on every pull request, every test that can run there ("Where tests run", below).
 - A change to the database's structure runs every test that depends on the database, never a chosen few.
+- CI also runs the check on the layout's boundaries, as part of the lint or the tests. The repo's "Where code goes" says which.
 - A pull-request job holds no login that reaches production.
-- Ask the owner: may an agent push whenever its branch is ready, or only when asked? Recommend whenever it is ready: a push to a branch can harm nothing, and the merge gate is what protects `main`.
+- Ask the owner: may an agent push its branch once the review is clean, without asking, or only when asked? Recommend without asking: a push to a branch can harm nothing, and the merge gate is what protects `main`.
+- When CI fails, the agent reads the failure and finds the cause. The fix then goes through the Fix step like any other round of fixes, before anything is pushed again. Word the building step's blank that way, and add whatever the repo's own rules demand, such as a new pull request where a pushed branch cannot be updated.
 
 **Merge.** `main` only ever holds changes that were reviewed and tested together.
 - Every change arrives as a pull request, and the rule binds administrators too.
-- The checks are green and the branch is up to date with `main`. GitHub's setting that requires this is switched on. Branches are updated by hand while pull requests are few.
+- The checks are green and the branch is up to date with `main`. GitHub's setting that requires this is switched on. It is what keeps a line of pull requests safe: each one is tested against what the others merged before it.
+- How a pull request that has fallen behind is brought up to date depends on what the account allows:
+  - **A pushed branch can be updated.** This is the usual case. `main` is merged into the branch and CI runs again. Rebasing the branch does the same job but needs a force-push, so offer it only where the owner allows one on a person's own branch. It is done by hand while pull requests are few.
+  - **A pushed branch cannot be updated.** The pull request is closed and replaced by a new branch cut from `main`. So the review and its fixes are finished before anything is pushed, the full local check passes with the latest `main` merged in, and a pull request stays open for as short a time as possible.
+- Either way the setting stays on. If keeping up to date is costly in this repo, say what it costs and let the owner decide. Never propose switching it off yourself.
 - The change has been reviewed by the repo's review subagents, with every finding settled. This is not GitHub's approving review, which is a separate rule where the account requires one.
 - Ask the owner who merges. Recommend that the agent merges its own pull request once the checks are green and that review is done with nothing blocking, and that the human saying "merge it" is enough by itself. The other choice is that only a person merges.
 
@@ -171,18 +180,21 @@ The section has these parts, in this order. `AGENTS-example.md` shows a finished
 2. **The environments.** A table with a row for each environment the repo has: what it is for, what data it holds, how a change gets there, and what an agent may do there. Under it, where the project has or plans a database, the rule in full: the database is built from the repo and never changed by hand, with the commands that build it and load made-up data once they exist. The never list says it a second time, on purpose.
 3. **The picture.** The route from a change on someone's machine to the last environment. One band for each place (the machine, GitHub, deployed) and one arrow for each gate. Number the gates G1, G2 and so on, in order. Adapt `example_pipeline.d2`, render it, and keep the source beside the picture.
 4. **Why each gate exists.** A table with one line for each gate.
-5. **What each gate demands.** One grid. The gates run across the top, with a row saying what enforces each. Down the side come the tests, then the rules. A filled dot means a machine checks it; an open dot means it rests on a person.
+5. **What each gate demands.** One grid. The gates run across the top, with a row saying what enforces each. Down the side come the tests, then the rules. A filled dot means a machine checks it; an open dot means it rests on a person. Under the grid, say in a line or two how a pull request is changed and brought up to date in this repo.
 6. **The never list.**
 7. **The tests.** A table numbering them T1, T2 and so on, with what each proves. The grid uses the same numbers.
 8. **Test data and logins.** Where logins are kept, and the standing test data with the command that rebuilds each. Never a credential's value. Nothing more goes here: what a fixture is for and how it behaves is written in its script's header, help text and error messages. Ask the human before making any other file about it.
 
-Then, in "How work is done", word three of the building steps from the answers: when a pull request is pushed, who merges, and where a change is proved.
+Then, in "How work is done", word three of the building steps from the answers: when a pull request is pushed and what happens if CI fails, who merges, and where a change is proved.
 
 ## 4. What to build
 
 Setup is one flow. It does not end with a file that describes checks nobody has made.
 
-- On the owner's yes, build what was decided for this stage, one piece at a time: the commit hook, the CI workflow, the rules on `main`, the commands that build the database and load made-up data where there is a database, and for a later stage the deploys and their checks.
-- Prove each piece before the next. The hook refuses a commit with a mistake in it. CI runs on a pull request. The rules on `main` refuse what they should.
-- The section describes only what exists. Anything decided that cannot be built yet is offered to the owner as a ticket and filed on their yes, all of them under one parent ticket for infrastructure. It is not written as though it were there.
+- On the owner's yes, build what was decided for this stage, one piece at a time: the commit hook, the CI workflow, the check on the layout's boundaries, the rules on `main`, the commands that build the database and load made-up data where there is a database, any scheduled run agreed for now, and for a later stage the deploys and their checks.
+- A builder builds it, the review subagents review it, and each round of fixes goes to a fresh builder, as for any change in this repo. These checks are small, but every later change rests on them.
+- Setup's own commits need no ticket. That covers everything setup commits: the agent instructions and the context files, these checks, and the README written at the end. Name the branch and its worktree for what they hold. The evidence goes on the setup ticket at the end (step 11 of `SKILL.md`).
+- The rules on `main` are in place before any product code is written. Setup's own commits may go in before them.
+- Prove each piece before the next. The hook refuses a commit with a mistake in it. CI runs on a pull request. The rules on `main` refuse what they should. The boundary check refuses an import that crosses a boundary. A scheduled run is seen to fire and to report.
+- The section describes only what exists. Anything decided that cannot be built yet is offered to the owner as a ticket and filed on their yes, in the epics agreed at the end (step 11 of `SKILL.md`). It is not written as though it were there. The "Scheduled runs" table is the one exception: a run agreed for later is a row there with its trigger, as the section guide says.
 - If a proof fails, or something could not be built, correct the section to match before you finish.

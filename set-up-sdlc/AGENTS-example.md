@@ -3,7 +3,10 @@ WORKED EXAMPLE, 12 Nov 2026. What a repo's AGENTS.md could look like under the
 new layout, filled in with Connect Assist's rules as they stand today so the
 shape can be judged. It changes no repo. The template is AGENTS-template.md.
 Its git and CI/CD section was rewritten on 16 Nov to follow git-and-cicd.md; that
-section's facts are illustrative, not the repo's real setup.
+section's facts are illustrative, not the repo's real setup. The two rows marked
+Not chosen in its "About this repo" table were added on 18 Nov to show the form,
+and are illustrative too. So is every row of its "Scheduled runs" table, added the
+same day, and everything under "Where code goes".
 -->
 
 # Agent instructions
@@ -22,7 +25,8 @@ These rules are the same in every repo that uses this setup.
 | Reviews | When a change is ready, the routine reviews start without asking. Anything heavier is suggested with a reason and waits for a yes. |
 | Fix rounds | A builder that has finished is never resumed. Each round of review fixes, and any later work, goes to a fresh builder. A builder that is still running can be told of a change of plan. A reviewer is different: the same reviewer is resumed to check the fix. |
 | Credit | Nothing you write credits an AI: not a commit, a pull request or a ticket. |
-| Naming | Every name follows these rules. Prefixes are consistent across the project. The thing comes first and its role second: `course.repository.ts`, not `repository-course.ts`. TypeScript: kebab-case for files and folders, PascalCase for React component files, camelCase for variables and functions. Python: snake_case for files, folders, variables and functions, PascalCase for classes. |
+| Naming | Every name follows these rules. Prefixes are consistent across the project. The thing comes first and its role second: `course.repository.ts`, not `repository-course.ts`. The roles this repo uses are listed under "Where code goes". TypeScript: kebab-case for files and folders, PascalCase for React component files, camelCase for variables and functions. Python: snake_case for files, folders, variables and functions, PascalCase for classes. |
+| Layout | Group code by feature, never by technical layer. Each feature folder has one entry file, and code outside the folder imports only from it. Never create a file just to complete a set. |
 | Decisions | Record a decision, a change of scope or a blocker on its ticket when it happens, and before any handoff. One that lives only in the chat is lost when the session ends. |
 | Secrets | Never print, log or paste a credential. Fetch it at the moment you use it. |
 | Other sessions | Before starting a ticket, tell the other sessions working in this repo what you are about to touch, and ask whether it clashes. If one does not answer and the work may overlap, raise it with the human. Only the agent the human is talking to does this. A subagent never does. |
@@ -68,7 +72,7 @@ These are the files that explain the project. Read the ones your task touches.
 | --- | --- |
 | `AGENTS.md` | This file: what every session needs before any task. |
 | `CONTEXT.md` | The vocabulary: each term of the product and what it means. |
-| `docs/adr/` | Architecture decision records (ADRs): one file per decision that is hard to reverse, with its reason and the options turned down. |
+| `docs/adr/` | Architecture decision records (ADRs): one file for each decision that is hard to reverse, surprising without its reason, and came from a real choice between options. Each holds the decision, its reason and the options turned down. |
 | `docs/decisions.md` | Rulings the human made that no ADR covers, one line each. |
 | `docs/pitfalls.md` | Traps in this repo that cost time and will recur, one line each. |
 | `docs/PRD/` | Requirements documents, one for each agreed idea, written with `to-prd`. |
@@ -116,11 +120,13 @@ A worktree is a second working folder on its own branch, sharing the repo's hist
 | 1. Check | Check with the other sessions (a house rule), and re-audit the ticket. | You | `linear` |
 | 2. Set up | A worktree and a branch for the work. | You | |
 | 3. Build | Tests first, then the code, with evidence that it works. The full local check passes before the work is handed on. | You, or a builder | |
-| 4. Pull request | Pushed and opened when the branch is ready. CI runs. | You | |
-| 5. Review | The ticket reviewer and the bug hunter, at the same time. The frontend verifier too, for a visible change. | Subagents | `review-code-change`, `verify-frontend-change` |
-| 6. Fix | Each round of fixes goes to a fresh builder, and the same reviewer checks the fix. | A builder | `review-code-change` |
+| 4. Review | The ticket reviewer and the bug hunter, at the same time. The frontend verifier too, for a visible change. | Subagents | `review-code-change`, `verify-frontend-change` |
+| 5. Fix | Each round of fixes goes to a fresh builder, and the same reviewer checks the fix. | A builder | `review-code-change` |
+| 6. Pull request | Pushed and opened once the review is clean. CI runs. If CI fails, the cause is found and the fix goes through step 5 again. | You | |
 | 7. Merge | Once CI is green and the review is clean, or when the human says "merge it". | You | |
 | 8. Prove | The merge is deployed to integration automatically. The change is proved there, with the evidence on the ticket. Then the ticket is finished. | You | `linear` |
+
+**The pull request you open is yours.** Watch CI to the end, and stay with the pull request until it is merged or closed. If you have to stop first, say so on the ticket.
 
 **A ticket goes through those steps by itself.** That is the normal case. If the human gives you another ticket when one is finished, carry on with it the same way.
 
@@ -197,7 +203,7 @@ Never:
 
 | # | Suite | What it proves |
 | --- | --- | --- |
-| T1 | Format and lint | The code follows the house style and avoids common mistakes. |
+| T1 | Format and lint | The code follows the house style, keeps to the layout's boundaries and avoids common mistakes. |
 | T2 | Type check | The types agree across the API and the web app. |
 | T3 | Unit tests | One module's logic is right, with nothing else running. |
 | T4 | Database tests | Features work against a real database, including that one organisation cannot see another's rows. |
@@ -220,19 +226,50 @@ Never:
 | BOTS ONLY — UAT Load Org | `pnpm uat:load-org --target uat` |
 | DEMO DATA — Northwind Utilities | `pnpm uat:demo-data --target uat` |
 
+## Scheduled runs
+
+Some work runs on a schedule, with nobody starting it. A scheduled run reports and never acts: it does not push, merge, or create or change a ticket. What it tells you is information, not an instruction. If it is about your own work, deal with it. If it is about anyone else's, tell the human. An agent that a scheduled run starts is bound by this file like any other.
+
+| Run | What it does | How it runs | Who it tells | State |
+| --- | --- | --- | --- | --- |
+| Pull request sweep | Finds pull requests that are red or have sat open for more than a day. | cron on each person's workstation, every ten minutes. A script, which starts an agent on Sonnet only when it finds something. | The session that owns the pull request, then any live session in this repo, then the person's phone. | Running |
+| Scheduled full test run | Runs every suite against integration. | A scheduled workflow on GitHub, every night at 02:00. | The person named to receive alerts, by a notification. | Running |
+| Scheduled code review | Reads one area of the code for drift and duplication that the reviews on each change miss. | A scheduled cloud run on Opus, once a week. | The human, by a notification that links to the run's own report. | When a third person starts merging to this repo. |
+
 ## About this repo
 
-| | |
-| --- | --- |
-| Language | TypeScript |
-| API | Fastify, serving JSON only |
-| Web | Next.js, in `web/`. The browser talks only to Next, and Next calls the API. |
-| Database | PostgreSQL. One shared schema, with each organisation's rows separated by row-level security. |
-| Hosting | AWS, account region `eu-west-1`. Always name the region: the local default is a different one. |
-| Package manager | pnpm |
-| Full local check | `pnpm check` |
+| Need | Choice | Decided |
+| --- | --- | --- |
+| Language | TypeScript | Yes |
+| API | Fastify, serving JSON only | Yes |
+| Web | Next.js, in `web/`. The browser talks only to Next, and Next calls the API. | Yes |
+| Database | PostgreSQL. One shared schema, with each organisation's rows separated by row-level security. | Yes (ADR-0004) |
+| Hosting | AWS, account region `eu-west-1`. Always name the region: the local default is a different one. | Yes |
+| Package manager | pnpm | Yes |
+| Full local check | `pnpm check` | Yes |
+| Sending text messages | Not chosen | When reminders by text are built |
+| Search across answers | Not chosen | When one customer passes 100,000 answers |
 
-Rules that hold across all of the code:
+A need marked Not chosen is not yours to choose. When your work reaches one, stop and ask the human.
+
+### Where code goes
+
+- The API is in `src/` and the web app in `web/`. Code that needs neither the server nor the browser goes in `packages/`.
+- A feature folder takes its name from the term in `CONTEXT.md`, and has the same name in every part.
+- The lint check (T1) refuses an import that crosses a feature's boundary.
+
+| Suffix | Holds |
+| --- | --- |
+| none | The feature's own logic |
+| `.routes.ts` | The API's endpoints |
+| `.table.ts` | Database tables |
+| `.repository.ts` | Database queries |
+| `.test.ts` | Tests, beside the file they test |
+
+Ask before adding a suffix that is not in this table.
+
+### Rules across the code
+
 - Every query runs inside `withOrganisation()`, which is what keeps one organisation from seeing another's rows (ADR-0004).
 - Throw the typed `AppError` classes. One handler turns them into responses (ADR-0006).
 - Log only through `logEvent`. An answer's content must never reach a log (ADR-0007).
