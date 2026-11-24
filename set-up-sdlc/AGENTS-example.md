@@ -29,7 +29,7 @@ These rules are the same in every repo that uses this setup.
 | Layout | Group code by feature, never by technical layer. Each feature folder has one entry file, and code outside the folder imports only from it. Never create a file just to complete a set. |
 | Decisions | Record a decision, a change of scope or a blocker on its ticket when it happens, and before any handoff. One that lives only in the chat is lost when the session ends. |
 | Secrets | Never print, log or paste a credential. Fetch it at the moment you use it. |
-| Other sessions | Before starting a ticket, tell the other sessions working in this repo what you are about to touch, and ask whether it clashes. If one does not answer and the work may overlap, raise it with the human. Only the agent the human is talking to does this. A subagent never does. |
+| Other sessions | Before starting a ticket, tell the other sessions working in this repo what you are about to touch, and ask whether it clashes. Do the same before adding a database migration, even partway through a ticket: two branches that each add one clash when they merge. If one does not answer and the work may overlap, raise it with the human. Only the agent the human is talking to does this. A subagent never does. |
 | This file | If something you learn or change makes a line in this file untrue, or the setup stops fitting the project, tell the human. Do not change the file yourself. |
 
 ## Skills
