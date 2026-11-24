@@ -30,7 +30,7 @@ The folder for worktrees and the pattern for branch names are fixed. The example
 
 Setup covers Node and Python projects.
 
-- **Nothing is built yet.** This blank waits for the table of what the product needs ("About this repo"), which settles the language and the package manager. Recommend pnpm as the package manager for Node and uv for Python there, and write the chosen manager's install command into the line.
+- **Nothing is built yet.** This blank waits for the table of what the product is built on ("About this repo"), which settles the language and the package manager. Recommend pnpm as the package manager for Node and uv for Python there, and write the chosen manager's install command into the line.
 - **Something is built.** Do not assume. Tell the owner what you found (the lock file, the package manager, any commit hook, any virtual environment) and explain that every worktree needs the same environment as the main folder. Then ask them to confirm what has to be run in a new one.
 - If they confirm that nothing needs running, leave the line out.
 
@@ -74,32 +74,20 @@ The pull request sweep is not in this skill yet (18 Nov 2026). Until this skill'
 
 Three parts. All hold only what every session needs and the repo does not show for itself. No map of the folders.
 
-**The table of what the product needs.** One table for the stack and for everything else the product will need. Three columns, headed Need, Choice and Decided. The Decided column says "Yes" for a need that is decided, with its ADR if it has one, and otherwise what will bring the decision up. The table holds what has been decided and what has not, together.
+**The table of what the product is built on.** One table for the stack. Two columns, headed Need and Choice. It holds only what has been chosen: a need with no choice yet gets no row.
 
-- **Start from the product, not from tools.** List what the product needs. Read it from the repo's documents if it has them, from the code if something is built, and ask the owner otherwise. Go past the usual rows (language, frameworks, database, hosting, package manager, the full local check) to what this product does: who signs in, what it stores, what it brings in and sends out, what runs in the background.
-- **Sort the needs by when each must be decided:** now, in this sitting, because it is hard to change later (how one customer's data is kept from another's, for example) or because the commit hook and CI depend on it; when the first piece of work touches it; when a product decision is made; at a later stage.
-- **Everything you suggest is a suggestion until the owner confirms it.** Show the owner the sorted list. They strike what will never be needed and add what is missing. Then take the needs one at a time, with one question at a time: is the need real, is it in the right group, and, for a need that waits, what will bring its decision up. Nothing goes in the table that the owner has not said yes to. Silence is not a yes, and neither is a yes to something else.
-- **Decide only the first group in this sitting,** one need at a time. Where there is a real choice, show the options and what each costs, and recommend one. Where there is not, say so and propose it. Each choice is the owner's to confirm.
+- **Start from the product, not from tools.** List what the product needs. Read it from the repo's documents if it has them, from the code if something is built, and ask the owner otherwise. Go past the usual rows (language, frameworks, database, hosting, package manager, the full local check) to the choices this product forces: how people sign in, where data is kept, how it reaches other systems, what runs work in the background.
+- **A row is a choice of technology, never a feature.** A need earns a row only if an agent would otherwise make the choice itself and the choice would be hard to undo. A feature, a question of scope, and anything a ticket already holds get no row. If the list reads like a backlog, cut it.
+- **Decide in this sitting only what cannot wait:** what is hard to change later (how one customer's data is kept from another's, for example), and what the commit hook and CI depend on. Take those one need at a time. Where there is a real choice, show the options and what each costs, and recommend one. Where there is not, say so and propose it. Each choice is the owner's to confirm.
+- **A need that can wait gets no row, and no note anywhere else in the file.** The fixed paragraph under the table already stops an agent choosing it. If the owner wants the decision remembered, offer a ticket. One kind of waiting need is written down: a gap in the pipeline or the infrastructure. It goes in "What this setup still lacks" under "Git and CI/CD", never here (`git-and-cicd.md`, part 3).
+- **Everything you suggest is a suggestion until the owner confirms it.** Show the owner the list of needs, and which of them you think cannot wait. They strike what will never be needed and add what is missing. Nothing goes in the table that the owner has not said yes to. Silence is not a yes, and neither is a yes to something else.
 - **Reason from this product.** The rule in `SKILL.md` against drawing on another repo matters most here: never take a choice from one unless the owner says to. You may offer to look, and you look only on a yes.
-- A choice earns an ADR only if it passes the test in `domain.md`: hard to reverse, surprising without its reason, and a real choice between options. Write the ADR on the owner's yes, and name it beside "Yes" in the third column, for example "Yes (ADR-0004)". The table holds the choice, not the reason.
-- For a need not yet decided, write "Not chosen" as the choice and, in the third column, what will bring the decision up. Give a trigger, never a date.
+- A choice earns an ADR only if it passes the test in `domain.md`: hard to reverse, surprising without its reason, and a real choice between options. Write the ADR on the owner's yes, and name it beside the choice, for example "PostgreSQL (ADR-0004)". The table holds the choice, not the reason.
 - If something is built, read the choices from the repo and ask the owner to confirm them.
 - When the package manager is agreed, go back to the Worktrees blank and fill in its install command.
 - A row may carry one short fact a session would otherwise get wrong.
 
-Suggest a trigger for each need that waits. These are starting points, and the owner sets each one:
-
-| Kind of need | A trigger to suggest |
-| --- | --- |
-| Sign-in, and who may see what | Before the first screen that shows real or private data |
-| Work that runs in the background | When the first task is too slow to finish inside one request |
-| Storing files | When the first upload or export is built |
-| A connection to another system | When the first piece of work reads from it or writes to it |
-| Sending email or messages | When the first feature has to tell someone something |
-| Anything that waits on a product decision | When that decision is made. Name the decision. |
-| Defining the hosting in code | With the first deployment |
-
-The template has one fixed line for this part: "A need marked Not chosen is not yours to choose. When your work reaches one, stop and ask the human." The table goes straight above it. Keep the line only if a row is marked Not chosen.
+The template has one fixed paragraph for this part, and it always stays: "This table is the whole list. Anything else the product would be built on has not been chosen, and is not yours to choose: a framework, a hosted service, a data store, a way of signing in, or a library a whole feature rests on. When your work needs one, stop and ask the human." The table goes straight above it.
 
 **Where code goes.** The layout of the repo, written as rules and never as a map. The template gives the heading.
 
@@ -133,7 +121,7 @@ The context files can be built backwards from the app. Work through them with th
 
 - **The vocabulary.** Draft the terms from the code, the screens and the names in the database. The owner corrects what each one means.
 - **ADRs.** Do not write up the project's past wholesale. Ask the owner which choices were hard to reverse and would still surprise a newcomer, and write an ADR only for those, with the reason in their words.
-- **About this repo.** Draft the table of what the product needs, "Where code goes" and the rules that hold across the code from what the code actually does. Have the owner confirm that each rule is a rule and not an accident.
+- **About this repo.** Draft the table of what the product is built on, "Where code goes" and the rules that hold across the code from what the code actually does. Have the owner confirm that each rule is a rule and not an accident.
 - **Notes and instruction files already there.** See "Notes and files already there", above.
 - **Git and CI/CD.** See "A repo that already has a setup" in [git-and-cicd.md](./git-and-cicd.md).
 - **Scheduled runs.** List what already runs on a schedule and have the owner confirm each one.

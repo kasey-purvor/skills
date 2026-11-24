@@ -240,6 +240,24 @@ One reviewer, told to look only for contradictions with the two edits and to mak
 - Part 1 of `git-and-cicd.md` is written for a first run. Now: a second run proposes only what is due, and does not treat the first run's build as "A repo that already has a setup".
 - "Skip every other step" also skipped step 1 and the steps that write the changed sections. Now: read as step 1 says, then follow only the steps that write those sections.
 
+### The repo table held features, 24 Nov (from the Org Assist session)
+
+Kasey, on Org Assist's "About this repo" table, which had fifteen rows marked Not chosen: "that table is doing too much", "its about the repo not the fucking apop", "i dont want iut becoming the linear ticket space", and "this was orignally intended to remind us to upgrade the CI/CD when the app evolves into prod ect.... it can be git,cicd/ infra/ that stuff. nit fucking features or tiny things about tests ect that can go in README".
+
+Rulings, and where each landed:
+
+| Ruling | Done |
+| --- | --- |
+| The stack table holds chosen rows only. No "Not chosen" rows, no triggers, two columns. | `section-guide.md`, "About this repo": the sorting by when, the "Not chosen" rule and the table of triggers to suggest are gone. A need that can wait gets no row. |
+| One fixed paragraph under the table stops an agent choosing technology on its own, whether or not anyone listed the need. | `AGENTS-template.md`, and the example. It always stays. |
+| What the pipeline and the infrastructure still lack is written in the repo's file, under "Git and CI/CD", with this test for a row: "A row is about how the code is checked, shipped, run or watched, and its trigger is a stage in the product's life, never a feature being built." | `git-and-cicd.md`, part 3, new item 3, "What this setup still lacks". Part 4 names it as the second exception to "describes only what exists". The example has the heading with two illustrative rows. |
+
+This reverses two things the skill said on purpose: part 3's "no list of what might come next" under the stage line, and "When to raise the next step" saying its triggers are never copied into a repo's file. Now the two triggers that are stages in the product's life are copied, as rows. The five that are signs of strain stay with setup's second run, and the open question about them stays on DEV-9.
+
+The bullet "A row is a choice of technology, never a feature" was written by another session earlier the same day and is kept unchanged.
+
+Not yet done: Org Assist's own `AGENTS.md`. Its table is cut and its four rows added in one edit at the close of its stream ORG-14.
+
 ## To revisit at the end of the walkthrough
 
 Superseded in part by "Rulings of 24 Nov 2026", above. Brought up to date on 20 Nov 2026. Everything else on the numbered list is applied or closed (see "Kasey's rulings on the open list").

@@ -3,10 +3,10 @@ WORKED EXAMPLE, 12 Nov 2026. What a repo's AGENTS.md could look like under the
 new layout, filled in with Connect Assist's rules as they stand today so the
 shape can be judged. It changes no repo. The template is AGENTS-template.md.
 Its git and CI/CD section was rewritten on 16 Nov to follow git-and-cicd.md; that
-section's facts are illustrative, not the repo's real setup. The two rows marked
-Not chosen in its "About this repo" table were added on 18 Nov to show the form,
-and are illustrative too. So is every row of its "Scheduled runs" table, added the
-same day, and everything under "Where code goes".
+section's facts are illustrative, not the repo's real setup. So is every row of its
+"Scheduled runs" table, added on 18 Nov, and everything under "Where code goes". On
+24 Nov the "About this repo" table was cut to chosen rows only, and "What this setup
+still lacks" was added under the environments; its rows are illustrative too.
 -->
 
 # Agent instructions
@@ -149,6 +149,15 @@ A stream is a parent ticket with the work's tickets beneath it. It gives one ses
 
 The database is built from the repo and never changed by hand. `pnpm db:migrate` builds it, and `pnpm db:seed:dev` loads the made-up data.
 
+### What this setup still lacks
+
+This list is what the pipeline and the infrastructure still lack. A row is about how the code is checked, shipped, run or watched, and its trigger is a stage in the product's life, never a feature being built. When your work reaches a trigger, tell the human.
+
+| What the setup lacks | Due |
+| --- | --- |
+| A second region the product can fail over to | Before the first customer whose contract requires it |
+| A named person on call outside working hours | When the first customer outside the United Kingdom goes live |
+
 ### The route and its gates
 
 ![The route a change takes, from a change on your machine to production, through six gates](example_pipeline.png)
@@ -238,19 +247,17 @@ Some work runs on a schedule, with nobody starting it. A scheduled run reports a
 
 ## About this repo
 
-| Need | Choice | Decided |
-| --- | --- | --- |
-| Language | TypeScript | Yes |
-| API | Fastify, serving JSON only | Yes |
-| Web | Next.js, in `web/`. The browser talks only to Next, and Next calls the API. | Yes |
-| Database | PostgreSQL. One shared schema, with each organisation's rows separated by row-level security. | Yes (ADR-0004) |
-| Hosting | AWS, account region `eu-west-1`. Always name the region: the local default is a different one. | Yes |
-| Package manager | pnpm | Yes |
-| Full local check | `pnpm check` | Yes |
-| Sending text messages | Not chosen | When reminders by text are built |
-| Search across answers | Not chosen | When one customer passes 100,000 answers |
+| Need | Choice |
+| --- | --- |
+| Language | TypeScript |
+| API | Fastify, serving JSON only |
+| Web | Next.js, in `web/`. The browser talks only to Next, and Next calls the API. |
+| Database | PostgreSQL. One shared schema, with each organisation's rows separated by row-level security (ADR-0004). |
+| Hosting | AWS, account region `eu-west-1`. Always name the region: the local default is a different one. |
+| Package manager | pnpm |
+| Full local check | `pnpm check` |
 
-A need marked Not chosen is not yours to choose. When your work reaches one, stop and ask the human.
+This table is the whole list. Anything else the product would be built on has not been chosen, and is not yours to choose: a framework, a hosted service, a data store, a way of signing in, or a library a whole feature rests on. When your work needs one, stop and ask the human.
 
 ### Where code goes
 

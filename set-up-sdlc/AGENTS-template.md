@@ -149,9 +149,9 @@ Some work runs on a schedule, with nobody starting it. A scheduled run reports a
 
 ## About this repo
 
-<!-- setup: the table of what the product needs. Follow "About this repo" in section-guide.md. The line below is fixed text. It stays only if a row is marked Not chosen. -->
+<!-- setup: the table of what the product is built on, chosen rows only. Follow "About this repo" in section-guide.md. The paragraph below is fixed text and always stays. -->
 
-A need marked Not chosen is not yours to choose. When your work reaches one, stop and ask the human.
+This table is the whole list. Anything else the product would be built on has not been chosen, and is not yours to choose: a framework, a hosted service, a data store, a way of signing in, or a library a whole feature rests on. When your work needs one, stop and ask the human.
 
 ### Where code goes
 

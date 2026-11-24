@@ -82,7 +82,7 @@ One stage matters: whether the product is live, meaning any real user's data exi
 
 #### When to raise the next step
 
-These are for setup, when it is run again on a repo: they say which part is due. They are not copied into the repo's agent instructions. A working agent has one general rule there instead (the house rule "This file"): tell the human when the setup stops fitting the project, and never change it yourself.
+The first two rows are stages in the product's life. Each one the owner agrees is coming is written into the repo's own list, "What this setup still lacks" (part 3), so a working agent tells the human when its work reaches it. The rest are signs that the pipeline is straining, and are not copied into the repo's agent instructions as they stand. (A gap the owner agrees to write down, such as monitoring, still goes in that list.) They are for setup, when it is run again on a repo: they say which part is due. A working agent has one general rule there instead (the house rule "This file"): tell the human when the setup stops fitting the project, and never change it yourself.
 
 | Stage | What is happening | What is due |
 | --- | --- | --- |
@@ -174,16 +174,21 @@ The default list for a repo's agent instructions:
 
 ## 3. What to write
 
-The section has these parts, in this order. `AGENTS-example.md` shows a finished one. Take its form, never its facts. Write only what exists or is being built now.
+The section has these parts, in this order. `AGENTS-example.md` shows a finished one. Take its form, never its facts. Write only what exists or is being built now. The exception here is item 3, the list of what the setup still lacks.
 
-1. **The stage.** One line saying whether the product is live. Nothing more: no list of what might come next.
+1. **The stage.** One line saying whether the product is live.
 2. **The environments.** A table with a row for each environment the repo has: what it is for, what data it holds, how a change gets there, and what an agent may do there. Under it, where the project has or plans a database, the rule in full: the database is built from the repo and never changed by hand, with the commands that build it and load made-up data once they exist. The never list says it a second time, on purpose.
-3. **The picture.** The route from a change on someone's machine to the last environment. One band for each place (the machine, GitHub, deployed) and one arrow for each gate. Number the gates G1, G2 and so on, in order. Adapt `example_pipeline.d2`, render it, and keep the source beside the picture.
-4. **Why each gate exists.** A table with one line for each gate.
-5. **What each gate demands.** One grid. The gates run across the top, with a row saying what enforces each. Down the side come the tests, then the rules. A filled dot means a machine checks it; an open dot means it rests on a person. Under the grid, say in a line or two how a pull request is changed and brought up to date in this repo.
-6. **The never list.**
-7. **The tests.** A table numbering them T1, T2 and so on, with what each proves. The grid uses the same numbers.
-8. **Test data and logins.** Where logins are kept, and the standing test data with the command that rebuilds each. Never a credential's value. Nothing more goes here: what a fixture is for and how it behaves is written in its script's header, help text and error messages. Ask the human before making any other file about it.
+3. **What this setup still lacks.** A short table under the environments, with two columns headed "What the setup lacks" and "Due". This fixed text goes above it: "This list is what the pipeline and the infrastructure still lack. A row is about how the code is checked, shipped, run or watched, and its trigger is a stage in the product's life, never a feature being built. When your work reaches a trigger, tell the human."
+   - The second sentence of that text is the test for every row. A feature fails it, and so does a choice of technology that a feature will need, and anything about one test or one command. The first two belong in tickets and the last in the README.
+   - The rows come from the stages in "What to decide when", above, but not from its last row, "Later, when it hurts", and from the owner: an integration environment, pre-production and production with their gates, the hosting defined in code, error tracking and monitoring. Nothing goes in that the owner has not agreed.
+   - A row is deleted when the thing is built, and the rest of the section then describes it as it is.
+   - If the setup lacks nothing, leave the heading out.
+4. **The picture.** The route from a change on someone's machine to the last environment. One band for each place (the machine, GitHub, deployed) and one arrow for each gate. Number the gates G1, G2 and so on, in order. Adapt `example_pipeline.d2`, render it, and keep the source beside the picture.
+5. **Why each gate exists.** A table with one line for each gate.
+6. **What each gate demands.** One grid. The gates run across the top, with a row saying what enforces each. Down the side come the tests, then the rules. A filled dot means a machine checks it; an open dot means it rests on a person. Under the grid, say in a line or two how a pull request is changed and brought up to date in this repo.
+7. **The never list.**
+8. **The tests.** A table numbering them T1, T2 and so on, with what each proves. The grid uses the same numbers.
+9. **Test data and logins.** Where logins are kept, and the standing test data with the command that rebuilds each. Never a credential's value. Nothing more goes here: what a fixture is for and how it behaves is written in its script's header, help text and error messages. Ask the human before making any other file about it.
 
 Then, in "How work is done", word three of the building steps from the answers: when a pull request is pushed and what happens if CI fails, who merges, and where a change is proved.
 
@@ -196,5 +201,5 @@ Setup is one flow. It does not end with a file that describes checks nobody has 
 - Setup's own commits need no ticket. That covers everything setup commits: the agent instructions and the context files, these checks, and the README written at the end. Name the branch and its worktree for what they hold. The evidence goes on the setup ticket at the end (step 11 of `SKILL.md`).
 - The rules on `main` are in place before any product code is written. Setup's own commits may go in before them.
 - Prove each piece before the next. The hook refuses a commit with a mistake in it. CI runs on a pull request. The rules on `main` refuse what they should. The boundary check refuses an import that crosses a boundary. A scheduled run is seen to fire and to report.
-- The section describes only what exists. Anything decided that cannot be built yet is offered to the owner as a ticket and filed on their yes, in the epics agreed at the end (step 11 of `SKILL.md`). It is not written as though it were there. The "Scheduled runs" table is the one exception: a run agreed for later is a row there with its trigger, as the section guide says.
+- The section describes only what exists. Anything decided that cannot be built yet is offered to the owner as a ticket and filed on their yes, in the epics agreed at the end (step 11 of `SKILL.md`). It is not written as though it were there. There are two exceptions, and each names what is missing with its trigger: a run agreed for later is a row in the "Scheduled runs" table, as the section guide says, and a gap in the pipeline or the infrastructure is a row in "What this setup still lacks" (part 3).
 - If a proof fails, or something could not be built, correct the section to match before you finish.
