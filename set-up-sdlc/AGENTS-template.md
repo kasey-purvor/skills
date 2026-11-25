@@ -31,7 +31,7 @@ These rules are the same in every repo that uses this setup.
 | Decisions | Record a decision, a change of scope or a blocker on its ticket when it happens, and before any handoff. One that lives only in the chat is lost when the session ends. |
 | Secrets | Never print, log or paste a credential. Fetch it at the moment you use it. |
 | Other sessions | Before starting a ticket, tell the other sessions working in this repo what you are about to touch, and ask whether it clashes. Do the same before adding a database migration, even partway through a ticket: two branches that each add one clash when they merge. If one does not answer and the work may overlap, raise it with the human. Only the agent the human is talking to does this. A subagent never does. |
-| This file | If something you learn or change makes a line in this file untrue, or the setup stops fitting the project, tell the human. Do not change the file yourself. |
+| This file | If something you learn or change makes a line in this file untrue, or the setup stops fitting the project, tell the human. It is changed only on their yes. |
 
 ## Skills
 
@@ -85,7 +85,7 @@ These are the files that explain the project. Read the ones your task touches.
 - create a new context file, ADR, planning document or folder for them;
 - start any new way of keeping context, such as a notes file, a log or a memory scheme.
 
-The one exception is an ADR: when a ticket or plan the human approved carries the exact new wording, land it unchanged without asking again. Code files and folders need no permission.
+`docs/agents/domain.md` says who may write each file and when, and gives the one exception. Code files and folders need no permission.
 
 ## How work is done
 

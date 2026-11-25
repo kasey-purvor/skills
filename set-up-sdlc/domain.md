@@ -16,13 +16,29 @@ A context file is a markdown file that agents and people read to understand this
 
 A repo with several separate parts may have a `CONTEXT-MAP.md` at the root, pointing at one `CONTEXT.md` for each part.
 
-## Before you change anything
+## Who may write what
 
-**Ask the human first, every time,** before you add to, change or remove anything in any of these files, create a new context file, ADR, planning document or folder for them, or start any new way of keeping context.
+Nothing in these files is added, changed or removed until the human has said yes to that specific change.
 
-The one exception is an ADR: when a ticket or plan the human approved carries the exact new wording, land it unchanged without asking again.
+| File | Who writes it | When |
+| --- | --- | --- |
+| `AGENTS.md` | The main agent | In a `session-wrap-up`, when a line is proved wrong; or when the human decides a table row. |
+| `CONTEXT.md` | The main agent | Whenever a new term appears or an inconsistency is found: proposed to the human, and written only on their yes. |
+| `docs/adr/` | The main agent | In `grill-with-docs` or `improve-codebase-architecture`, for a ruling that passes the ADR test in the table above. `session-wrap-up` may also offer one. |
+| `docs/decisions.md` | The main agent | In a `session-wrap-up` only. |
+| `docs/pitfalls.md` | The main agent | In a `session-wrap-up` only, deletions included. |
+| `docs/PRD/` | The main agent | In `to-prd`. |
+| `docs/agents/domain.md` | The main agent | When the setup template changes. |
+| `README.md` | The main agent, never a subagent | When what it describes changes. |
+| A new context file, notes file, planning document, log or folder for them | Nobody, without asking first | |
 
-A requirements document is written when the human asks for one with `to-prd`. That request is the yes for that one file.
+There is one exception. When a ticket or plan the human approved carries the exact new wording of an ADR, a builder lands it unchanged, without asking again.
+
+A requirements document is written only when the human asks for one with `to-prd`. That request is the yes for that one file.
+
+Subagents never write to any of these files otherwise. A builder, reviewer or verifier reports what it found, and the main agent proposes it.
+
+Nothing goes into decisions or pitfalls that the human did not decide or an agent did not actually hit. A trap in a shared tool or machine does not go in this repo: `session-wrap-up` proposes it for the handbook's `topics/pitfalls.md`.
 
 ## Where a thing goes
 
@@ -85,7 +101,3 @@ YYYY-MM-DD · [tags] · <symptom, plainly> → <fix or rule> · seen: N · sourc
 
 - The date is when the trap was first seen. Before adding a line, look for the same symptom. If it is there, raise `seen` instead.
 - This file is an inbox, not an archive. A line stays until the trap is fixed at its source (a hook, a script or a check now stops it), and then it is deleted.
-
-## Who writes decisions and pitfalls lines
-
-One route: the `session-wrap-up` skill. It proposes each line, and each deletion, and the human says yes or no to each. A builder reports a trap in its final report and does not write it. Nothing goes in that the human did not decide or an agent did not actually hit.

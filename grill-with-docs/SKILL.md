@@ -51,7 +51,7 @@ If a `CONTEXT-MAP.md` exists at the root, the repo has multiple contexts. The ma
 │       └── docs/adr/
 ```
 
-Setup creates these files. If one is missing, tell the human and suggest running the `set-up-sdlc` skill. Do not create it yourself.
+Setup creates these files. If one is missing, tell the human and suggest running the `set-up-sdlc` skill. Do not create it yourself. Who may write each file, and when, is in the repo's `docs/agents/domain.md`; every change needs the human's yes.
 
 ## During the session
 
@@ -85,16 +85,10 @@ When a term is resolved, propose its `CONTEXT.md` entry to the human right there
 
 ### Offer ADRs sparingly
 
-Only offer to create an ADR when all three are true:
+Offer an ADR only for a ruling that passes the test in the repo's `docs/agents/domain.md`: hard to reverse, surprising without its reason, and a real choice between options. If any of the three is missing, skip it. Use the format in [ADR-FORMAT.md](./ADR-FORMAT.md).
 
-1. **Hard to reverse** — the cost of changing your mind later is meaningful
-2. **Surprising without context** — a future reader will wonder "why did they do it this way?"
-3. **The result of a real trade-off** — there were genuine alternatives and you picked one for specific reasons
+### Decisions that don't earn an ADR
 
-If any of the three is missing, skip the ADR. Use the format in [ADR-FORMAT.md](./ADR-FORMAT.md). Write or change an ADR only on the human's yes.
-
-### Record the settled decisions that don't earn an ADR
-
-A decision the user made that fails the ADR test is still a decision: the ticket comment keeps the history, and `docs/decisions.md` is where the next agent looks for the standing rule. The repo's `docs/agents/domain.md` says what belongs in that file and how a line gets there.
+A decision the user made that fails the ADR test is still a decision. Record it on the ticket. It is not written to `docs/decisions.md` here: the repo's `docs/agents/domain.md` says how a line gets there.
 
 </supporting-info>
