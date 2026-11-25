@@ -83,9 +83,10 @@ Pick the **one** row closest to what you're fundamentally doing, then add any
 secret change to a running production system, also takes the live-system row whatever its
 size; a review takes its own row plus the row its change would take.
 
-**Whatever the row, two chapters ride along:** read `environment` before the first
-command of a piece of work (known traps in the tools, the harness and the machines), and
-scan `pitfalls` alongside any new code or module (named anti-patterns to catch before
+**Whatever the row, `pitfalls` rides along:** read its traps before the first
+command of a piece of work (known traps in the tools, the harness and the machines),
+unless a hook put them in your context when the session started, and
+scan its anti-patterns alongside any new code or module (named anti-patterns to catch before
 they become embedded).
 
 | What you're doing | Core chapters (start here, then adjust) | Read them for |
@@ -134,7 +135,6 @@ If your task matches no row, pick chapters by keyword from the **Topic index** b
 | `topics/configuration.md` | Env var validation, `.env`, multi-layer config, build-time vs runtime config, secret delivery and rotation, where clients are built, serverless config |
 | `topics/data-integrity.md` | Zod/Pydantic, three-layer integrity model, validation boundaries, transactions, locking and deadlocks, transactional outbox, poolers |
 | `topics/deployment.md` | Rolling deploys and the mixed-version window, release patterns, rollback, migrations in the pipeline, lockfiles and supply chain, CI/CD and promotion, infrastructure as code |
-| `topics/environment.md` | Traps in shared tools and machines: Claude Code, Codex, Linear, scraping and search services, git/GitHub, the machines. Read before the first command of a piece of work |
 | `topics/error-handling.md` | Error hierarchies, global handlers, RFC 9457, error chaining |
 | `topics/frontend-development.md` | Component boundaries, state ownership, data changes, forms, navigation, accessibility, layout, React/framework decisions |
 | `topics/frontend-patterns.md` | Observable interface faults by review lens (fit, first screen, controls, tasks, consistency, wording, states, accessibility), with browser checks and probe sizes; read the relevant group for a browser review |
@@ -142,7 +142,7 @@ If your task matches no row, pick chapters by keyword from the **Topic index** b
 | `topics/module-design.md` | Deep vs shallow modules, interfaces, seams, adapters, design-it-twice, dependency categories |
 | `topics/monitoring.md` | Metric types, RED/USE, job and queue monitoring, SLOs and burn-rate alerts, distributed tracing, OTel |
 | `topics/multi-tenant-isolation.md` | Isolation strategies, scoped data layers, the RLS database backstop, elevated cross-tenant access, tenant scope beyond the database (caches, jobs, storage, search) |
-| `topics/pitfalls.md` | Named anti-patterns from real codebases, grouped by what you're building. Scan alongside any new code or module |
+| `topics/pitfalls.md` | Named anti-patterns from real codebases, grouped by what you're building, and traps in shared tools and machines: Claude Code, Codex, Linear, scraping and search services, git/GitHub, the machines. Read the traps before the first command of a piece of work; scan the anti-patterns alongside any new code or module |
 | `topics/product-analytics.md` | Event tracking and naming, server-side capture, identity (not in anonymity products), groups, consent |
 | `topics/resilience.md` | Retries, circuit breakers, timeouts, fan-out and connection pools, idempotency, background jobs, graceful shutdown, health checks |
 | `topics/schema-evolution.md` | Migrations, expand-and-contract, backfills, lock timeouts, adding constraints to big tables, which release each migration rides in |
