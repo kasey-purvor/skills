@@ -74,3 +74,7 @@ Standards: <the dev-standards-handbook chapters this slice touches>
 </universal-frame>
 
 Do NOT close or modify any parent issue.
+
+### 6. Offer the session wrap-up
+
+Once the issues are published, offer the `session-wrap-up` skill in one line, once: the planning that led here (the grill, the requirements document, this breakdown) is where rulings get made, and this is the point to keep the ones worth keeping. Start it only on a yes.

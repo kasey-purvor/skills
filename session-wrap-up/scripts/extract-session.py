@@ -5,9 +5,18 @@ What the human typed is kept in full, including messages typed while the agent w
 working. The agent's own text is truncated, each tool call becomes one line, tool
 errors are kept, and system reminders and skill dumps are dropped. Messages from
 other agents are labelled as such, so they are never mistaken for the human, and a
-compaction summary is reduced to one marker line for the same reason. A subagent's
-final message and the reports other agents send back are kept whole: a builder lists
-the traps it hit at the end.
+compaction summary is reduced to one marker line for the same reason. The reports other
+agents send back are kept whole: a builder lists the traps it hit at the end.
+
+A subagent's own transcript is reduced to what the main session never saw: its tool
+errors, and its final message when that message did not arrive. Its narration, its brief
+and its tool calls are left out; read its transcript with --file to see them. An idle
+notice that only repeats a report the agent had just sent becomes one line. Tool errors
+seen more than once are counted at the top, across every transcript. A notice that a
+background command or monitor finished becomes one line: its summary and its status.
+
+The last line printed says whether the extract will fit: the context of the session
+running the script, plus the extract, as a share of the window (--window, in tokens).
 
   python3 -I extract-session.py --latest [--out PATH]           # this Claude Code session
   python3 -I extract-session.py --codex [--out PATH]            # newest Codex session here
@@ -19,6 +28,7 @@ Standard library only.
 """
 import argparse
 import glob
+import html
 import json
 import os
 import re
@@ -28,6 +38,13 @@ ASSIST_MAX = 900
 AGENT_MSG_MAX = 600
 ERROR_MAX = 300
 HINT_MAX = 160
+CHARS_PER_TOKEN = 3.5  # an estimate, on the low side so the extract is not undercounted
+WINDOW = 1_000_000  # the context window assumed for the size line; --window changes it
+TAIL_BYTES = 4_000_000  # how much of the running session's transcript to read for its last turn
+IDLE_KEY = 200  # characters of an idle notice's text compared with a subagent's final message
+SENT_SHARE = 0.5  # an idle notice repeats a report when the agent sent a message at least this share of its length
+ERR_KEY = 80  # characters, numbers blanked, that make two tool errors the same error
+TALLY_MAX = 40  # repeated errors listed in the count at the top
 
 SKIP_PREFIX = ("<local-command-stdout>", "<local-command-caveat>", "Caveat: The messages below",
                "Base directory for this skill:", "# AGENTS.md instructions", "<skills_instructions>",
@@ -208,7 +225,8 @@ def parse_claude(path, human_label="USER"):
 
 
 def claude_subagents(path):
-    """The session's subagent transcripts, each with a label from its .meta.json."""
+    """The session's subagent transcripts: path, a label from its .meta.json, the name it
+    messages under (named ones only) and the id its task notification carries."""
     found = []
     for sub in glob.glob(os.path.join(path[:-len(".jsonl")], "subagents", "*.jsonl")):
         label = os.path.basename(sub)[:-len(".jsonl")]
@@ -217,9 +235,11 @@ def claude_subagents(path):
                 m = json.load(fh)
             name = m.get("name") or m.get("agentType") or label
             label = f"{name} — {m['description']}" if m.get("description") else name
+            sent_as = m.get("name")
         except Exception:
-            pass
-        found.append((sub, label))
+            sent_as = None
+        aid = os.path.basename(sub)[:-len(".jsonl")]
+        found.append((sub, label, sent_as, aid[len("agent-"):] if aid.startswith("agent-") else aid))
     return found
 
 
@@ -323,7 +343,7 @@ def codex_subagents(root_id):
             label = head.get("agent_nickname") or head.get("agent_path") or os.path.basename(path)
             if head.get("agent_path") and head.get("agent_nickname"):
                 label = f"{head['agent_nickname']} — {head['agent_path']}"
-            found.append((path, label))
+            found.append((path, label, None, None))
     return found
 
 
@@ -332,11 +352,13 @@ def stamp(ts):
     return (ts or "")[5:16].replace("T", " ")
 
 
-def render(turns):
+def render(turns, tools=True):
+    """tools=False leaves out the one line per tool call; errors and messages stay."""
     out = []
     for role, text, ts in turns:
         if role == "TOOL":
-            out.append(f"  · {stamp(ts)} [{text}]\n")
+            if tools:
+                out.append(f"  · {stamp(ts)} [{text}]\n")
         elif role == "TOOL-ERROR":
             out.append(f"  ! {stamp(ts)} TOOL ERROR: {text}\n")
         elif role == "MARKER":
@@ -351,12 +373,218 @@ def human_count(turns):
     return sum(1 for r, _, _ in turns if r.startswith("USER"))
 
 
+# ---------- what reached the manager ----------
+BLOCK = re.compile(r"<teammate-message\b([^>]*)>(.*?)</teammate-message>|<agent-message\b([^>]*)>(.*?)</agent-message>",
+                   re.S)
+TASK = re.compile(r"<task-notification>.*?</task-notification>", re.S)
+BOILER = re.compile(r"\n*(?:This came from another Claude session — not typed by your user"
+                    r"|That \"other Claude session\" is an agent working inside this same session)[^\n]*")
+NOTE = re.compile(r"\s*<note>.*?</note>", re.S)
+
+
+def attr(attrs, name):
+    m = re.search(rf'\b{name}="([^"]*)"', attrs or "")
+    return m.group(1) if m else None
+
+
+def received(turns):
+    """Find which subagents' last words reached the main session, and drop what only repeats.
+
+    A named subagent sends its report as a message, then an idle notice that repeats its last
+    words. The notice becomes one line when a message of comparable size came from the same
+    agent since its previous notice. Otherwise the notice is the report, and it stays whole.
+    The harness's own sentences around these messages are dropped, and a notice that a
+    background command or monitor finished becomes one line.
+
+    Returns the turns; for each named agent the start of the last idle notice it sent; the
+    ids of unnamed agents whose result arrived as a task notification; and the notices cut.
+    """
+    last_idle, tasks, sent, cut, quiet = {}, set(), {}, 0, 0
+
+    def one(m):
+        nonlocal cut
+        if m.group(2) is not None:
+            who, body = attr(m.group(1), "teammate_id"), m.group(2)
+        else:
+            who, body = attr(m.group(3), "from"), m.group(4)
+        idle = None
+        if body.lstrip().startswith("{"):  # the harness's own notices are JSON
+            try:
+                idle = json.loads(body)
+            except Exception:
+                idle = None
+            if not isinstance(idle, dict) or idle.get("type") != "idle_notification":
+                return m.group(0)
+        else:
+            if body.strip():
+                sent[who] = max(sent.get(who, 0), len(body))
+            return m.group(0)
+        who = idle.get("from") or who
+        result = str(idle.get("result") or "")
+        before, sent[who] = sent.get(who, 0), 0
+        if result:
+            last_idle[who] = norm(result)[:IDLE_KEY]
+            if before < len(result) * SENT_SHARE:
+                return m.group(0)
+        cut += 1
+        return f"[idle notice from {who}: {'repeats the report it sent above' if result else 'no text'}]"
+
+    def task(m):
+        """A subagent's result stays whole. A background command or monitor becomes one line:
+        what it carries beyond its summary is tool output, which is dropped everywhere else."""
+        nonlocal quiet
+        note = m.group(0)
+        tid = re.search(r"<task-id>([^<]+)</task-id>", note)
+        if "<result>" in note:
+            if tid:
+                tasks.add(tid.group(1).strip())
+            return note
+        quiet += 1
+        summary = re.search(r"<summary>(.*?)</summary>", note, re.S)
+        status = re.search(r"<status>([^<]*)</status>", note)
+        said = html.unescape(oneline(summary.group(1))) if summary else "no summary"
+        return f"[background: {trunc(said, HINT_MAX)}{' · ' + status.group(1).strip() if status else ''}]"
+
+    out = []
+    for role, text, ts in turns:
+        if role == "AGENT-MSG":
+            text = TASK.sub(task, text)
+            text = NOTE.sub("", BOILER.sub("", BLOCK.sub(one, text))).strip()
+        out.append((role, text, ts))
+    return out, last_idle, tasks, cut
+
+
+# ---------- subagents ----------
+def tally(sources):
+    """One line for each tool error seen more than once, across every transcript."""
+    seen = {}
+    for who, turns in sources:
+        for role, text, _ in turns:
+            if role == "TOOL-ERROR":
+                e = seen.setdefault(re.sub(r"[0-9a-f]{7,}|\d+", "#", text)[:ERR_KEY], [0, set(), text])
+                e[0] += 1
+                e[1].add(who)
+    total = sum(e[0] for e in seen.values())
+    if not total:
+        return ""
+    again = sorted((e for e in seen.values() if e[0] > 1), key=lambda e: -e[0])
+    out = [f"\n## Tool errors, counted\n\n{total} in all, {len(seen)} distinct. Each one also appears "
+           f"further down, where it happened. Seen more than once:\n\n"]
+    for n, who, text in again[:TALLY_MAX]:
+        out.append(f"- {n}× in {len(who)} transcript(s): {trunc(text, HINT_MAX)}\n")
+    if len(again) > TALLY_MAX:
+        out.append(f"- and {len(again) - TALLY_MAX} more seen more than once\n")
+    if not again:
+        out.append("- none\n")
+    return "".join(out)
+
+
+def subagent_part(parsed, last_idle, tasks, keep_all_finals):
+    """A line for every subagent, then only what the main session never saw of each.
+
+    That is its tool errors, and its final message when that message did not arrive. Its
+    narration, its brief and its tool calls are left out: read it with --file to see them.
+    """
+    if not parsed:
+        return ""
+    folders = {os.path.dirname(sub) for _, _, sub, *_ in parsed}
+    roster = [f"\n---\n\n## Subagents ({len(parsed)})\n\n"
+              "One line each. A subagent's narration, brief and tool calls are left out; "
+              "read its transcript with --file to see them.\n"]
+    if len(folders) == 1:
+        roster.append(f"Transcripts are in {folders.pop()}\n")
+    roster.append("\n")
+    blocks, unreported = [], 0
+    for n, (first, label, sub, sturns, smeta, name, aid) in enumerate(parsed, 1):
+        said = [i for i, (r, _, _) in enumerate(sturns) if r in ("CLAUDE", "CODEX")]
+        final = sturns[said[-1]] if said else None
+        cut_off = not said or any(r in ("TOOL", "TOOL-ERROR") for r, _, _ in sturns[said[-1] + 1:])
+        arrived = bool(final) and not keep_all_finals and (
+            aid in tasks or (name is not None and last_idle.get(name) == norm(final[1])[:IDLE_KEY]))
+        calls = sum(1 for r, _, _ in sturns if r == "TOOL")
+        errors = [t for t in sturns if t[0] == "TOOL-ERROR"]
+        if final is None:
+            state = "no message of its own"
+        elif arrived:
+            state = "its final message reached the main session"
+        else:
+            state = "its final message is below"
+            unreported += 1
+        if cut_off and final is not None:
+            state += "; it stopped on a tool call"
+        where = os.path.basename(sub) if not folders else sub
+        roster.append(f"{n}. {label} · {stamp(smeta['first'])} to {stamp(smeta['last'])} · {calls} tool calls · "
+                      f"{len(errors)} errors · {state} · {where}\n")
+        if errors or (final is not None and not arrived):
+            blocks.append(f"\n### Subagent {n}: {label}\n\n")
+            blocks.append(render(errors))
+            if final is not None and not arrived:
+                blocks.append(render([(f"{final[0]} (its final message)", final[1], final[2])]))
+    return "".join(roster + blocks), unreported
+
+
+# ---------- size ----------
+def last_usage(lines):
+    """Tokens in the context at the last turn of a Claude Code transcript, or None."""
+    for line in reversed(lines):
+        if '"usage"' not in line:
+            continue
+        try:
+            o = json.loads(line)
+        except Exception:
+            continue
+        u = (o.get("message") or {}).get("usage")
+        if o.get("type") == "assistant" and not o.get("isSidechain") and isinstance(u, dict):
+            n = sum(u.get(k) or 0 for k in ("input_tokens", "cache_creation_input_tokens",
+                                            "cache_read_input_tokens"))
+            if n:
+                return n
+    return None
+
+
+def running_context():
+    """How full the session running this script is, from its own transcript, or None."""
+    sid = os.environ.get("CLAUDE_CODE_SESSION_ID")
+    if not sid:
+        return None
+    root = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude")
+    found = glob.glob(os.path.join(root, "projects", "*", f"{sid}.jsonl"))
+    if not found:
+        return None
+    path = max(found, key=os.path.getmtime)
+    try:
+        with open(path, "rb") as fh:
+            fh.seek(max(0, os.path.getsize(path) - TAIL_BYTES))
+            tail = fh.read().decode("utf-8", "replace").split("\n")[1:]
+        n = last_usage(tail)
+        if n is None:  # a very long last turn: read the whole file
+            with open(path, errors="replace") as fh:
+                n = last_usage(fh.read().split("\n"))
+        return n
+    except OSError:
+        return None
+
+
+def size_line(chars, window):
+    """The arithmetic a reader needs before opening the extract: will it fit?"""
+    extract = int(chars / CHARS_PER_TOKEN)
+    now = running_context()
+    if now is None:
+        return (f"size: extract about {extract:,} tokens, {extract * 100 // window}% of a {window:,}-token "
+                f"window; this session's own context is not known (no CLAUDE_CODE_SESSION_ID transcript)")
+    total = now + extract
+    return (f"size: this session's context {now:,} tokens + extract about {extract:,} = {total:,}, "
+            f"{total * 100 // window}% of a {window:,}-token window")
+
+
 def main():
     ap = argparse.ArgumentParser(description="Condense a session transcript for a session wrap-up.")
     ap.add_argument("--file", help="one transcript (.jsonl), Claude Code or Codex")
     ap.add_argument("--latest", action="store_true", help="this Claude Code session ($CLAUDE_CODE_SESSION_ID), else the newest for this directory")
     ap.add_argument("--codex", action="store_true", help="the newest Codex session for this directory")
     ap.add_argument("--out", help="write here instead of stdout")
+    ap.add_argument("--window", type=int, default=WINDOW,
+                    help=f"context window in tokens, for the size line (default {WINDOW:,})")
     args = ap.parse_args()
     if not (args.file or args.latest or args.codex):
         ap.error("name a transcript: --file PATH, --latest, or --codex")
@@ -379,28 +607,30 @@ def main():
     turns, meta = parse(path)
     subs = codex_subagents(meta["id"]) if is_codex else claude_subagents(path)
     parsed = []
-    for sub, label in subs:
+    for sub, label, name, aid in subs:
         sturns, smeta = parse(sub, human_label="PARENT")
-        parsed.append((smeta["first"] or "", label, sub, sturns, smeta))
+        parsed.append((smeta["first"] or "", label, sub, sturns, smeta, name, aid))
     parsed.sort(key=lambda x: x[0])
     if not turns and not parsed:
         sys.exit(f"nothing read from {path}: it holds no Claude Code or Codex messages")
-    withdrawn = meta["withdrawn"] + [r for *_, smeta in parsed for r in smeta["withdrawn"]]
+    turns, last_idle, tasks, cut = received(turns)
+    withdrawn = meta["withdrawn"] + [r for p in parsed for r in p[4]["withdrawn"]]
     if withdrawn:
         print(f"dropped {len(withdrawn)} queued message(s) taken back unsent (reasons: "
               f"{sorted(set(map(str, withdrawn)))}); a reason that means delivered belongs in DELIVERED",
               file=sys.stderr)
 
+    sub_text, unreported = subagent_part(parsed, last_idle, tasks, keep_all_finals=is_codex) if parsed else ("", 0)
+    if parsed:
+        print(f"subagents: {len(parsed)}; final messages that never reached the main session: {unreported}; "
+              f"idle notices cut to one line: {cut}", file=sys.stderr)
     doc = [f"# Session {meta['id']}\n",
            f"- tool: {'codex' if is_codex else 'claude code'}\n- cwd: {meta['cwd']}\n- branch: {meta['branch']}\n",
            f"- title: {meta['title']}\n- from: {meta['first']}\n- to: {meta['last']}\n",
            f"- human turns: {human_count(turns)}  tool errors: {meta['errors']}  subagents: {len(parsed)}\n",
-           f"- source: {path}\n\n---\n", render(turns)]
-    for n, (first, label, sub, sturns, smeta) in enumerate(parsed, 1):
-        doc.append(f"\n---\n\n## Subagent {n}: {label}\n\n"
-                   f"- from: {smeta['first']}\n- to: {smeta['last']}\n- tool errors: {smeta['errors']}\n"
-                   f"- source: {sub}\n")
-        doc.append(render(sturns))
+           f"- source: {path}\n",
+           tally([("main session", turns)] + [(p[2], p[3]) for p in parsed]),
+           "\n---\n", render(turns), sub_text]
     text = "".join(doc)
 
     if args.out:
@@ -413,6 +643,7 @@ def main():
               f"{len(text):,} characters", file=sys.stderr)
     else:
         sys.stdout.write(text)
+    print(size_line(len(text), args.window), file=sys.stderr)
 
 
 if __name__ == "__main__":
